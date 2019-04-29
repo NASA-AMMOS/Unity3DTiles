@@ -169,7 +169,7 @@ namespace Unity3DTiles
             this.FrameState = new TileFrameState();
             if (tile.Content != null)
             {
-                this.Id = Path.GetFileNameWithoutExtension(tile.Content.Url);
+                this.Id = Path.GetFileNameWithoutExtension(tile.Content.Uri);
             }
             if (parent != null)
             {
@@ -220,7 +220,7 @@ namespace Unity3DTiles
             else
             {
                 ContentState = Unity3DTileContentState.UNLOADED;
-                this.ContentUrl = UriHelper.JoinUrls(basePath, tile.Content.Url);
+                this.ContentUrl = UriHelper.JoinUrls(basePath, tile.Content.Uri);
             }
 
             this.HasRenderableContent = false;

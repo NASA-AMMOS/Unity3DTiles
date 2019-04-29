@@ -8,15 +8,16 @@ In the mean time, the following steps were taken last time UnityGLTF was updated
 
 #### Updating the 3D Tiles Scheme
 
-1. Download latest [schema](https://github.com/KhronosGroup/glTF/tree/master/specification) from 3D Tiles github and place files in `SchemaGen\Generate\3DTileSchema`.  See also [instructions on UnityGLTF](https://github.com/KhronosGroup/UnityGLTF#gltfserializer)
-2. Update the references in SchemaGen\Generate.csproj to include any new schema files or remove any old ones
-3. Build SchemaGen\Generate.sln which will replace Assets\Unity3DTiles\Schema.cs
-4. Manually edit Schema.cs to build under .net 3.5 and to fix name errors such as:
+1. Download latest [schema](https://github.com/KhronosGroup/glTF/tree/master/specification) from 3D Tiles github and place files in `SchemaGen\Generate\3DTileSchema`.  
+2. Update the references in `SchemaGen\Generate.csproj` under the `3DTileSchema` folder to include any new schema files or remove any old ones.   Also ensure that all schema files have "Copy to Output Directory=Copy if newer"  in the properties window otherwise you will get an exception hen running
+3. Build and run SchemaGen\Generate.sln which will replace Assets\Unity3DTiles\TilesetSchema.cs
+4. Manually edit TilesetSchema.cs to build under .net 3.5 and to fix name errors such as:
    1. Properties2 - delete and use Dictionary<string,object> instead
-   2. Tile becomes TileContent
-   3. Tile2 becomes Tile
-   4. Remove {get;set;} for any property with a default value
-   5. Find and replace System.Array with List
-   6. Added additional methods onto BoundingVolume
-   7. Changed type of Tile.ViewerRequestVolume from object to BoundingVolume
-   8. Made Tile.Refine nullable
+   2. Rename/Refactor the class `Tile` and all references to `TileContent` (be careful not to change other references in the project outside of TilesetSchema.cs)
+   3. Rename/Refactor the class `Tile2` becomes `Tile`
+   4. Rename/Refactor the class `Tile2Refine` to `TileRefine`
+   5. Remove {get;set;} for any property with a default value
+   6. Find and replace `System.Array` with `List`.  Add `using System.Collections.Generic;`
+   7. ~~Added additional methods onto BoundingVolume~~
+   8. ~~Changed type of Tile.ViewerRequestVolume from object to BoundingVolume~~
+   9. Made Tile.Refine nullable (i.e. `public TileRefine` to `public TileRefine?`)
