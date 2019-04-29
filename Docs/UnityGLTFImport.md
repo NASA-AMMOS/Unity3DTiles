@@ -8,7 +8,7 @@ In the mean time, the following steps were taken last time UnityGLTF was updated
 
 #### Updating the 3D Tiles Scheme
 
-1. Download latest [schema](https://github.com/KhronosGroup/glTF/tree/master/specification) from 3D Tiles github and place files in `SchemaGen\Generate\3DTileSchema`.  See also [instructions on UnityGLTF](https://github.com/KhronosGroup/UnityGLTF#gltfserializer)
+1. Download latest [schema](https://github.com/AnalyticalGraphicsInc/3d-tiles/tree/master/schema) from 3D Tiles github and place files in `SchemaGen\Generate\3DTileSchema`.  See also [instructions on UnityGLTF](https://github.com/KhronosGroup/UnityGLTF#gltfserializer)
 2. Update the references in SchemaGen\Generate.csproj to include any new schema files or remove any old ones
 3. Build SchemaGen\Generate.sln which will replace Assets\Unity3DTiles\Schema.cs
 4. Manually edit Schema.cs to build under .net 3.5 and to fix name errors such as:
