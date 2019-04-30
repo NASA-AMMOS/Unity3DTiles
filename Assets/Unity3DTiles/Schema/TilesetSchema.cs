@@ -110,9 +110,28 @@ namespace Unity3DTiles.Schema
         public BoundingVolume BoundingVolume = new BoundingVolume();
     
         /// <summary>A uri that points to the tile's content. When the uri is relative, it is relative to the referring tileset JSON file.</summary>
-        [Newtonsoft.Json.JsonProperty("uri", Required = Newtonsoft.Json.Required.Always)]
+        [Newtonsoft.Json.JsonProperty("uri", NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Uri { get; set; }
-    
+
+        /// <summary>
+        /// Property to support legacy format that used url instead of uri
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty("url", NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Url { get; set; }
+
+        /// <summary>
+        /// Helper method to get uri or uri parameter for backwards compatability
+        /// </summary>
+        /// <returns></returns>
+        public string GetUri()
+        {
+            if(Uri!= null)
+            {
+                return Uri;
+            }
+            return Url;
+        }
+
         [Newtonsoft.Json.JsonProperty("extensions", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.Dictionary<string, object> Extensions = new System.Collections.Generic.Dictionary<string, object>();
     
