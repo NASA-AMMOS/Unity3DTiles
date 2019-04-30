@@ -36,6 +36,7 @@ Please note that since initial development completed, the 3d-tiles specification
 ### Dependencies
 
 * Unity3DTiles depends on the [C-Sharp-Promise Library](https://www.nuget.org/packages/RSG.Promise/) whose DLL has been imbedded in the plugins directory of this project.
+* This project utilizes an automatically generated schema to parse the 3D Tiles format.  Instructions for updating this schema can be found [here](Docs/3DTileSchemaUpdate.md).
 * This project also depends on [UnityGLTF](https://github.com/KhronosGroup/UnityGLTF).  To simplify usage and avoid compilation issues for different platforms, a version of the UnityGLTF package has been checked into the `Assets/UnityGLTF` folder so that users do not need to build it independently.  Some minor modifications to the UnityGLTF package were necessary.  The modifications as well as the procedure for updating the package can be found [here](Docs/UnityGLTFImport.md).
 * The Newtonsoft package from the Untiy Asset Store has been installed to support efficient deserialization of json.
 
