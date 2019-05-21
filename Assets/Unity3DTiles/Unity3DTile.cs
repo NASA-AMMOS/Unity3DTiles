@@ -283,6 +283,7 @@ namespace Unity3DTiles
                     go.transform.parent = this.tileset.Behaviour.transform;
                     go.transform.localPosition = Vector3.zero;
                     go.transform.localRotation = Quaternion.identity;
+                    go.transform.localScale = Vector3.one;
                     go.layer = this.tileset.Behaviour.gameObject.layer;
                     go.SetActive(false);
                     this.Content = new Unity3DTileContent(go);
