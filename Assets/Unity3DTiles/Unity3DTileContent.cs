@@ -177,5 +177,15 @@ namespace Unity3DTiles
         {
             return this.renderers;
         }
+
+        public bool ContainsCollider(Collider collider)
+        {
+            if (colliders != null)
+            {
+                return System.Array.IndexOf(colliders, collider) >= 0;
+            }
+
+            return false;
+        }
     }
 }

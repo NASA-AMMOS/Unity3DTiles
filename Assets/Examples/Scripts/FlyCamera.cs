@@ -15,11 +15,11 @@ public class FlyCamera : MonoBehaviour
     void Update()
     {
         // Mouse commands (rotate)
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(1))
         {
             lastMouse = Input.mousePosition;
         }
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButton(1))
         {
 
             lastMouse = Input.mousePosition - lastMouse;
@@ -69,6 +69,14 @@ public class FlyCamera : MonoBehaviour
         if (Input.GetKey(KeyCode.D))
         {
             p_Velocity += new Vector3(1, 0, 0);
+        }
+        if (Input.GetKey(KeyCode.E))
+        {
+            p_Velocity += new Vector3(0, 1, 0);
+        }
+        if (Input.GetKey(KeyCode.Q))
+        {
+            p_Velocity += new Vector3(0, -1, 0);
         }
         return p_Velocity;
     }

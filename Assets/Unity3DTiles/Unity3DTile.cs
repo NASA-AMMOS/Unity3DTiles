@@ -109,6 +109,8 @@ namespace Unity3DTiles
 
         public bool HasTilesetContent { get; private set; }
 
+        public bool HasChildren { get { return Children.Count > 0; } }
+
         public TileFrameState FrameState { get; private set; }
 
         private int hashCode;

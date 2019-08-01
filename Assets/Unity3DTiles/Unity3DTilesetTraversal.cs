@@ -139,7 +139,7 @@ namespace Unity3DTiles
             mask = tile.BoundingVolume.IntersectPlanes(planes, mask);
             if (mask.Intersection == IntersectionType.OUTSIDE)
             {
-                return false;
+                return false; // <-- I'm not in frustum set, and it's impossible for my children to be
             }
             // We are in frustum and at a rendereable level of detail, mark as used and as visible
             tile.MarkUsed();  //  mark content as used in LRUContent so it won't be unloaded
@@ -155,19 +155,22 @@ namespace Unity3DTiles
                 tile.FrameState.ScreenSpaceError = sse.PixelError((float)tile.GeometricError, distance);
                 if (tile.FrameState.ScreenSpaceError <= tileset.Options.MaximumScreenSpaceError)
                 {
-                    return true;
+                    return true; // <-- I'm in frustum set and I meet sse requirements, so don't consider (i.e. potentially mark 'used' or 'inFrustumSet') children
                 }
             }
             if (tileset.Options.MaxDepth > 0 && tile.Depth >= tileset.Options.MaxDepth)
             {
-                return true;
+                return true; // <-- I'm in frustum set and *don't* meet sse reqs - but we've exceeded maxDepth, so don't consider (i.e. potentially mark 'used' or 'inFrustumSet') children
             }
+
+            // === if we reach this point, we're in the frustum set but don't adequately meet drawing requirements, so we'll want to consider (i.e. potentially mark 'used' or 'inFrustumSet') children === //
+
             // Recurse on children
             bool anyChildUsed = false;
             for (int i = 0; i < tile.Children.Count; i++)
             {
-                bool r = DetermineFrustumSet(tile.Children[i], planes, sse, cameraPosInTilesetFrame, mask);
-                anyChildUsed = anyChildUsed || r;
+                bool thisChildUsed = DetermineFrustumSet(tile.Children[i], planes, sse, cameraPosInTilesetFrame, mask);
+                anyChildUsed = anyChildUsed || thisChildUsed;
             }
             // If any children are in the workingset, mark all of them as being used (siblings/atomic split criteria).  
             if (anyChildUsed && this.tileset.Options.LoadSiblings)
@@ -250,10 +253,12 @@ namespace Unity3DTiles
         /// <param name="tile"></param>
         void SkipTraversal(Unity3DTile tile)
         {
+            // this tile didn't even intersect the frustum this frame, so skip
             if (!tile.FrameState.IsUsedThisFrame(this.frameCount))
             {
                 return;
             }
+            // as a 'used leaf set' tile - we definitely want to render this and we don't care it's children
             if (tile.FrameState.IsUsedSetLeaf)
             {
                 if (tile.ContentState == Unity3DTileContentState.READY)
@@ -273,11 +278,14 @@ namespace Unity3DTiles
                 return;
             }
 
+            // === if we reach this point, we're looking at drawing / requesting tiles that aren't strictly ideal (i.e. are *not* used leaf tiles) === //
+
             // Draw a parent tile iff
-            // 1) meets SSE cuttoff
+            //   (*note* we only get to this point *after* determining that 'tile' isn't a leaf in the used set - so this is 'make it look nicer than an empty hole' drawing)
+            // 1) meets (loosely, i.e. with SkipScreenSpaceErrorMultiplier scaling) SSE cuttoff
             // 2) has content and is not empty
             // 3) one or more of its chidlren don't have content
-            bool meetsSSE = tile.FrameState.ScreenSpaceError < (tileset.Options.MaximumScreenSpaceError * tileset.Options.SkipScreenSpaceErrorMultiplier);
+            bool meetsScaledSSE = tile.FrameState.ScreenSpaceError < (tileset.Options.MaximumScreenSpaceError * tileset.Options.SkipScreenSpaceErrorMultiplier);
             bool hasContent = tile.ContentState == Unity3DTileContentState.READY && !tile.HasEmptyContent;
             bool allChildrenHaveContent = true;
             for (int i = 0; i < tile.Children.Count; i++)
@@ -288,11 +296,11 @@ namespace Unity3DTiles
                     allChildrenHaveContent = allChildrenHaveContent && childContent;
                 }
             }
-            if(meetsSSE && !hasContent)
+            if(meetsScaledSSE && !hasContent)
             {
                 RequestTile(tile);
             }
-            if (meetsSSE && hasContent && !allChildrenHaveContent)
+            if (meetsScaledSSE && hasContent && !allChildrenHaveContent)
             {
                 if (tile.FrameState.InFrustumSet)
                 {
@@ -417,7 +425,7 @@ namespace Unity3DTiles
         /// Unloads content from unused nodes
         /// </summary>
         void UnloadUnusedContent()
-        {            
+        {
             if (this.tileset.LRUContent.Count > this.tileset.Options.LRUCacheMaxSize)
             {
                 List<Unity3DTile> unused = this.tileset.LRUContent.GetUnused();
