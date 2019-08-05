@@ -7,10 +7,11 @@ namespace Unity3DTiles
     public class TileSelectorController : MonoBehaviour
     {
         // TYPES
-        public enum SelectionViewMode
+        public enum HighlightMode
         {
-            standard,
-            children,
+            none,
+            selected,
+            viewOffset,
             NUM_VIEW_MODES
         }
         public enum SelectionChangeType
@@ -21,6 +22,8 @@ namespace Unity3DTiles
         }
 
         // FIELDS
+        // consts
+
         // singleton interface
         public static TileSelectorController instance
         {
@@ -44,6 +47,10 @@ namespace Unity3DTiles
         private GameObject _geometricErrorCallout = null;
         [SerializeField]
         private RectTransform _screenSpaceErrorCallout = null;
+        [SerializeField]
+        private int _minTreeViewOffset = 0;
+        [SerializeField]
+        private int _maxTreeViewOffset = 1;
 
         // selected tile
         public Unity3DTile selectedTile
@@ -55,38 +62,53 @@ namespace Unity3DTiles
         }
         private Unity3DTile _selectedTile = null;
         private Stack<Unity3DTile> _childSelectionStack = new Stack<Unity3DTile>();
-        public int ChildStackSize
+        public int treeViewOffset
         {
             get
             {
-                return _childSelectionStack.Count;
+                return _treeViewOffset;
+            }
+            private set
+            {
+                // don't allow setting outside of specified bounds
+                if (value < _minTreeViewOffset || value > _maxTreeViewOffset)
+                {
+                    return;
+                }
+
+                // if there are no tiles at desired view offset, don't set
+                if (null == GetTilesAtTreeViewOffset(value))
+                {
+                    return;
+                }
+
+                _treeViewOffset = value;
+                if(null != onTreeViewOffsetChanged) { onTreeViewOffsetChanged(_treeViewOffset); }
             }
         }
+        private int _treeViewOffset = 0;
 
         // view mode
-        public SelectionViewMode viewMode
+        public HighlightMode highlightMode
         {
             get
             {
-                return _viewMode;
+                return _highlightMode;
             }
             set
             {
-                _viewMode = value;
+                _highlightMode = value;
 
                 // refresh highlights
                 RefreshTileSelectionHighlight();
-
-                // inform listeners of view mode change
-                if (null != onViewModeChanged) { onViewModeChanged(_viewMode); }
             }
         }
-        private SelectionViewMode _viewMode = SelectionViewMode.standard;
+        private HighlightMode _highlightMode = HighlightMode.none;
 
         // events
         public event System.Action<bool> onEngagedSet;
         public event System.Action<Unity3DTile> onTileSelected;
-        public event System.Action<SelectionViewMode> onViewModeChanged;
+        public event System.Action<int> onTreeViewOffsetChanged;
 
         // engaged
         public bool isEngaged
@@ -99,9 +121,12 @@ namespace Unity3DTiles
             {
                 _isEngaged = value;
 
-                // put in a 'default' state
-                SetSelectedTile(null);
-                viewMode = SelectionViewMode.standard;
+                // if turning off, put in a 'default' state
+                if (!_isEngaged)
+                {
+                    SetSelectedTile(null);
+                    highlightMode = HighlightMode.selected;
+                }
 
                 // inform listeners
                 if (null != onEngagedSet) { onEngagedSet(_isEngaged); }
@@ -167,45 +192,72 @@ namespace Unity3DTiles
                     }
                 }
 
-                // if we're selecting something AND...
+                // if we're selecting something
                 if (null != selectedTile)
                 {
-                    // if we press the 'go up in the tree' key
-                    if (Input.GetKeyDown(KeyCode.UpArrow) && null != selectedTile.Parent)
+                    if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
                     {
-                        SetSelectedTile(selectedTile.Parent, SelectionChangeType.ToParent);
+                        // if we press the 'select next node up' key
+                        if (Input.GetKeyDown(KeyCode.UpArrow) && null != selectedTile.Parent)
+                        {
+                            SetSelectedTile(selectedTile.Parent, SelectionChangeType.ToParent);
+                        }
+                        // if we press the 'select to previous node down' key
+                        else if (Input.GetKeyDown(KeyCode.DownArrow) && _childSelectionStack.Count > 0)
+                        {
+                            SetSelectedTile(_childSelectionStack.Pop(), SelectionChangeType.toPreviousChild);
+                        }
+                        // if we press a key to go to a specific child
+                        else if (Input.GetKeyDown(KeyCode.Alpha0) && selectedTile.Children.Count > 0)
+                        {
+                            SetSelectedTile(selectedTile.Children[0]);
+                        }
+                        else if (Input.GetKeyDown(KeyCode.Alpha1) && selectedTile.Children.Count > 1)
+                        {
+                            SetSelectedTile(selectedTile.Children[1]);
+                        }
+                        else if (Input.GetKeyDown(KeyCode.Alpha2) && selectedTile.Children.Count > 2)
+                        {
+                            SetSelectedTile(selectedTile.Children[2]);
+                        }
+                        else if (Input.GetKeyDown(KeyCode.Alpha3) && selectedTile.Children.Count > 3)
+                        {
+                            SetSelectedTile(selectedTile.Children[3]);
+                        }
                     }
-                    // if we press the 'go down in the tree' key
-                    else if (Input.GetKeyDown(KeyCode.DownArrow) && _childSelectionStack.Count > 0)
+                    else
                     {
-                        SetSelectedTile(_childSelectionStack.Pop(), SelectionChangeType.toPreviousChild);
-                    }
-                    // if we press a key to go to a specific child
-                    else if ((Input.GetKeyDown(KeyCode.Alpha0) || Input.GetKeyDown(KeyCode.Keypad0)) && selectedTile.Children.Count > 0)
-                    {
-                        SetSelectedTile(selectedTile.Children[0]);
-                    }
-                    else if ((Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) && selectedTile.Children.Count > 1)
-                    {
-                        SetSelectedTile(selectedTile.Children[1]);
-                    }
-                    else if ((Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) && selectedTile.Children.Count > 2)
-                    {
-                        SetSelectedTile(selectedTile.Children[2]);
-                    }
-                    else if ((Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3)) && selectedTile.Children.Count > 3)
-                    {
-                        SetSelectedTile(selectedTile.Children[3]);
+                        // if we press the 'deselect' key
+                        if (Input.GetKeyDown(KeyCode.Backspace))
+                        {
+                            SetSelectedTile(null);
+                        }
+                        // if we press the 'show tiles one node up' key
+                        else if (Input.GetKeyDown(KeyCode.UpArrow))
+                        {
+                            treeViewOffset -= 1;
+                        }
+                        // if we press the 'show tiles one node down' key
+                        else if (Input.GetKeyDown(KeyCode.DownArrow))
+                        {
+                            treeViewOffset += 1;
+                        }
                     }
                 }
 
                 // if we press the 'change view mode' key
                 if (Input.GetKeyDown(KeyCode.V))
                 {
-                    int newViewModeInt = ((int)viewMode + 1) % (int)SelectionViewMode.NUM_VIEW_MODES;
-                    viewMode = (SelectionViewMode)newViewModeInt;
+                    int newViewModeInt = ((int)highlightMode + 1) % (int)HighlightMode.NUM_VIEW_MODES;
+                    highlightMode = (HighlightMode)newViewModeInt;
                 }
             }
+        }
+
+        // engaged
+        public void ToggleEngaged()
+        {
+            isEngaged = !isEngaged;
         }
 
         // selected tile
@@ -229,6 +281,9 @@ namespace Unity3DTiles
                         // do nothing (i.e. maintain the stack)
                         break;
                 }
+
+                // on new selection, reset treeViewOffset
+                treeViewOffset = 0;
 
                 // update selection
                 _selectedTile = newSelectedTile;
@@ -269,6 +324,63 @@ namespace Unity3DTiles
 
             return null;
         }
+        public Unity3DTile[] GetTilesAtCurrentTreeViewOffset()
+        {
+            return GetTilesAtTreeViewOffset(treeViewOffset);
+        }
+        private Unity3DTile[] GetTilesAtTreeViewOffset(int offset)
+        {
+            // early out if we have no selected tile
+            if(null == selectedTile)
+            {
+                return null;
+            }
+
+            // if no offset, just return array with selected tile
+            if (offset == 0)
+            {
+                return new Unity3DTile[] { selectedTile };
+            }
+            // otherwise, if offset is negative / parent-ward / upward in the tree
+            else if (offset < 0)
+            {
+                // return array containing offset-th ancestor, if any
+                Unity3DTile ancestorTile = selectedTile;
+                while (ancestorTile != null && ancestorTile.Depth > selectedTile.Depth + offset)
+                {
+                    ancestorTile = ancestorTile.Parent;
+                }
+
+                return ancestorTile != null ? new Unity3DTile[] { ancestorTile } : null;
+            }
+            // otherwise... (if the offset is positive / child-ward / downward in the tree)
+            else
+            {
+                // return array containing all descendants at current + offset depth, if any 
+                var descendantTilesAtOffset = new List<Unity3DTile>();
+                var dfsStack = new Stack<Unity3DTile>();
+                dfsStack.Push(selectedTile);
+                while (dfsStack.Count > 0)
+                {
+                    var tile = dfsStack.Pop();
+
+                    // if we're at the depth we want, add it to list and continue on
+                    if(tile.Depth == selectedTile.Depth + offset)
+                    {
+                        descendantTilesAtOffset.Add(tile);
+                        continue;
+                    }
+
+                    // add all children
+                    for(int iChild = 0; iChild < tile.Children.Count; ++iChild)
+                    {
+                        dfsStack.Push(tile.Children[iChild]);
+                    }
+                }
+
+                return descendantTilesAtOffset.Count > 0 ? descendantTilesAtOffset.ToArray() : null;
+            }
+        }
 
         // highlights
         private void RefreshTileSelectionHighlight()
@@ -290,7 +402,13 @@ namespace Unity3DTiles
                 var viewModeOverride = DetermineViewModeOverrideForCurrentState();
                 switch (viewModeOverride)
                 {
-                    case SelectionViewMode.standard:
+                    case HighlightMode.none:
+
+                        // show nothing
+
+                        break;
+
+                    case HighlightMode.selected:
 
                         // turn on and position selected highlight
                         _selectedTileHighlight.SetActive(true);
@@ -298,7 +416,7 @@ namespace Unity3DTiles
 
                         break;
 
-                    case SelectionViewMode.children:
+                    case HighlightMode.viewOffset:
 
                         // if there are children to highlight
                         if (selectedTile.HasChildren)
@@ -411,22 +529,17 @@ namespace Unity3DTiles
         }
 
         // view mode
-        private SelectionViewMode DetermineViewModeOverrideForCurrentState()
+        private HighlightMode DetermineViewModeOverrideForCurrentState()
         {
             // if we are either not selecting a tile or selecting a tile that has no children...
             //   => override the child view mode with standard view mode
-            if (viewMode == SelectionViewMode.children && (null == selectedTile || !selectedTile.HasChildren))
+            if (highlightMode == HighlightMode.viewOffset && (null == selectedTile || !selectedTile.HasChildren))
             {
-                return SelectionViewMode.standard;
+                return HighlightMode.selected;
             }
 
-            return viewMode;
+            return highlightMode;
         }
 
-        // engaged
-        public void ToggleEngaged()
-        {
-            isEngaged = !isEngaged;
-        }
     }
 }

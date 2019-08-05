@@ -31,7 +31,7 @@ namespace Unity3DTiles
         {
             TileSelectorController.instance.onEngagedSet += OnTileSelectorEngagedSet;
             TileSelectorController.instance.onTileSelected += OnTileSelected;
-            TileSelectorController.instance.onViewModeChanged += OnTileSelectorViewModeChanged;
+            TileSelectorController.instance.onTreeViewOffsetChanged += OnTileSelectorViewOffsetChanged;
 
             // simulate setengaged and tileselected events
             OnTileSelectorEngagedSet(TileSelectorController.instance.isEngaged);
@@ -41,7 +41,7 @@ namespace Unity3DTiles
         {
             TileSelectorController.instance.onEngagedSet -= OnTileSelectorEngagedSet;
             TileSelectorController.instance.onTileSelected -= OnTileSelected;
-            TileSelectorController.instance.onViewModeChanged -= OnTileSelectorViewModeChanged;
+            TileSelectorController.instance.onTreeViewOffsetChanged -= OnTileSelectorViewOffsetChanged;
         }
         private void Update()
         {
@@ -52,31 +52,49 @@ namespace Unity3DTiles
         private void RefreshInfoText()
         {
             var selectedTile = TileSelectorController.instance.selectedTile;
-            var viewMode = TileSelectorController.instance.viewMode;
+            var viewMode = TileSelectorController.instance.highlightMode;
 
             // tile selector controller state
             var tileSelectorStateText = string.Format(
-                "  View Mode: {0}\n  Child Stack Count: {1}",
-                viewMode,
-                TileSelectorController.instance.ChildStackSize);
+                "  View Mode: {0}",
+                viewMode);
 
-            // selected tile info
-            var selectedTileText = "  No Tile Selected. Right Click anywhere on the mesh to select a tile.";
+            var selectedTileText = "  No tile selected. Left click anywhere on the mesh to select a tile.";
+            var renderedTileInfo = "  No Tile Selected";
             if (null != selectedTile)
             {
-                var boundingBox = selectedTile.BoundingVolume as TileOrientedBoundingBox;
-                var frameState = selectedTile.FrameState;
-                selectedTileText = string.Format(
-                        "  Id: {0}\n  Center: {1}\n  Is Leaf: {2}\n  Geometric Error: {3}\n  Screen Space Error: {4}",
-                        selectedTile.Id,
-                        boundingBox.Center,
-                        selectedTile.Children.Count == 0,
-                        selectedTile.GeometricError,
-                        null != frameState ? frameState.ScreenSpaceError.ToString() : "Unknown");
+                var maxDepthFromSelected = GetMaxLeafDepthFromTile(selectedTile);
 
+                // selected tile info
+                selectedTileText = string.Format(
+                        "  Id: {0}\n  Depth in Tree: {1}/{2}\n  Geometric Error: {3}\n  Screen Space Error: {4}",
+                        selectedTile.Id,
+                        selectedTile.Depth,
+                        maxDepthFromSelected,
+                        selectedTile.GeometricError,
+                        selectedTile.FrameState.ScreenSpaceError);
+
+                // rendered tile info
+                var renderedTiles = TileSelectorController.instance.GetTilesAtCurrentTreeViewOffset();
+                string tileIds = string.Empty;
+                for(int i = 0; i < renderedTiles.Length; ++i)
+                {
+                    tileIds += renderedTiles[i].Id + (i == renderedTiles.Length - 1 ? "" : ", ");
+                }
+                renderedTileInfo = string.Format(
+                        "  Offset: {0}\n  Depth in Tree: {1}/{2}\n  Num Displayed: {3}\n  Ids:  {4}",
+                        TileSelectorController.instance.treeViewOffset,
+                        TileSelectorController.instance.treeViewOffset + selectedTile.Depth,
+                        maxDepthFromSelected,
+                        renderedTiles.Length,
+                        tileIds);
             }
 
-            _selectedTileInfoText.text = string.Format("TILE SELECTOR STATE:\n{0}\n\nSELECTED TILE INFO:\n{1}", tileSelectorStateText, selectedTileText);
+            _selectedTileInfoText.text = string.Format(
+                "TILE SELECTOR STATE:\n{0}\n\nSELECTED TILE INFO:\n{1}\n\nRENDERED TILE INFO:\n{2}",
+                tileSelectorStateText,
+                selectedTileText,
+                renderedTileInfo);
         }
 
         // tile selector event handlers
@@ -92,9 +110,35 @@ namespace Unity3DTiles
         {
             //RefreshInfoText();
         }
-        private void OnTileSelectorViewModeChanged(TileSelectorController.SelectionViewMode viewMode)
+        private void OnTileSelectorViewOffsetChanged(int viewOffset)
         {
-            //RefreshInfoText();
+        }
+
+        // helpers
+        private int GetMaxLeafDepthFromTile(Unity3DTile myTile)
+        {
+            int maxDepth = 0;
+            var dfsStack = new Stack<Unity3DTile>();
+            dfsStack.Push(myTile);
+            while (dfsStack.Count > 0)
+            {
+                var tile = dfsStack.Pop();
+
+                // if we're at a leaf, record the depth and continue
+                if (tile.Children.Count == 0)
+                {
+                    maxDepth = Mathf.Max(maxDepth, tile.Depth);
+                    continue;
+                }
+
+                // otherwise, add all children
+                for (int iChild = 0; iChild < tile.Children.Count; ++iChild)
+                {
+                    dfsStack.Push(tile.Children[iChild]);
+                }
+            }
+
+            return maxDepth;
         }
     }
 }

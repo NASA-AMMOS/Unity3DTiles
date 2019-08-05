@@ -44,20 +44,50 @@ namespace Unity3DTiles
             }
 
             SSECalculator sse = new SSECalculator(this.tileset);
-            foreach (Camera cam in tileset.Options.ClippingCameras)
+            if (null != TileSelectorController.instance.selectedTile)
             {
-                if (cam == null)
-                {
-                    continue;
-                }
-                // All of our bounding boxes and tiles are using tileset coordinate frame so lets get our frustrum planes
-                // in tileset frame.  This way we only need to transform our planes, not every bounding box we need to check against
-                Matrix4x4 cameraMatrix = cam.projectionMatrix * cam.worldToCameraMatrix * tileset.Behaviour.transform.localToWorldMatrix;
-                Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cameraMatrix);
+                // get the set of tiles we should be showing this frame
+                var tilesToShow = TileSelectorController.instance.GetTilesAtCurrentTreeViewOffset();
 
-                sse.Configure(cam);
-                Vector3 cameraPositionInTilesetFrame = tileset.Behaviour.transform.InverseTransformPoint(cam.transform.position);
-                DetermineFrustumSet(tileset.Root, planes, sse, cameraPositionInTilesetFrame, PlaneClipMask.GetDefaultMask());
+                // mark tile and all of its ancestors as 'used'
+                for(int iTile = 0; iTile < tilesToShow.Length; ++iTile)
+                {
+                    var tile = tilesToShow[iTile];
+                    while(tile != null && !tile.FrameState.IsUsedThisFrame(this.frameCount))
+                    {
+                        tile.FrameState.Reset(this.frameCount);
+                        tile.MarkUsed();
+                        tile.FrameState.InFrustumSet = true;
+                        this.tileset.Statistics.FrustumSetCount += 1;
+
+                        var viewingCam = Camera.main;
+                        sse.Configure(viewingCam);
+                        Vector3 cameraPositionInTilesetFrame = tileset.Behaviour.transform.InverseTransformPoint(viewingCam.transform.position);
+                        float distance = tile.BoundingVolume.DistanceTo(cameraPositionInTilesetFrame);
+                        tile.FrameState.DistanceToCamera = Mathf.Min(distance, tile.FrameState.DistanceToCamera);
+                        tile.FrameState.ScreenSpaceError = sse.PixelError((float)tile.GeometricError, distance);
+
+                        tile = tile.Parent;
+                    }
+                }
+            }
+            else
+            {
+                foreach (Camera cam in tileset.Options.ClippingCameras)
+                {
+                    if (cam == null)
+                    {
+                        continue;
+                    }
+                    // All of our bounding boxes and tiles are using tileset coordinate frame so lets get our frustrum planes
+                    // in tileset frame.  This way we only need to transform our planes, not every bounding box we need to check against
+                    Matrix4x4 cameraMatrix = cam.projectionMatrix * cam.worldToCameraMatrix * tileset.Behaviour.transform.localToWorldMatrix;
+                    Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cameraMatrix);
+
+                    sse.Configure(cam);
+                    Vector3 cameraPositionInTilesetFrame = tileset.Behaviour.transform.InverseTransformPoint(cam.transform.position);
+                    DetermineFrustumSet(tileset.Root, planes, sse, cameraPositionInTilesetFrame, PlaneClipMask.GetDefaultMask());
+                }
             }
             MarkUsedSetLeaves(tileset.Root);
             SkipTraversal(tileset.Root);
@@ -258,7 +288,9 @@ namespace Unity3DTiles
             {
                 return;
             }
-            // as a 'used leaf set' tile - we definitely want to render this and we don't care it's children
+            // as a 'used leaf set' tile - we definitely want to render this and we don't care about it's children
+            //   We automatically know we want to render since 'DetermineFrustumSet' checks MaximumScreenSpaceError
+            //   and stops recurssion of error is less than specified limit
             if (tile.FrameState.IsUsedSetLeaf)
             {
                 if (tile.ContentState == Unity3DTileContentState.READY)
@@ -278,7 +310,7 @@ namespace Unity3DTiles
                 return;
             }
 
-            // === if we reach this point, we're looking at drawing / requesting tiles that aren't strictly ideal (i.e. are *not* used leaf tiles) === //
+            // === if we reach this point, we're considering drawing / requesting tiles that aren't strictly ideal (i.e. are *not* used leaf tiles) === //
 
             // Draw a parent tile iff
             //   (*note* we only get to this point *after* determining that 'tile' isn't a leaf in the used set - so this is 'make it look nicer than an empty hole' drawing)
@@ -319,7 +351,7 @@ namespace Unity3DTiles
                 }
                 return;
             }
-            // Otherwise keep decending
+            // Otherwise keep descending
             for (int i = 0; i < tile.Children.Count; i++)
             {
                 if (tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount))
