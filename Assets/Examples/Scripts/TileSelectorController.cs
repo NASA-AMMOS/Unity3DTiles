@@ -11,7 +11,7 @@ namespace Unity3DTiles
         {
             none,
             selected,
-            viewOffset,
+            children,
             NUM_VIEW_MODES
         }
         public enum SelectionChangeType
@@ -22,8 +22,6 @@ namespace Unity3DTiles
         }
 
         // FIELDS
-        // consts
-
         // singleton interface
         public static TileSelectorController instance
         {
@@ -108,6 +106,7 @@ namespace Unity3DTiles
         // events
         public event System.Action<bool> onEngagedSet;
         public event System.Action<Unity3DTile> onTileSelected;
+        public event System.Action<HighlightMode> onHighlightModeChanged;
         public event System.Action<int> onTreeViewOffsetChanged;
 
         // engaged
@@ -133,6 +132,12 @@ namespace Unity3DTiles
             }
         }
         private bool _isEngaged = false;
+
+        // error callouts
+        private Vector2 _dragBeginMousePos = Vector2.zero;
+        private Vector2 _dragBeginScreenSpaceErrorPos = Vector2.zero;
+        private Vector3 _dragBeginGeometricErrorPos = Vector3.zero;
+        private float _dragBeginGeometricErrorMouseYCoordinate = 0f;
 
         // METHODS
         // unity
@@ -161,6 +166,7 @@ namespace Unity3DTiles
             // refresh visual
             RefreshGeometricErrorCallout();
             RefreshTileSelectionHighlight();
+            ResetScreenSpaceErrorPosition();
         }
         private void Update()
         {
@@ -177,7 +183,7 @@ namespace Unity3DTiles
                 // if we perform a click
                 if (Input.GetMouseButtonDown(0))
                 {
-                    Camera viewingCam = Camera.main;
+                    var viewingCam = Camera.main;
 
                     // 'select' the clicked tile, if any
                     RaycastHit hitInfo;
@@ -185,71 +191,70 @@ namespace Unity3DTiles
                     if (Physics.Raycast(clickRay, out hitInfo, viewingCam.farClipPlane))
                     {
                         var tile = GetTileCorrespondingToCollider(hitInfo.collider);
-                        SetSelectedTile(tile);
+                        if (null != tile)
+                        {
+                            SetSelectedTile(tile);
 
-                        // set pointer position
-                        _selectedTilePointer.transform.position = hitInfo.point;
+                            // set pointer position
+                            _selectedTilePointer.transform.position = hitInfo.point;
+                        }
                     }
                 }
 
                 // if we're selecting something
                 if (null != selectedTile)
                 {
-                    if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                    // if we press the 'deselect' key
+                    if (Input.GetKeyDown(KeyCode.Backspace))
                     {
-                        // if we press the 'select next node up' key
-                        if (Input.GetKeyDown(KeyCode.UpArrow) && null != selectedTile.Parent)
-                        {
-                            SetSelectedTile(selectedTile.Parent, SelectionChangeType.ToParent);
-                        }
-                        // if we press the 'select to previous node down' key
-                        else if (Input.GetKeyDown(KeyCode.DownArrow) && _childSelectionStack.Count > 0)
-                        {
-                            SetSelectedTile(_childSelectionStack.Pop(), SelectionChangeType.toPreviousChild);
-                        }
-                        // if we press a key to go to a specific child
-                        else if (Input.GetKeyDown(KeyCode.Alpha0) && selectedTile.Children.Count > 0)
-                        {
-                            SetSelectedTile(selectedTile.Children[0]);
-                        }
-                        else if (Input.GetKeyDown(KeyCode.Alpha1) && selectedTile.Children.Count > 1)
-                        {
-                            SetSelectedTile(selectedTile.Children[1]);
-                        }
-                        else if (Input.GetKeyDown(KeyCode.Alpha2) && selectedTile.Children.Count > 2)
-                        {
-                            SetSelectedTile(selectedTile.Children[2]);
-                        }
-                        else if (Input.GetKeyDown(KeyCode.Alpha3) && selectedTile.Children.Count > 3)
-                        {
-                            SetSelectedTile(selectedTile.Children[3]);
-                        }
+                        SetSelectedTile(null);
                     }
-                    else
+                    // if we press the 'show tiles one node up' key
+                    else if (Input.GetKeyDown(KeyCode.UpArrow))
                     {
-                        // if we press the 'deselect' key
-                        if (Input.GetKeyDown(KeyCode.Backspace))
-                        {
-                            SetSelectedTile(null);
-                        }
-                        // if we press the 'show tiles one node up' key
-                        else if (Input.GetKeyDown(KeyCode.UpArrow))
-                        {
-                            treeViewOffset -= 1;
-                        }
-                        // if we press the 'show tiles one node down' key
-                        else if (Input.GetKeyDown(KeyCode.DownArrow))
-                        {
-                            treeViewOffset += 1;
-                        }
+                        treeViewOffset -= 1;
+                    }
+                    // if we press the 'show tiles one node down' key
+                    else if (Input.GetKeyDown(KeyCode.DownArrow))
+                    {
+                        treeViewOffset += 1;
+                    }
+                    // if we press the 'select next node up' key
+                    else if (Input.GetKeyDown(KeyCode.PageUp) && null != selectedTile.Parent)
+                    {
+                        SetSelectedTile(selectedTile.Parent, SelectionChangeType.ToParent);
+                    }
+                    // if we press the 'select to previous node down' key
+                    else if (Input.GetKeyDown(KeyCode.PageDown) && _childSelectionStack.Count > 0)
+                    {
+                        SetSelectedTile(_childSelectionStack.Pop(), SelectionChangeType.toPreviousChild);
+                    }
+                    // if we press a key to go to a specific child
+                    else if ((Input.GetKeyDown(KeyCode.Alpha0) || Input.GetKeyDown(KeyCode.Keypad0)) && selectedTile.Children.Count > 0)
+                    {
+                        SetSelectedTile(selectedTile.Children[0]);
+                    }
+                    else if ((Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) && selectedTile.Children.Count > 1)
+                    {
+                        SetSelectedTile(selectedTile.Children[1]);
+                    }
+                    else if ((Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) && selectedTile.Children.Count > 2)
+                    {
+                        SetSelectedTile(selectedTile.Children[2]);
+                    }
+                    else if ((Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3)) && selectedTile.Children.Count > 3)
+                    {
+                        SetSelectedTile(selectedTile.Children[3]);
                     }
                 }
 
                 // if we press the 'change view mode' key
-                if (Input.GetKeyDown(KeyCode.V))
+                if (Input.GetKeyDown(KeyCode.H))
                 {
-                    int newViewModeInt = ((int)highlightMode + 1) % (int)HighlightMode.NUM_VIEW_MODES;
-                    highlightMode = (HighlightMode)newViewModeInt;
+                    int newHighlightModeInt = ((int)highlightMode + 1) % (int)HighlightMode.NUM_VIEW_MODES;
+                    highlightMode = (HighlightMode)newHighlightModeInt;
+
+                    if(null != onHighlightModeChanged) { onHighlightModeChanged(highlightMode); }
                 }
             }
         }
@@ -291,6 +296,7 @@ namespace Unity3DTiles
                 // refresh visual elements
                 RefreshGeometricErrorCallout();
                 RefreshTileSelectionHighlight();
+                ResetScreenSpaceErrorPosition();
 
                 // inform listeners of selection change
                 if (null != onTileSelected) { onTileSelected(_selectedTile); }
@@ -399,8 +405,8 @@ namespace Unity3DTiles
                 // turn on pointer
                 _selectedTilePointer.SetActive(true);
 
-                var viewModeOverride = DetermineViewModeOverrideForCurrentState();
-                switch (viewModeOverride)
+                var highlightModeOverride = DetermineHighlightModeOverrideForCurrentState();
+                switch (highlightModeOverride)
                 {
                     case HighlightMode.none:
 
@@ -416,7 +422,7 @@ namespace Unity3DTiles
 
                         break;
 
-                    case HighlightMode.viewOffset:
+                    case HighlightMode.children:
 
                         // if there are children to highlight
                         if (selectedTile.HasChildren)
@@ -509,37 +515,87 @@ namespace Unity3DTiles
                 // turn on
                 _screenSpaceErrorCallout.gameObject.SetActive(true);
 
-                // SCREEN SPACE ERROR
-                // determine screenspace right extent of geometric error callout
-                var geoCalloutTransform = _geometricErrorCallout.transform;
-                var viewingCam = Camera.main;
-                var worldRightExtent = geoCalloutTransform.position + viewingCam.transform.right * 0.5f * Mathf.Min(geoCalloutTransform.localScale.x, geoCalloutTransform.localScale.y);
-                var screenRightExtent = viewingCam.WorldToScreenPoint(worldRightExtent);
-
-                // set position
-                _screenSpaceErrorCallout.anchoredPosition = new Vector2(
-                    screenRightExtent.x,
-                    screenRightExtent.y);
-
                 // set size
                 _screenSpaceErrorCallout.sizeDelta = new Vector2(
                     _screenSpaceErrorCallout.sizeDelta.x,
                     selectedTile.FrameState.ScreenSpaceError);
             }
         }
+        private void ResetScreenSpaceErrorPosition()
+        {
+            // set offset as point directly in front of viewing camera
+            var calloutParent = _screenSpaceErrorCallout.transform.parent as RectTransform;
+            _screenSpaceErrorCallout.anchoredPosition = new Vector2(
+                -calloutParent.rect.width / 4f,
+                0f);
+        }
+        public void OnScreenSpaceErrorDragBegin()
+        {
+            if (Input.GetMouseButton(0))
+            {
+                _dragBeginMousePos = Input.mousePosition;
+                _dragBeginScreenSpaceErrorPos = _screenSpaceErrorCallout.anchoredPosition;
+            }
+        }
+        public void OnScreenSpaceErrorDrag()
+        {
+            if (Input.GetMouseButton(0))
+            {
+                Vector2 currentMousePos = Input.mousePosition;
+
+                // set position
+                _screenSpaceErrorCallout.anchoredPosition =
+                    _dragBeginScreenSpaceErrorPos + (currentMousePos - _dragBeginMousePos);
+            }
+        }
+        public void OnGeometricErrorDragBegin()
+        {
+            if (Input.GetMouseButton(0))
+            {
+                _dragBeginGeometricErrorPos = _geometricErrorCallout.transform.position;
+                _dragBeginGeometricErrorMouseYCoordinate = GetGeometricErrorYCoordinateForMousePosition(Input.mousePosition);
+            }
+        }
+        public void OnGeometricErrorDrag()
+        {
+            if (Input.GetMouseButton(0))
+            {
+                var currentMouseYCoordinate = GetGeometricErrorYCoordinateForMousePosition(Input.mousePosition);
+                var yDiff = currentMouseYCoordinate - _dragBeginGeometricErrorMouseYCoordinate;
+
+                _geometricErrorCallout.transform.position = _dragBeginGeometricErrorPos + Vector3.up * yDiff;
+            }
+        }
+        private float GetGeometricErrorYCoordinateForMousePosition(Vector3 mousePos)
+        {
+            var viewingCam = Camera.main;
+            var geoTransform = _geometricErrorCallout.transform;
+
+            // create plane parallel to y-axis, facing towards camera
+            var geoToCam = viewingCam.transform.position - geoTransform.position;
+            geoToCam = Vector3.ProjectOnPlane(geoToCam, Vector3.up);
+            Plane plane = new Plane(geoToCam, geoTransform.position);
+
+            // find point of intersection with that plane and ray from mouse pointer
+            var pointerRay = viewingCam.ScreenPointToRay(mousePos);
+            float distance;
+            plane.Raycast(pointerRay, out distance);
+            var intersectPoint = pointerRay.GetPoint(distance);
+
+            return intersectPoint.y;
+        }
 
         // view mode
-        private HighlightMode DetermineViewModeOverrideForCurrentState()
+        private HighlightMode DetermineHighlightModeOverrideForCurrentState()
         {
             // if we are either not selecting a tile or selecting a tile that has no children...
             //   => override the child view mode with standard view mode
-            if (highlightMode == HighlightMode.viewOffset && (null == selectedTile || !selectedTile.HasChildren))
+            if (highlightMode == HighlightMode.children && (null == selectedTile || !selectedTile.HasChildren))
             {
                 return HighlightMode.selected;
             }
 
             return highlightMode;
         }
-
     }
 }

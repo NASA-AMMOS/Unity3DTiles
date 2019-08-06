@@ -12,6 +12,8 @@ public class FlyCamera : MonoBehaviour
     private Vector3 lastMouse = new Vector3(255, 255, 255); //kind of in the middle of the screen, rather than at the top (play)
     private float totalRun = 1.0f;
 
+    public event System.Action onCameraPositionChanged;
+
     void Update()
     {
         // Mouse commands (rotate)
@@ -27,7 +29,7 @@ public class FlyCamera : MonoBehaviour
             lastMouse = new Vector3(transform.eulerAngles.x + lastMouse.x, transform.eulerAngles.y + lastMouse.y, 0);
             transform.eulerAngles = lastMouse;
             lastMouse = Input.mousePosition;
-            //Mouse  camera angle done.              
+            //Mouse  camera angle done.
         }
 
         //Keyboard commands (run)
@@ -46,14 +48,16 @@ public class FlyCamera : MonoBehaviour
             p = p * mainSpeed;
         }
         p = p * Time.deltaTime;
-        Vector3 newPosition = transform.position;
-        transform.Translate(p);
-
+        if (p != Vector3.zero)
+        {
+            transform.Translate(p);
+            if (null != onCameraPositionChanged) { onCameraPositionChanged(); }
+        }
     }
 
     private Vector3 GetBaseInput()
     { //returns the basic values, if it's 0 than it's not active.
-        Vector3 p_Velocity = new Vector3();
+        Vector3 p_Velocity = Vector3.zero;
         if (Input.GetKey(KeyCode.W))
         {
             p_Velocity += new Vector3(0, 0, 1);
