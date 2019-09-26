@@ -19,33 +19,56 @@ using UnityEngine;
 
 namespace Unity3DTiles
 {
-
-    public class TilesetBehaviour : MonoBehaviour
+    public class AbstractTilesetBehaviour : MonoBehaviour
     {
-        public Unity3DTilesetOptions TilesetOptions = new Unity3DTilesetOptions();
-        public Unity3DTileset Tileset;
+        public Unity3DTilesetSceneOptions SceneOptions = new Unity3DTilesetSceneOptions();        
         public Unity3DTilesetStatistics Stats;
+        public LRUCache<Unity3DTile> LRUCache = new LRUCache<Unity3DTile>();
 
         public int MaxConcurrentRequests = 6;
 
-        public virtual void Start()
+        public void LateUpdate()
+        {
+            LRUCache.MaxSize = SceneOptions.LRUCacheMaxSize;
+            LRUCache.MarkAllUnused();
+            this._lateUpdate();
+            LRUCache.UnloadUnusedContent(SceneOptions.LRUCacheTargetSize, SceneOptions.LRUMaxFrameUnloadRatio, n => -n.Depth, t => t.UnloadContent());
+        }
+
+        protected virtual void _lateUpdate()
+        {
+            //override in subclass
+        }
+    }
+
+    public class TilesetBehaviour : AbstractTilesetBehaviour
+    {
+        public Unity3DTilesetOptions TilesetOptions = new Unity3DTilesetOptions();
+        public Unity3DTileset Tileset;
+
+        public void MakeTileset()
+        {
+            RequestManager rm = new RequestManager(MaxConcurrentRequests);
+            Tileset = new Unity3DTileset(TilesetOptions, this, rm, this.LRUCache);
+            Stats = Tileset.Statistics;
+        }
+
+        public void Start()
+        {
+            _start();
+        }
+
+        protected virtual void _start()
         {
             MakeTileset();
         }
 
-        public virtual void LateUpdate()
+        protected override void _lateUpdate()
         {
             if (Tileset != null)
             {
                 Tileset.Update();
             }
-        }
-
-        protected virtual void MakeTileset()
-        {
-            RequestManager rm = new RequestManager(MaxConcurrentRequests);
-            Tileset = new Unity3DTileset(TilesetOptions, this, rm);
-            Stats = Tileset.Statistics;
         }
     }
 }

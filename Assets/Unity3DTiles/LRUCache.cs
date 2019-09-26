@@ -13,6 +13,7 @@
  */
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Unity3DTiles
@@ -22,6 +23,7 @@ namespace Unity3DTiles
     /// </summary>
     public class LRUCache<T> where T : class
     {
+        public int MaxSize = -1; //unbounded
 
         // List looks like this
         // [ unused, sential, used ]
@@ -82,15 +84,20 @@ namespace Unity3DTiles
         /// </summary>
         /// <param name="element"></param>
         /// <returns></returns>
-        public void Add(T element)
+        public bool Add(T element)
         {
             if (nodeLookup.ContainsKey(element))
             {
-                return;
+                return false;
+            }
+            if (this.Count >= this.MaxSize && this.MaxSize > 0)
+            {
+                return false;
             }
             LinkedListNode<T> node = new LinkedListNode<T>(element);
             nodeLookup.Add(element, node);
             list.AddLast(node);
+            return true;
         }
 
         /// <summary>
@@ -149,6 +156,31 @@ namespace Unity3DTiles
             return list;
         }
 
+        AsyncOperation lastUnloadAssets = null;
+
+        /// <summary>
+        /// Unloads content from unused nodes
+        /// </summary>
+        public void UnloadUnusedContent(int targetSize, float unloadPercent, System.Func<T, float> Priority, System.Action<T> OnRemove)
+        {
+            if (this.Count > targetSize && this.Unused > 0)
+            {
+                List<T> unused = this.GetUnused();
+                var sortedUnused = unused.OrderBy(node => Priority(node)).ToArray();
+                int nodesToUnload = (int)(targetSize * unloadPercent);
+                nodesToUnload = System.Math.Min(sortedUnused.Length, nodesToUnload);
+                for (int i = 0; i < nodesToUnload; i++)
+                {
+                    Remove(sortedUnused[i]);
+                    OnRemove?.Invoke(sortedUnused[i]);
+                }
+                if (lastUnloadAssets == null || lastUnloadAssets.isDone)
+                {
+                    lastUnloadAssets = Resources.UnloadUnusedAssets();
+                }
+            }
+        }
+
         /// <summary>
         /// Returns a list of unused nodes but does not remove them
         /// </summary>
@@ -177,7 +209,6 @@ namespace Unity3DTiles
                 nodeLookup.Remove(element);
                 this.list.Remove(node);
             }
-
         }
     }
 }

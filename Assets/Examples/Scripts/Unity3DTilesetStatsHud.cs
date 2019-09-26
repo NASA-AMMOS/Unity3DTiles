@@ -19,7 +19,7 @@ using Unity3DTiles;
 
 public class Unity3DTilesetStatsHud : MonoBehaviour {
 
-    public TilesetBehaviour tileset;
+    public AbstractTilesetBehaviour tileset;
     [Tooltip("How many frames should we consider into our average calculation?")]
     [SerializeField]
     private int frameRange = 60;
@@ -89,10 +89,13 @@ public class Unity3DTilesetStatsHud : MonoBehaviour {
         builder.Append("Used Set: ");
         builder.Append(stats.UsedSetCount);
         builder.AppendLine();
-        builder.Append("Content Cache: ");
+        builder.Append("Content Loaded: ");
         builder.Append(stats.LoadedContentCount);
+        builder.AppendLine();
+        builder.Append("Content Cache: ");
+        builder.Append(tileset.LRUCache.Count);
         builder.Append(" / ");
-        builder.Append(tileset.TilesetOptions.LRUCacheMaxSize);
+        builder.Append(tileset.SceneOptions.LRUCacheMaxSize);
         builder.AppendLine();
         builder.Append("Tiles Remaining: ");
         builder.Append(stats.TilesLeftToLoad);

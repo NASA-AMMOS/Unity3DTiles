@@ -20,7 +20,10 @@ namespace Unity3DTiles
     [System.Serializable]
     public class Unity3DTilesetOptions
     {
+        //Options unique to a single tileset 
+
         [Tooltip("Full path URL to the tileset. Can be a local file or url as long as it is a full path")]
+        public string Name = null;
         public string Url = null;
         public bool Show = true;
         public UnityEngine.Rendering.ShadowCastingMode ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
@@ -38,27 +41,13 @@ namespace Unity3DTiles
 
         public bool LoadSiblings = true;
 
-        public List<Camera> ClippingCameras;
+        public Matrix4x4 Transform = Matrix4x4.identity;
 
         [Tooltip("Max child depth that we should render. If this is zero, disregard")]
         /// <summary>
         /// "Max child depth that we should render. If this is zero, disregard"
         /// </summary>
-        public int MaxDepth = 0;        
-        
-        [Tooltip("Sets the maximum number of tiles that can be loaded into memory at any given time.  Beyond this limit, unused tiles will be unloaded as new requests are made.")]
-        /// <summary>
-        /// Max number of items in LRU cache
-        /// </summary>
-        public int LRUCacheMaxSize = 600;
-
-        /// <summary>
-        /// Controls the maximum number of unused tiles that will be unloaded at a time
-        /// When the cache is full.  This is specified as a ratio of the LRUMaxCacheSize.
-        /// For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will
-        /// unload 120 (0.2*600) tiles in a single frame.
-        /// </summary>
-        public float LRUMaxFrameUnloadRatio = 0.2f;
+        public int MaxDepth = 0;
 
         [Header("GLTF Loader Settings")]
         // Options for B3DM files
@@ -69,4 +58,30 @@ namespace Unity3DTiles
         [Header("Debug Settings")]
         public bool DebugDrawBounds = false;
     }
+
+    [System.Serializable]
+    public class Unity3DTilesetSceneOptions
+    {
+        //Options shared between tilesets in a scene, extended below
+
+        public List<Camera> ClippingCameras;
+
+        [Tooltip("Sets the target maximum number of tiles that can be loaded into memory at any given time.  Beyond this limit, unused tiles will be unloaded as new requests are made.")]
+        /// <summary>
+        /// Target max number of items in LRU cache
+        /// </summary>
+        public int LRUCacheTargetSize = 600;
+
+        [Tooltip("Sets the maximum number of tiles (hard limit) that can be loaded into memory at any given time. Requests that would exceed this limit fail.")]
+        public int LRUCacheMaxSize = 700;
+
+        /// <summary>
+        /// Controls the maximum number of unused tiles that will be unloaded at a time
+        /// When the cache is full.  This is specified as a ratio of the LRUMaxCacheSize.
+        /// For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will
+        /// unload 120 (0.2*600) tiles in a single frame.
+        /// </summary>
+        public float LRUMaxFrameUnloadRatio = 0.2f;
+    }
+
 }

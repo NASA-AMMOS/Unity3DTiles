@@ -29,7 +29,7 @@ namespace Unity3DTiles
     /// </summary>
     public class Unity3DTileset
     {
-        public Unity3DTilesetOptions Options { private set; get; }
+        public Unity3DTilesetOptions TilesetOptions { private set; get; }
         public Unity3DTile Root { get; private set; }
 
         private string basePath;
@@ -40,6 +40,7 @@ namespace Unity3DTiles
         public Queue<Unity3DTile> ProcessingQueue = new Queue<Unity3DTile>();           // Tiles whose content is being loaded/processed
 
         public MonoBehaviour Behaviour { get; private set; }
+        public Transform TilesetTransform;
 
         /// <summary>
         /// Maintians a least recently used list of tiles that have content
@@ -86,25 +87,29 @@ namespace Unity3DTiles
             }
         }
 
-        public Unity3DTileset(Unity3DTilesetOptions options, MonoBehaviour behaviour, RequestManager requestManager)
+        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour, RequestManager requestManager, LRUCache<Unity3DTile> cache = null)
         {
-            this.Options = options;
+            this.TilesetOptions = tilesetOptions;
             this.Behaviour = behaviour;
             this.RequestManager = requestManager;
-            this.traversal = new Unity3DTilesetTraversal(this);
-            this.LRUContent = new LRUCache<Unity3DTile>();
+            this.traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
+            this.LRUContent = cache ?? new LRUCache<Unity3DTile>();
             this.DeepestDepth = 0;
+            this.TilesetTransform = new GameObject("transform").transform;
+            this.TilesetTransform.parent = behaviour.transform;
+            this.TilesetTransform.localPosition = new Vector3(tilesetOptions.Transform.m03, tilesetOptions.Transform.m13, tilesetOptions.Transform.m23);
+            this.TilesetTransform.localRotation = tilesetOptions.Transform.rotation;
             
             // TODO: Detect data Uri?
-            if (Path.GetExtension(options.Url) == ".json")
+            if (Path.GetExtension(tilesetOptions.Url) == ".json")
             {
-                this.tilesetUrl = this.Options.Url;
-                this.basePath = UriHelper.GetBaseUri(this.Options.Url, true);
+                this.tilesetUrl = this.TilesetOptions.Url;
+                this.basePath = UriHelper.GetBaseUri(this.TilesetOptions.Url, true);
             }
             else
             {
-                this.basePath = this.Options.Url;
-                this.tilesetUrl = UriHelper.JoinUrls(this.Options.Url, "tileset.json", true);
+                this.basePath = this.TilesetOptions.Url;
+                this.tilesetUrl = UriHelper.JoinUrls(this.TilesetOptions.Url, "tileset.json", true);
             }
             LoadTilesetJson(this.tilesetUrl).Then(json =>
             {
@@ -204,7 +209,7 @@ namespace Unity3DTiles
                 return;
             }            
             Statistics.Clear();
-            traversal.Run();
+            traversal.Run(this.TilesetOptions.Show);
             Statistics.RequestQueueLength = this.RequestManager.QueueSize();
             Statistics.ConcurrentRequests = this.RequestManager.RequestsInProgress();
             Statistics.ProcessingTiles = this.ProcessingQueue.Count;
@@ -226,7 +231,7 @@ namespace Unity3DTiles
                 LoadProgress(remaining);
             }
             previousTilesRemaining = remaining;
-            if (this.Options.DebugDrawBounds)
+            if (this.TilesetOptions.DebugDrawBounds)
             {
                 traversal.DrawDebug();
             }

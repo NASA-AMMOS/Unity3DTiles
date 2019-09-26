@@ -179,10 +179,8 @@ namespace Unity3DTiles
 
             // TODO: Consider using a double percision Matrix library for doing 3d tiles root transform calculations
             // Set the local transform for this tile, default to identity matrix
-            this.transform = this.tile.UnityTransform();
-            
-            var parentTransform = (parent != null) ? parent.computedTransform : Matrix4x4.identity;
-            this.computedTransform = parentTransform * this.transform;
+            this.computedTransform = this.tileset.TilesetOptions.Transform;
+            this.transform = (parent != null) ? parent.computedTransform : Matrix4x4.identity;
             this.BoundingVolume = CreateBoundingVolume(tile.BoundingVolume, this.computedTransform);
             // TODO: Add 2D bounding volumes
 
@@ -233,8 +231,15 @@ namespace Unity3DTiles
             {
                 this.ContentState = Unity3DTileContentState.READY;
                 // We add this once the tile is ready instead of when we request, this way we don't try to unload nodes before the download
-                this.tileset.LRUContent.Add(this);
-                this.Content.Initialize(this.tileset.Options.CreateColliders);
+                bool added = this.tileset.LRUContent.Add(this);
+                if (added)
+                {
+                    this.Content.Initialize(this.tileset.TilesetOptions.CreateColliders);
+                }
+                else
+                {
+                    this.UnloadContent();
+                }
             }
         }
 
@@ -266,7 +271,7 @@ namespace Unity3DTiles
                     {
                         this.ContentState = Unity3DTileContentState.PROCESSING;
                         this.tileset.ProcessingQueue.Enqueue(this);
-                        this.Content.SetShadowMode(this.tileset.Options.ShadowCastingMode, this.tileset.Options.RecieveShadows);
+                        this.Content.SetShadowMode(this.tileset.TilesetOptions.ShadowCastingMode, this.tileset.TilesetOptions.RecieveShadows);
                         this.tileset.Statistics.LoadedContentCount += 1;
                         this.tileset.Statistics.TotalTilesLoaded += 1;
                     }
@@ -280,7 +285,7 @@ namespace Unity3DTiles
                 started.Then(() =>
                 {
                     GameObject go = new GameObject(Id);
-                    go.transform.parent = this.tileset.Behaviour.transform;
+                    go.transform.parent = this.tileset.TilesetTransform;
                     go.transform.localPosition = Vector3.zero;
                     go.transform.localRotation = Quaternion.identity;
                     go.transform.localScale = Vector3.one;
@@ -292,9 +297,9 @@ namespace Unity3DTiles
                     {
                         B3DMComponent b3dmCo = go.AddComponent<B3DMComponent>();
                         b3dmCo.Url = this.ContentUrl;
-                        b3dmCo.Multithreaded = this.tileset.Options.GLTFMultithreadedLoad;
-                        b3dmCo.MaximumLod = this.tileset.Options.GLTFMaximumLOD;
-                        b3dmCo.ShaderOverride = this.tileset.Options.GLTFShaderOverride;
+                        b3dmCo.Multithreaded = this.tileset.TilesetOptions.GLTFMultithreadedLoad;
+                        b3dmCo.MaximumLod = this.tileset.TilesetOptions.GLTFMaximumLOD;
+                        b3dmCo.ShaderOverride = this.tileset.TilesetOptions.GLTFShaderOverride;
                         b3dmCo.addColliders = false;
                         b3dmCo.DownloadOnStart = false;
                         this.tileset.Behaviour.StartCoroutine(b3dmCo.Download(finished));

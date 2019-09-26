@@ -24,7 +24,7 @@ namespace Unity3DTiles
         readonly public Promise Started;
         readonly public Promise<bool> Finished;
 
-        public Request(Unity3DTile tile, float priority, Promise started, Promise<bool> finished)  : base(tile, priority)
+        public Request(Unity3DTile tile, float priority, Promise started, Promise<bool> finished) : base(tile, priority)
         {
             this.Started = started;
             this.Finished = finished;
