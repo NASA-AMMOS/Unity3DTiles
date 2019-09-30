@@ -41,7 +41,7 @@ public class GenericWebTilesetBehaviour : TilesetBehaviour
 #else
     private static string getURLParameter(string name)
     {
-        Debug.LogWarning("cannot get URL parameter \"" + name + "\", not running WebGL build");
+        Debug.LogWarning("cannot get URL parameter \"" + name + "\"");
 
         return null;
     }
@@ -111,6 +111,9 @@ public class GenericWebTilesetBehaviour : TilesetBehaviour
             TilesetOptions.Url = tilesetURL;
             Debug.Log("set tileset URL from URL parameter: " + tilesetURL);
         }
+
+        Camera.main.transform.position = TilesetOptions.DefaultCameraPosition;
+        Camera.main.transform.eulerAngles = TilesetOptions.DefaultCameraRotation;
 
         if (!string.IsNullOrEmpty(TilesetOptions.Url))
         {

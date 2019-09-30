@@ -68,5 +68,9 @@ namespace Unity3DTiles
 
         [Header("Debug Settings")]
         public bool DebugDrawBounds = false;
+
+        [Header("Camera Settings")]
+        public Vector3 DefaultCameraPosition = new Vector3(0, 0, -30);
+        public Vector3 DefaultCameraRotation = Vector3.zero;
     }
 }
