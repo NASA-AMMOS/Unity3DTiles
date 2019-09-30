@@ -19,7 +19,12 @@ using Unity3DTiles;
 
 public class Unity3DTilesetStatsHud : MonoBehaviour {
 
+    public string message;
+
     public TilesetBehaviour tileset;
+
+    public UnityEngine.UI.Text text;
+
     [Tooltip("How many frames should we consider into our average calculation?")]
     [SerializeField]
     private int frameRange = 60;
@@ -41,7 +46,7 @@ public class Unity3DTilesetStatsHud : MonoBehaviour {
             "80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
             "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"
     };
-    UnityEngine.UI.Text text;
+
     StringBuilder builder = new StringBuilder();
 
 	// Use this for initialization
@@ -107,6 +112,11 @@ public class Unity3DTilesetStatsHud : MonoBehaviour {
         builder.Append("Visible Megapixels: ");
         builder.Append((stats.VisiblePixels / 1000000f).ToString("0.00"));
         builder.AppendLine();
+        if (!string.IsNullOrEmpty(message))
+        {
+            builder.Append(message);
+            builder.AppendLine();
+        }
 
         text.text = builder.ToString();
 
