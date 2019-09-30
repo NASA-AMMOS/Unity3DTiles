@@ -575,7 +575,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TilesetOptions:
-    Url: file://e:/home/vona/landform-storage/local/tiling/TileSet/0000100372Frame/best/tt4_useexisting/tileset.json
+    Url: 
     Show: 1
     ShadowCastingMode: 0
     RecieveShadows: 0
