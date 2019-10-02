@@ -87,7 +87,8 @@ namespace Unity3DTiles
             }
         }
 
-        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour, RequestManager requestManager, LRUCache<Unity3DTile> cache = null)
+        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour, RequestManager requestManager, 
+            LRUCache<Unity3DTile> cache = null)
         {
             this.TilesetOptions = tilesetOptions;
             this.Behaviour = behaviour;
@@ -209,7 +210,7 @@ namespace Unity3DTiles
                 return;
             }            
             Statistics.Clear();
-            traversal.Run(this.TilesetOptions.Show);
+            traversal.Run();
             Statistics.RequestQueueLength = this.RequestManager.QueueSize();
             Statistics.ConcurrentRequests = this.RequestManager.RequestsInProgress();
             Statistics.ProcessingTiles = this.ProcessingQueue.Count;

@@ -18,6 +18,13 @@ using UnityEngine;
 
 namespace Unity3DTiles
 {
+    public enum CacheRequestStatus
+    {
+        ADDED,
+        DUPLICATE,
+        FULL
+    }
+
     /// <summary>
     /// Represents a least recently used (LRU) cache
     /// </summary>
@@ -26,7 +33,7 @@ namespace Unity3DTiles
         public int MaxSize = -1; //unbounded
 
         // List looks like this
-        // [ unused, sential, used ]
+        // [ unused, sentinal, used ]
 
         LinkedList<T> list = new LinkedList<T>();
         LinkedListNode<T> sentinal = new LinkedListNode<T>(null);
@@ -39,6 +46,11 @@ namespace Unity3DTiles
         public int Count
         {
             get { return list.Count - 1; }
+        }
+
+        public bool Full
+        {
+            get { return MaxSize > 0 && Count >= MaxSize; }
         }
 
         /// <summary>
@@ -84,20 +96,20 @@ namespace Unity3DTiles
         /// </summary>
         /// <param name="element"></param>
         /// <returns></returns>
-        public bool Add(T element)
+        public CacheRequestStatus Add(T element)
         {
             if (nodeLookup.ContainsKey(element))
             {
-                return false;
+                return CacheRequestStatus.DUPLICATE;
             }
-            if (this.Count >= this.MaxSize && this.MaxSize > 0)
+            if (this.Full)
             {
-                return false;
+                return CacheRequestStatus.FULL;
             }
             LinkedListNode<T> node = new LinkedListNode<T>(element);
             nodeLookup.Add(element, node);
             list.AddLast(node);
-            return true;
+            return CacheRequestStatus.ADDED;
         }
 
         /// <summary>

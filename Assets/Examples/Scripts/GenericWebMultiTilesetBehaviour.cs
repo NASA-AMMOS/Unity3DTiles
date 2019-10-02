@@ -56,8 +56,6 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
             {
                 SceneFormat.Scene scene = SceneFormat.Scene.FromJson(json);
                 Matrix4x4 transform = scene.GetTransform(scene.tilesets[0].frame_id);
-                //AddTileset("unaligned", "https://landlords-dev.s3-us-west-1.amazonaws.com/rcrocco/tt4new/tileset.json", transform);
-                //AddTileset("aligned", "https://landlords-dev.s3-us-west-1.amazonaws.com/rcrocco/tt4aligned/tileset.json", transform); //TODO: don't hardcode
                 MakeTilesetsFromSceneFile();
             });
         }

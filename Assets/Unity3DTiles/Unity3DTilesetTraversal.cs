@@ -32,10 +32,10 @@ namespace Unity3DTiles
             this.sceneOptions = sceneOptions;
         }
 
-        public void Run(bool show)
+        public void Run()
         {
             frameCount++;
-            if(!show)
+            if(!tileset.TilesetOptions.Show)
             {
                 ToggleTiles(tileset.Root);
                 return;
@@ -65,7 +65,6 @@ namespace Unity3DTiles
             }
             MarkUsedSetLeaves(tileset.Root);
             SkipTraversal(tileset.Root);
-            //UnloadUnusedContent();
             ToggleTiles(tileset.Root);
             this.tileset.RequestManager.Process();
         }
@@ -270,7 +269,7 @@ namespace Unity3DTiles
                     tile.FrameState.InColliderSet = true;
                     this.tileset.Statistics.ColliderTileCount += 1;
                 }
-                else
+                else if (!tileset.LRUContent.Full)
                 {
                     RequestTile(tile);
                 }
@@ -292,7 +291,7 @@ namespace Unity3DTiles
                     allChildrenHaveContent = allChildrenHaveContent && childContent;
                 }
             }
-            if(meetsSSE && !hasContent)
+            if(meetsSSE && !hasContent && !tileset.LRUContent.Full)
             {
                 RequestTile(tile);
             }
@@ -308,7 +307,7 @@ namespace Unity3DTiles
                 // Request children
                 for (int i = 0; i < tile.Children.Count; i++)
                 {
-                    if (tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount))
+                    if (tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount) && !tileset.LRUContent.Full)
                     {
                         RequestTile(tile.Children[i]);
                     }
@@ -394,23 +393,23 @@ namespace Unity3DTiles
         {
             if (tile.Parent == null)
             {
-                tile.RequestContent(-tile.FrameState.DistanceToCamera);
+                tile.RequestContent(this.tileset.TilesetOptions.TilePriority(tile)); // was -tile.FrameState.DistanceToCamera, bug?
             }
             else
             {
-                float minDist = float.MaxValue;
+                float priority = float.MaxValue;
                 for (int i = 0; i < tile.Parent.Children.Count; i++)
                 {
                     if (tile.Parent.Children[i].FrameState.IsUsedThisFrame(this.frameCount))
                     {
-                        minDist = Mathf.Min(tile.Parent.Children[i].FrameState.DistanceToCamera, minDist);
+                        priority = Mathf.Min(this.tileset.TilesetOptions.TilePriority(tile.Parent.Children[i]), priority);
                     }
                 }
                 for (int i = 0; i < tile.Parent.Children.Count; i++)
                 {
                     if (tile.Parent.Children[i].FrameState.IsUsedThisFrame(this.frameCount))
                     {
-                        tile.Parent.Children[i].RequestContent(-minDist);
+                        tile.Parent.Children[i].RequestContent(priority);
                     }
                 }
             }

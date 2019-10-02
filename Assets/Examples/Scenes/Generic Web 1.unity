@@ -587,8 +587,8 @@ MonoBehaviour:
   SceneOptions:
     ClippingCameras:
     - {fileID: 1438352746}
-    LRUCacheTargetSize: 600
-    LRUCacheMaxSize: 800
+    LRUCacheTargetSize: 299
+    LRUCacheMaxSize: 300
     LRUMaxFrameUnloadRatio: 0.2
   Stats:
     FrustumSetCount: 0

@@ -231,8 +231,9 @@ namespace Unity3DTiles
             {
                 this.ContentState = Unity3DTileContentState.READY;
                 // We add this once the tile is ready instead of when we request, this way we don't try to unload nodes before the download
-                bool added = this.tileset.LRUContent.Add(this);
-                if (added)
+                
+                CacheRequestStatus status = this.tileset.LRUContent.Add(this);
+                if (status == CacheRequestStatus.ADDED)
                 {
                     this.Content.Initialize(this.tileset.TilesetOptions.CreateColliders);
                 }
@@ -249,7 +250,7 @@ namespace Unity3DTiles
         /// <param name="priority"></param>
         public void RequestContent(float priority)
         {
-            if(this.tileset.RequestManager.Full())
+            if (this.tileset.RequestManager.Full())
             {
                 return;
             }
@@ -257,7 +258,7 @@ namespace Unity3DTiles
             {
                 return;
             }
-            if(this.ContentState == Unity3DTileContentState.UNLOADED ||
+            if (this.ContentState == Unity3DTileContentState.UNLOADED ||
                this.ContentState == Unity3DTileContentState.EXPIRED)
             {
                 this.ContentState = Unity3DTileContentState.LOADING;

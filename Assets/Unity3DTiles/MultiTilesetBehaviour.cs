@@ -180,7 +180,6 @@ namespace Unity3DTiles
         public string SceneManifestUrl = null;
         public Unity3DTilesetOptions[] TilesetOptionsArray = new Unity3DTilesetOptions[] { };
         private Dictionary<string, Unity3DTileset> Tilesets = new Dictionary<string, Unity3DTileset>();
-        private RequestManager RequestManager;
 
         protected override void _lateUpdate()
         {
@@ -191,18 +190,15 @@ namespace Unity3DTiles
             Stats = Unity3DTilesetStatistics.aggregate(Tilesets.Values.Select(t => t.Statistics).ToArray());
         }
 
-        public void AddTileset(string tilesetName, string tilesetURL, Matrix4x4 rootTransform)
+        public void AddTileset(string tilesetName, string tilesetURL, Matrix4x4 rootTransform, RequestManager requestManager = null)
         {
-            if(this.RequestManager == null || true)
-            {
-                this.RequestManager = new RequestManager(MaxConcurrentRequests);
-            }
             Unity3DTilesetOptions options = new Unity3DTilesetOptions();
             options.Name = tilesetName;
             options.Url = tilesetURL;
             options.Show = true;
             options.Transform = rootTransform;
-            Tilesets.Add(tilesetName, new Unity3DTileset(options, this, RequestManager, LRUCache));
+            var rm = requestManager ?? new RequestManager(MaxConcurrentRequests);
+            Tilesets.Add(tilesetName, new Unity3DTileset(options, this, rm, LRUCache));
             this.TilesetOptionsArray = Tilesets.Values.ToList().Select(t => t.TilesetOptions).ToArray();
             Stats = Unity3DTilesetStatistics.aggregate(this.Tilesets.Values.Select(t => t.Statistics).ToArray());
         }

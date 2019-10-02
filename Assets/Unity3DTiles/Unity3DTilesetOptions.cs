@@ -57,6 +57,11 @@ namespace Unity3DTiles
 
         [Header("Debug Settings")]
         public bool DebugDrawBounds = false;
+
+        public System.Func<Unity3DTile, float> TilePriority = new System.Func<Unity3DTile, float>(tile =>
+        {
+            return (float)(tile.Depth - 1.0 / tile.FrameState.DistanceToCamera);
+        });
     }
 
     [System.Serializable]
