@@ -189,7 +189,7 @@ namespace Unity3DTiles
                 if (lastUnloadAssets == null || lastUnloadAssets.isDone)
                 {
                     lastUnloadAssets = Resources.UnloadUnusedAssets();
-                }
+                } //TODO: schedule unload instead of skip
             }
         }
 

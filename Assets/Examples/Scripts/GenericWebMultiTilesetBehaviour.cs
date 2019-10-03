@@ -20,6 +20,7 @@ using Unity3DTiles;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using RSG;
 
 /* Extends TilesetBehavior to optionally retrieve configuration from URL parameters in a WebGL build.
  *
@@ -47,11 +48,87 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
     }
 #endif
 
-    public void Start()
+    IEnumerator DownloadSceneJson(string url, Promise<string> promise)
     {
+        using (var uwr = UnityWebRequest.Get(url))
+        {
+
+#if UNITY_2017_2_OR_NEWER
+            yield return uwr.SendWebRequest();
+#else
+			    yield return uwr.Send();
+#endif
+            if (uwr.isNetworkError || uwr.isHttpError)
+            {
+                promise.Reject(new System.Exception("Error downloading " + url + " " + uwr.error));
+            }
+            else
+            {
+                promise.Resolve(uwr.downloadHandler.text);
+            }
+        }
+    }
+
+    public Promise<string> LoadSceneJson(string url)
+    {
+        Promise<string> promise = new Promise<string>();
+        this.StartCoroutine(DownloadSceneJson(url, promise));
+        return promise;
+    }
+
+    private IEnumerator GetOptions(string optionsURL)
+    {
+        Debug.Log("downloading tileset options from URL parameter: " + optionsURL);
+
+        using (UnityWebRequest www = UnityWebRequest.Get(optionsURL))
+        {
+            yield return www.Send();
+
+            if (www.isNetworkError || www.isHttpError)
+            {
+                Debug.Log("error downloading tileset options: " + www.error);
+            }
+
+            try
+            {
+                //use PopulateObject() so that the downloaded options can be partial
+                Unity3DTilesetOptions opts = new Unity3DTilesetOptions();
+                JsonConvert.PopulateObject(www.downloadHandler.text, opts);
+                Debug.Log("set tileset options from " + optionsURL + ":\n" + www.downloadHandler.text);
+                Debug.Log(JsonConvert.SerializeObject(opts, Formatting.Indented,
+                                                      new JsonConverter[] { new StringEnumConverter() }));
+                AddTileset(opts);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.Log("error parsing tileset options: " + ex.Message);
+            }
+        }
+        
+    }
+
+    protected override void _start()
+    {
+        string maxRequests = getURLParameter("MaxConcurrentRequests");
+        if (!string.IsNullOrEmpty(maxRequests))
+        {
+            if (int.TryParse(maxRequests, out MaxConcurrentRequests))
+            {
+                Debug.Log("set MaxConcurrentRequests=" + MaxConcurrentRequests + " from URL parameter");
+            }
+            else
+            {
+                Debug.Log("error setting MaxConcurrentRequests=" + maxRequests + " from URL parameter");
+            }
+        }
+
+        string sceneManifestUrl = getURLParameter("SceneManifestURL");
+        if (!string.IsNullOrEmpty(sceneManifestUrl))
+        {
+            SceneManifestUrl = sceneManifestUrl;
+        }
         if (!string.IsNullOrEmpty(SceneManifestUrl))
         {
-            //StartCoroutine(GetOptions(sceneManifestUrl));
             LoadSceneJson(SceneManifestUrl).Done(json =>
             {
                 SceneFormat.Scene scene = SceneFormat.Scene.FromJson(json);
@@ -61,19 +138,45 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
         }
         else
         {
-            Debug.Log("empty scene manifest URL, consider setting URL parmeter \"SceneManifestUrl\"");       
+            int n = 0;
+            string tilesetOptionsURL = getURLParameter("TilesetOptions" + n);
+            while (!string.IsNullOrEmpty(tilesetOptionsURL))
+            {
+                GetOptions(tilesetOptionsURL);
+                ++n;
+                tilesetOptionsURL = getURLParameter("TilesetOptions" + n);
+            }
+            if(n == 0)
+            {
+                Debug.Log("empty scene manifest URL, consider setting URL parmeter \"SceneManifestUrl\" or pass individual tilesets with \"TilesetURL0\", \"TilesetURL1\", etc");
+            }
         }
     }
 
-    protected override void MakeTilesetsFromSceneFile()
+    protected void MakeTilesetsFromSceneFile()
     {
         if (!string.IsNullOrEmpty(SceneManifestUrl))
         {
-            base.MakeTilesetsFromSceneFile();
+            //Read in scene json from options url
+            LoadSceneJson(SceneManifestUrl).Done(json =>
+            {
+                SceneFormat.Scene scene = SceneFormat.Scene.FromJson(json);
+                MakeTilesetFromScene(scene);
+            });          
         }
         else
         {
             Debug.Log("empty scene URL, consider setting URL parmeter \"TilesetURL\"");
+        }
+    }
+
+    protected void MakeTilesets(params string[] tilesetOptionsURLs)
+    {
+        foreach(string url in tilesetOptionsURLs)
+        {
+            Unity3DTilesetOptions opts = new Unity3DTilesetOptions();
+            opts.Name = url;
+            opts.Url = url;
         }
     }
 }

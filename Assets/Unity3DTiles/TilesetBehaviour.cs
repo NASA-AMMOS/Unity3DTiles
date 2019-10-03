@@ -39,19 +39,6 @@ namespace Unity3DTiles
         {
             //override in subclass
         }
-    }
-
-    public class TilesetBehaviour : AbstractTilesetBehaviour
-    {
-        public Unity3DTilesetOptions TilesetOptions = new Unity3DTilesetOptions();
-        public Unity3DTileset Tileset;
-
-        public void MakeTileset()
-        {
-            RequestManager rm = new RequestManager(MaxConcurrentRequests);
-            Tileset = new Unity3DTileset(TilesetOptions, this, rm, this.LRUCache);
-            Stats = Tileset.Statistics;
-        }
 
         public void Start()
         {
@@ -59,6 +46,24 @@ namespace Unity3DTiles
         }
 
         protected virtual void _start()
+        {
+            //override in subclass
+        }
+    }
+
+    public class TilesetBehaviour : AbstractTilesetBehaviour
+    {
+        public Unity3DTilesetOptions TilesetOptions = new Unity3DTilesetOptions();
+        public Unity3DTileset Tileset;
+
+        public virtual void MakeTileset()
+        {
+            RequestManager rm = new RequestManager(MaxConcurrentRequests);
+            Tileset = new Unity3DTileset(TilesetOptions, this, rm, this.LRUCache);
+            Stats = Tileset.Statistics;
+        }
+
+        protected override void _start()
         {
             MakeTileset();
         }

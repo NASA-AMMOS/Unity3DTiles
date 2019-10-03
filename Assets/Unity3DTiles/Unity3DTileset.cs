@@ -40,7 +40,7 @@ namespace Unity3DTiles
         public Queue<Unity3DTile> ProcessingQueue = new Queue<Unity3DTile>();           // Tiles whose content is being loaded/processed
 
         public MonoBehaviour Behaviour { get; private set; }
-        public Transform TilesetTransform;
+        //public Transform TilesetTransform;
 
         /// <summary>
         /// Maintians a least recently used list of tiles that have content
@@ -96,11 +96,11 @@ namespace Unity3DTiles
             this.traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
             this.LRUContent = cache ?? new LRUCache<Unity3DTile>();
             this.DeepestDepth = 0;
-            this.TilesetTransform = new GameObject("transform").transform;
-            this.TilesetTransform.parent = behaviour.transform;
-            this.TilesetTransform.localPosition = new Vector3(tilesetOptions.Transform.m03, tilesetOptions.Transform.m13, tilesetOptions.Transform.m23);
-            this.TilesetTransform.localRotation = tilesetOptions.Transform.rotation;
-            
+            //this.TilesetTransform = new GameObject(tilesetOptions.Name).transform;
+            //this.TilesetTransform.parent = behaviour.transform;
+            //this.TilesetTransform.localPosition = new Vector3(tilesetOptions.Transform.m03, tilesetOptions.Transform.m13, tilesetOptions.Transform.m23);
+            //this.TilesetTransform.localRotation = tilesetOptions.Transform.rotation;
+
             // TODO: Detect data Uri?
             if (Path.GetExtension(tilesetOptions.Url) == ".json")
             {

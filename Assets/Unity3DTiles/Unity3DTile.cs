@@ -179,12 +179,15 @@ namespace Unity3DTiles
 
             // TODO: Consider using a double percision Matrix library for doing 3d tiles root transform calculations
             // Set the local transform for this tile, default to identity matrix
-            this.computedTransform = this.tileset.TilesetOptions.Transform;
-            this.transform = (parent != null) ? parent.computedTransform : Matrix4x4.identity;
+            this.transform = this.tile.UnityTransform();
+            var parentTransform = (parent != null) ? parent.computedTransform : tileset.TilesetOptions.Transform;
+            this.computedTransform = parentTransform * this.transform;
+
             this.BoundingVolume = CreateBoundingVolume(tile.BoundingVolume, this.computedTransform);
+
             // TODO: Add 2D bounding volumes
 
-            if(tile.Content != null && tile.Content.BoundingVolume.IsDefined())
+            if (tile.Content != null && tile.Content.BoundingVolume.IsDefined())
             {
                 // Non-leaf tiles may have a content bounding-volume, which is a tight-fit bounding volume
                 // around only the features in the tile.  This box is useful for culling for rendering,
@@ -286,10 +289,9 @@ namespace Unity3DTiles
                 started.Then(() =>
                 {
                     GameObject go = new GameObject(Id);
-                    go.transform.parent = this.tileset.TilesetTransform;
-                    go.transform.localPosition = Vector3.zero;
-                    go.transform.localRotation = Quaternion.identity;
-                    go.transform.localScale = Vector3.one;
+                    go.transform.parent = this.tileset.Behaviour.transform;
+                    go.transform.localPosition = new Vector3(this.computedTransform.m03, this.computedTransform.m13, this.computedTransform.m23);
+                    go.transform.localRotation = this.computedTransform.rotation;
                     go.layer = this.tileset.Behaviour.gameObject.layer;
                     go.SetActive(false);
                     this.Content = new Unity3DTileContent(go);

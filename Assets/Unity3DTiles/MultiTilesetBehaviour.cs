@@ -32,16 +32,9 @@ namespace SceneFormat
         public float y;
         public float z;
 
-        public void Fill(Vector3 v3)
+        public static implicit operator Vector3(Vector3Serializer v3s)
         {
-            x = v3.x;
-            y = v3.y;
-            z = v3.z;
-        }
-
-        public Vector3 V3()
-        {
-            return new Vector3(x, y, z);
+            return new Vector3(v3s.x, v3s.y, v3s.z);
         }
     }
 
@@ -53,72 +46,45 @@ namespace SceneFormat
         public float z;
         public float w;
 
-        public void Fill(Quaternion q)
+        public static implicit operator Quaternion(QuaternionSerializer qs)
         {
-            x = q.x;
-            y = q.y;
-            z = q.z;
-            w = q.w;
-        }
-
-        public Quaternion Q()
-        {
-            return new Quaternion(x, y, z, w);
+            return new Quaternion(qs.x, qs.y, qs.z, qs.w);
         }
     }
 
     public class SceneTileset
     {
-        [JsonPropertyAttribute("id")]
-        public string id { get; set; }
-        [JsonPropertyAttribute("uri")]
-        public string uri { get; set; }
-        [JsonPropertyAttribute("frame_id")]
-        public string frame_id { get; set; }
-        [JsonPropertyAttribute("show")]
-        public bool show { get; set; }
+        public string id;
+        public string uri;
+        public string frame_id;
+        public bool show;
     }
 
     public class SceneImage
     {
-        [JsonPropertyAttribute("id")]
-        public string id { get; set; }
-        [JsonPropertyAttribute("uri")]
-        public string uri { get; set; }
-        [JsonPropertyAttribute("frame_id")]
-        public string frame_id { get; set; }
-        [JsonPropertyAttribute("width")]
-        public int width { get; set; }
-        [JsonPropertyAttribute("height")]
-        public int height { get; set; }
-        [JsonPropertyAttribute("bands")]
-        public int bands { get; set; }
+        public string id;
+        public string uri;
+        public string frame_id;
+        public int width;
+        public int height;
+        public int bands;
     }
 
     public class SceneFrame
     {
-        [JsonPropertyAttribute("frame_id")]
-        public string frame_id { get; set; }
-        [JsonPropertyAttribute("translation")]
-        public Vector3Serializer translation { get; set; }
-        [JsonPropertyAttribute("rotation")]
-        public QuaternionSerializer rotation { get; set; }
-        [JsonPropertyAttribute("scale")]
-        public Vector3Serializer scale { get; set; }
-        [JsonPropertyAttribute("parent_id")]
-        public string parent_id { get; set; }
+        public string frame_id;
+        public Vector3Serializer translation;
+        public QuaternionSerializer rotation;
+        public Vector3Serializer scale;
+        public string parent_id;
     }
 
     public class Scene
     {
-        [JsonPropertyAttribute("version")]
-        public string version { get; set; }
-        [JsonPropertyAttribute("tilesets")]
-        public List<SceneTileset> tilesets { get; set; }
-        [JsonPropertyAttribute("images")]
-        public List<SceneImage> images { get; set; }
-        [JsonPropertyAttribute("frames")]
-        public List<SceneFrame> frames { get; set; }
+        public string version;
+        public List<SceneTileset> tilesets;
+        public List<SceneImage> images;
+        public List<SceneFrame> frames;
 
         public Scene()
         {
@@ -135,8 +101,7 @@ namespace SceneFormat
 
         public static Scene FromJson(string data)
         {
-            Scene scene = JsonConvert.DeserializeObject<Scene>(data);
-            return scene;
+            return JsonConvert.DeserializeObject<Scene>(data);
         }
 
         private SceneFrame GetFrame(string frame_id)
@@ -161,12 +126,10 @@ namespace SceneFormat
             }
             if(frame.parent_id == "")
             {
-                return Matrix4x4.identity;
+                return Matrix4x4.TRS(frame.translation, frame.rotation, frame.scale);
             } else
             {
-                Matrix4x4 transform = Matrix4x4.Translate(frame.translation.V3()) * 
-                    Matrix4x4.Scale(frame.scale.V3()) * 
-                    Matrix4x4.Rotate(frame.rotation.Q());
+                Matrix4x4 transform = Matrix4x4.TRS(frame.translation, frame.rotation, frame.scale);
                 return GetTransform(frame.parent_id) * transform; //Apply this transform before parent transform
             }
         }
@@ -197,15 +160,35 @@ namespace Unity3DTiles
             options.Url = tilesetURL;
             options.Show = true;
             options.Transform = rootTransform;
+            AddTileset(options, requestManager);
+        }
+
+        public void AddTileset(Unity3DTilesetOptions options, RequestManager requestManager = null)
+        {
             var rm = requestManager ?? new RequestManager(MaxConcurrentRequests);
-            Tilesets.Add(tilesetName, new Unity3DTileset(options, this, rm, LRUCache));
+            Tilesets.Add(options.Name, new Unity3DTileset(options, this, rm, LRUCache));
             this.TilesetOptionsArray = Tilesets.Values.ToList().Select(t => t.TilesetOptions).ToArray();
             Stats = Unity3DTilesetStatistics.aggregate(this.Tilesets.Values.Select(t => t.Statistics).ToArray());
         }
 
+        public IEnumerable<Unity3DTileset> GetTilesets()
+        {
+            return Tilesets.Values;
+        }
+
+        public Unity3DTileset GetTileset(string name)
+        {
+            if (Tilesets.ContainsKey(name))
+            {
+                return Tilesets[name];
+            }
+            Debug.LogWarning(String.Format("No tileset: {0}", name));
+            return null;
+        }
+
         public void ShowTilesets(params string[] names)
         {
-            foreach(string name in names)
+            foreach (string name in names)
             {
                 Tilesets[name].TilesetOptions.Show = true;
             }
@@ -227,50 +210,14 @@ namespace Unity3DTiles
             }
         }
 
-        public Promise<string> LoadSceneJson(string url)
+        protected virtual void MakeTilesetFromScene(SceneFormat.Scene scene)
         {
-            Promise<string> promise = new Promise<string>();
-            this.StartCoroutine(DownloadSceneJson(url, promise));
-            return promise;
-        }
-
-        IEnumerator DownloadSceneJson(string url, Promise<string> promise)
-        {
-            using (var uwr = UnityWebRequest.Get(url))
+            //Create unity tilesets
+            foreach (SceneFormat.SceneTileset tileset in scene.tilesets)
             {
-
-#if UNITY_2017_2_OR_NEWER
-                yield return uwr.SendWebRequest();
-#else
-			    yield return uwr.Send();
-#endif
-                if (uwr.isNetworkError || uwr.isHttpError)
-                {
-                    promise.Reject(new System.Exception("Error downloading " + url + " " + uwr.error));
-                }
-                else
-                {
-                    promise.Resolve(uwr.downloadHandler.text);
-                }
+                var transform = scene.GetTransform(tileset.frame_id);
+                AddTileset(tileset.id, tileset.uri, transform);
             }
-        }
-
-        protected virtual void MakeTilesetsFromSceneFile()
-        {
-            //Read in scene json from options url
-            LoadSceneJson(SceneManifestUrl).Done(json =>
-            {
-                SceneFormat.Scene scene = SceneFormat.Scene.FromJson(json);
-
-                //Create unity tilesets
-                foreach (SceneFormat.SceneTileset tileset in scene.tilesets)
-                {
-                    var transform = scene.GetTransform(tileset.frame_id);
-                    AddTileset(tileset.id, tileset.uri, transform);
-                }
-
-                Debug.Log(string.Format("Finished loading {0} tileset(s).", Tilesets.Count));
-            });
         }
     }
 }
