@@ -64,9 +64,10 @@ namespace Unity3DTiles
                 DetermineFrustumSet(tileset.Root, planes, sse, cameraPositionInTilesetFrame, PlaneClipMask.GetDefaultMask());
             }
             MarkUsedSetLeaves(tileset.Root);
-            SkipTraversal(tileset.Root);
+            SkipTraversal(tileset.Root);      
             ToggleTiles(tileset.Root);
             this.tileset.RequestManager.Process();
+            //UnloadUnusedContent called once for all tilesets at end of AbstractTilesetBehaviour.LateUpdate()
         }
 
         class SSECalculator

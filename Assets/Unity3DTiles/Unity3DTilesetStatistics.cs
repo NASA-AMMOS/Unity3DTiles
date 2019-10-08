@@ -67,14 +67,13 @@ namespace Unity3DTiles
             ret.NumberOfTilesTotal = 0;
             ret.LoadedContentCount = 0;
             ret.ProcessingTiles = 0;
-            ret.RequestQueueLength = stats[0].RequestQueueLength; //Cache informed statisticss shared between tilesets, do not sum
+            ret.RequestQueueLength = stats[0].RequestQueueLength; //Cache informed statistics shared between tilesets, do not sum
             ret.ConcurrentRequests = stats[0].ConcurrentRequests;
             ret.TotalTilesLoaded = 0;
 
-            //TODO: frustum set
-
             foreach (var stat in stats)
             {
+                ret.FrustumSetCount += stat.FrustumSetCount;
                 ret.UsedSetCount += stat.UsedSetCount;
                 ret.VisibleTileCount += stat.VisibleTileCount;
                 ret.ColliderTileCount += stat.ColliderTileCount;
