@@ -37,7 +37,7 @@ namespace Unity3DTiles
         private int previousTilesRemaining = 0;
 
         private Schema.Tileset tileset;
-        public Queue<Unity3DTile> ProcessingQueue = new Queue<Unity3DTile>();           // Tiles whose content is being loaded/processed
+        public Queue<Unity3DTile> ProcessingQueue;           // Tiles whose content is being loaded/processed
 
         public MonoBehaviour Behaviour { get; private set; }
         //public Transform TilesetTransform;
@@ -87,19 +87,16 @@ namespace Unity3DTiles
             }
         }
 
-        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour, RequestManager requestManager, 
-            LRUCache<Unity3DTile> cache = null)
+        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour, 
+            RequestManager requestManager, Queue<Unity3DTile> processingQueue, LRUCache<Unity3DTile> cache = null)
         {
             this.TilesetOptions = tilesetOptions;
             this.Behaviour = behaviour;
             this.RequestManager = requestManager;
+            this.ProcessingQueue = processingQueue;
             this.traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
             this.LRUContent = cache ?? new LRUCache<Unity3DTile>();
             this.DeepestDepth = 0;
-            //this.TilesetTransform = new GameObject(tilesetOptions.Name).transform;
-            //this.TilesetTransform.parent = behaviour.transform;
-            //this.TilesetTransform.localPosition = new Vector3(tilesetOptions.Transform.m03, tilesetOptions.Transform.m13, tilesetOptions.Transform.m23);
-            //this.TilesetTransform.localRotation = tilesetOptions.Transform.rotation;
 
             // TODO: Detect data Uri?
             if (Path.GetExtension(tilesetOptions.Url) == ".json")

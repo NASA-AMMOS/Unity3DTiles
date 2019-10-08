@@ -143,6 +143,7 @@ namespace Unity3DTiles
         public string SceneManifestUrl = null;
         public Unity3DTilesetOptions[] TilesetOptionsArray = new Unity3DTilesetOptions[] { };
         private Dictionary<string, Unity3DTileset> Tilesets = new Dictionary<string, Unity3DTileset>();
+        private Queue<Unity3DTile> postDownloadQueue = new Queue<Unity3DTile>();
 
         protected override void _lateUpdate()
         {
@@ -153,20 +154,39 @@ namespace Unity3DTiles
             Stats = Unity3DTilesetStatistics.aggregate(Tilesets.Values.Select(t => t.Statistics).ToArray());
         }
 
-        public void AddTileset(string tilesetName, string tilesetURL, Matrix4x4 rootTransform, RequestManager requestManager = null)
+        public bool AddTileset(string tilesetName, string tilesetURL, Matrix4x4 rootTransform, RequestManager requestManager = null)
         {
             Unity3DTilesetOptions options = new Unity3DTilesetOptions();
             options.Name = tilesetName;
             options.Url = tilesetURL;
             options.Show = true;
             options.Transform = rootTransform;
-            AddTileset(options, requestManager);
+            return AddTileset(options, requestManager);
         }
 
-        public void AddTileset(Unity3DTilesetOptions options, RequestManager requestManager = null)
+        public bool AddTileset(Unity3DTilesetOptions options, RequestManager requestManager = null)
         {
+            if(Tilesets.ContainsKey(name))
+            {
+                Debug.LogWarning(String.Format("Attempt to add tileset with duplicate name {0} failed.", name));
+                return false;
+            }
             var rm = requestManager ?? new RequestManager(MaxConcurrentRequests);
-            Tilesets.Add(options.Name, new Unity3DTileset(options, this, rm, LRUCache));
+            Tilesets.Add(options.Name, new Unity3DTileset(options, this, rm, postDownloadQueue, LRUCache));
+            updateOptionsAndStats();
+            return true;
+        }
+
+        public Unity3DTileset RemoveTileset(string name)
+        {
+            var tileset = GetTileset(name);
+            Tilesets.Remove(name);
+            updateOptionsAndStats();
+            return tileset;
+        }
+
+        private void updateOptionsAndStats()
+        {
             this.TilesetOptionsArray = Tilesets.Values.ToList().Select(t => t.TilesetOptions).ToArray();
             Stats = Unity3DTilesetStatistics.aggregate(this.Tilesets.Values.Select(t => t.Statistics).ToArray());
         }

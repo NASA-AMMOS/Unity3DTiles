@@ -41,7 +41,7 @@ namespace Unity3DTiles
                 return;
             }
             // Move any tiles with downloaded content to the ready state
-            for (int i = 0; i < this.tileset.TilesetOptions.MaximumTilesToProcessPerFrame && this.tileset.ProcessingQueue.Count != 0; i++)
+            for (int i = 0; i < this.sceneOptions.MaximumTilesToProcessPerFrame && this.tileset.ProcessingQueue.Count != 0; i++)
             {
                 var tile = this.tileset.ProcessingQueue.Dequeue();
                 tile.Process();

@@ -30,9 +30,6 @@ namespace Unity3DTiles
         public bool RecieveShadows = true;
         public bool CreateColliders = true;
 
-        [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrese load time but may increase frame lurches when loading tiles.")]
-        public int MaximumTilesToProcessPerFrame = 1;
-
         [Tooltip("Controls the level of detail the tileset will be loaded to by specifying the allowed amount of on screen geometric error allowed in pixels")]
         public double MaximumScreenSpaceError = 16;
 
@@ -70,6 +67,9 @@ namespace Unity3DTiles
         //Options shared between tilesets in a scene, extended below
 
         public List<Camera> ClippingCameras;
+
+        [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrese load time but may increase frame lurches when loading tiles.")]
+        public int MaximumTilesToProcessPerFrame = 1;
 
         [Tooltip("Sets the target maximum number of tiles that can be loaded into memory at any given time.  Beyond this limit, unused tiles will be unloaded as new requests are made.")]
         /// <summary>
@@ -146,6 +146,7 @@ namespace Unity3DTiles
             Unity3DTilesetSceneOptions opts = new Unity3DTilesetSceneOptions();
             opts.ClippingCameras = this.ClippingCameras;
             opts.LRUCacheMaxSize = this.LRUCacheMaxSize;
+            opts.MaximumTilesToProcessPerFrame = this.MaximumTilesToProcessPerFrame;
             opts.LRUCacheTargetSize = (int)(0.9 * this.LRUCacheMaxSize);
             opts.LRUMaxFrameUnloadRatio = this.LRUMaxFrameUnloadRatio;
             return opts;
@@ -159,8 +160,7 @@ namespace Unity3DTiles
             opts.Show = this.Show;
             opts.ShadowCastingMode = this.ShadowCastingMode;
             opts.RecieveShadows = this.RecieveShadows;
-            opts.CreateColliders = this.CreateColliders;     
-            opts.MaximumTilesToProcessPerFrame = this.MaximumTilesToProcessPerFrame;
+            opts.CreateColliders = this.CreateColliders;          
             opts.MaximumScreenSpaceError = this.MaximumScreenSpaceError;
             opts.SkipScreenSpaceErrorMultiplier = this.SkipScreenSpaceErrorMultiplier;
             opts.LoadSiblings = this.LoadSiblings;
