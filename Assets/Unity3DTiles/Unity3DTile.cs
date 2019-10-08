@@ -36,6 +36,12 @@ namespace Unity3DTiles
         Unknown
     }
 
+    public class TileParentInfo : MonoBehaviour
+    {
+        public Unity3DTile Parent;
+        public Unity3DTileset Tileset;
+    }
+
     public class Unity3DTile
     {
 
@@ -292,6 +298,9 @@ namespace Unity3DTiles
                     go.transform.localScale = Vector3.one;
                     go.layer = this.tileset.Behaviour.gameObject.layer;
                     go.SetActive(false);
+                    var info = go.AddComponent<TileParentInfo>();
+                    info.Parent = this.Parent;
+                    info.Tileset = this.tileset;
                     this.Content = new Unity3DTileContent(go);
 
                     if (ContentType == Unity3DTileContentType.B3DM)
