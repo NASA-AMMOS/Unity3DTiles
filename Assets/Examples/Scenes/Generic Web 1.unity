@@ -587,6 +587,7 @@ MonoBehaviour:
   SceneOptions:
     ClippingCameras:
     - {fileID: 1438352746}
+    MaximumTilesToProcessPerFrame: 1
     LRUCacheTargetSize: 300
     LRUCacheMaxSize: 600
     LRUMaxFrameUnloadRatio: 0.2
@@ -609,7 +610,7 @@ MonoBehaviour:
     LeafContentLoaded: 0
     RequestsThisFrame: 0
     NetworkError: 0
-  MaxConcurrentRequests: 10
+  MaxConcurrentRequests: 16
   SceneManifestUrl: https://landlords-dev.s3-us-west-1.amazonaws.com/tt4-tactical-scene/scene.json
   TilesetOptionsArray: []
 --- !u!1 &1931381442
