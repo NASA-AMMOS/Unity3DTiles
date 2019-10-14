@@ -19,45 +19,6 @@ using UnityEngine;
 
 namespace Unity3DTiles
 {
-    public class AbstractTilesetBehaviour : MonoBehaviour
-    {
-        public Unity3DTilesetSceneOptions SceneOptions = new Unity3DTilesetSceneOptions();        
-        public Unity3DTilesetStatistics Stats;
-        public LRUCache<Unity3DTile> LRUCache = new LRUCache<Unity3DTile>();
-        private Queue<Unity3DTile> postDownloadQueue = new Queue<Unity3DTile>();
-
-        public int MaxConcurrentRequests = 6;
-
-        public void LateUpdate()
-        {
-            LRUCache.MaxSize = SceneOptions.LRUCacheMaxSize;
-            // Move any tiles with downloaded content to the ready state
-            for (int i = 0; i < this.SceneOptions.MaximumTilesToProcessPerFrame && this.postDownloadQueue.Count != 0; i++)
-            {
-                var tile = this.postDownloadQueue.Dequeue();
-                tile.Process();
-            }
-            LRUCache.MarkAllUnused();
-            this._lateUpdate();
-            LRUCache.UnloadUnusedContent(SceneOptions.LRUCacheTargetSize, SceneOptions.LRUMaxFrameUnloadRatio, n => -n.Depth, t => t.UnloadContent());
-        }
-
-        protected virtual void _lateUpdate()
-        {
-            //override in subclass
-        }
-
-        public void Start()
-        {
-            _start();
-        }
-
-        protected virtual void _start()
-        {
-            //override in subclass
-        }
-    }
-
     public class TilesetBehaviour : AbstractTilesetBehaviour
     {
         public Unity3DTilesetOptions TilesetOptions = new Unity3DTilesetOptions();
@@ -65,8 +26,8 @@ namespace Unity3DTiles
 
         public virtual void MakeTileset()
         {
-            RequestManager rm = new RequestManager(MaxConcurrentRequests);
-            Tileset = new Unity3DTileset(TilesetOptions, this, rm, new Queue<Unity3DTile>(), this.LRUCache);
+            this.requestManager = new RequestManager(MaxConcurrentRequests);
+            Tileset = new Unity3DTileset(TilesetOptions, this, this.requestManager, this.postDownloadQueue, this.LRUCache);
             Stats = Tileset.Statistics;
         }
 

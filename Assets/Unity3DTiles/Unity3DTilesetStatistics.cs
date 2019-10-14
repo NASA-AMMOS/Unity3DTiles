@@ -65,10 +65,11 @@ namespace Unity3DTiles
             }
 
             ret.NumberOfTilesTotal = 0;
-            ret.LoadedContentCount = 0;
-            ret.ProcessingTiles = 0;
+            ret.LoadedContentCount = 0;         
             ret.RequestQueueLength = stats[0].RequestQueueLength; //Cache informed statistics shared between tilesets, do not sum
             ret.ConcurrentRequests = stats[0].ConcurrentRequests;
+            ret.ProcessingTiles = stats[0].ProcessingTiles; //Single queue for all tilesets
+            ret.TilesLeftToLoad = ret.RequestQueueLength + ret.ConcurrentRequests + ret.ProcessingTiles;
             ret.TotalTilesLoaded = 0;
 
             foreach (var stat in stats)
@@ -83,14 +84,13 @@ namespace Unity3DTiles
                          
                 ret.NumberOfTilesTotal += stat.NumberOfTilesTotal;
                 ret.LoadedContentCount += stat.LoadedContentCount;
-                ret.ProcessingTiles += stat.ProcessingTiles;
                 ret.TotalTilesLoaded += stat.TotalTilesLoaded;
                 ret.LeafContentRequired += stat.LeafContentRequired;
                 ret.LeafContentLoaded += stat.LeafContentLoaded;
                 ret.RequestsThisFrame += stat.RequestsThisFrame;
                 ret.NetworkError = ret.NetworkError || stat.NetworkError;
             }
-            ret.TilesLeftToLoad = ret.RequestQueueLength + ret.ConcurrentRequests + ret.ProcessingTiles; //Combination of tileset and cache stats
+            
             return ret;
         }
 

@@ -234,23 +234,15 @@ namespace Unity3DTiles
             this.HasTilesetContent = false;
         }
 
-        public void Process()
+        public bool Process()
         {
             if (this.ContentState == Unity3DTileContentState.PROCESSING)
             {
                 this.ContentState = Unity3DTileContentState.READY;
-                // We add this once the tile is ready instead of when we request, this way we don't try to unload nodes before the download
-                
-                CacheRequestStatus status = this.tileset.LRUContent.Add(this);
-                if (status == CacheRequestStatus.ADDED)
-                {
-                    this.Content.Initialize(this.tileset.TilesetOptions.CreateColliders);
-                }
-                else
-                {
-                    this.UnloadContent();
-                }
+                this.Content.Initialize(this.tileset.TilesetOptions.CreateColliders);
+                return true;
             }
+            return false;
         }
 
         /// <summary>
@@ -280,10 +272,19 @@ namespace Unity3DTiles
                     if (success)
                     {
                         this.ContentState = Unity3DTileContentState.PROCESSING;
-                        this.tileset.ProcessingQueue.Enqueue(this);
                         this.Content.SetShadowMode(this.tileset.TilesetOptions.ShadowCastingMode, this.tileset.TilesetOptions.RecieveShadows);
                         this.tileset.Statistics.LoadedContentCount += 1;
                         this.tileset.Statistics.TotalTilesLoaded += 1;
+                        // Track tile in cache as soon as it has downloaded content, but still queue it for processing
+                        CacheRequestStatus status = this.tileset.LRUContent.Add(this);
+                        if (status == CacheRequestStatus.ADDED)
+                        {
+                            this.tileset.ProcessingQueue.Enqueue(this);
+                        }
+                        else
+                        {
+                            UnloadContent();
+                        }                                             
                     }
                     else
                     {

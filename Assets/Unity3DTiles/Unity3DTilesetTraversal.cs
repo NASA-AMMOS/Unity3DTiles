@@ -40,13 +40,6 @@ namespace Unity3DTiles
                 ToggleTiles(tileset.Root);
                 return;
             }
-            // Move any tiles with downloaded content to the ready state
-            for (int i = 0; i < this.sceneOptions.MaximumTilesToProcessPerFrame && this.tileset.ProcessingQueue.Count != 0; i++)
-            {
-                var tile = this.tileset.ProcessingQueue.Dequeue();
-                tile.Process();
-            }
-
             SSECalculator sse = new SSECalculator(this.tileset);
             foreach (Camera cam in sceneOptions.ClippingCameras)
             {
@@ -66,7 +59,7 @@ namespace Unity3DTiles
             MarkUsedSetLeaves(tileset.Root);
             SkipTraversal(tileset.Root);      
             ToggleTiles(tileset.Root);
-            this.tileset.RequestManager.Process();
+            //this.tileset.RequestManager.Process();
             //UnloadUnusedContent called once for all tilesets at end of AbstractTilesetBehaviour.LateUpdate()
         }
 
@@ -247,6 +240,15 @@ namespace Unity3DTiles
             }
         }
 
+        private bool CanRequest
+        {
+            get
+            {
+                return this.tileset.LRUContent.HasMaxSize && 
+                    this.tileset.LRUContent.Count + this.tileset.ProcessingQueue.Count + this.tileset.RequestManager.QueueSize() < this.tileset.LRUContent.MaxSize;
+            }
+        }
+
         /// <summary>
         /// Traverse the tree, request tiles, and enable visible tiles
         /// Skip parent tiles that have a screen space error larger than MaximumScreenSpaceError*SkipScreenSpaceErrorMultiplier
@@ -270,7 +272,7 @@ namespace Unity3DTiles
                     tile.FrameState.InColliderSet = true;
                     this.tileset.Statistics.ColliderTileCount += 1;
                 }
-                else if (!tileset.LRUContent.Full)
+                else if (this.CanRequest)
                 {
                     RequestTile(tile);
                 }
@@ -292,7 +294,7 @@ namespace Unity3DTiles
                     allChildrenHaveContent = allChildrenHaveContent && childContent;
                 }
             }
-            if(meetsSSE && !hasContent && !tileset.LRUContent.Full)
+            if(meetsSSE && !hasContent && this.CanRequest)
             {
                 RequestTile(tile);
             }
@@ -308,7 +310,7 @@ namespace Unity3DTiles
                 // Request children
                 for (int i = 0; i < tile.Children.Count; i++)
                 {
-                    if (tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount) && !tileset.LRUContent.Full)
+                    if (tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount) && this.CanRequest)
                     {
                         RequestTile(tile.Children[i]);
                     }

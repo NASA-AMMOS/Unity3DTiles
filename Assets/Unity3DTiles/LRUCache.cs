@@ -48,9 +48,14 @@ namespace Unity3DTiles
             get { return list.Count - 1; }
         }
 
+        public bool HasMaxSize
+        {
+            get { return MaxSize > 0;  }
+        }
+
         public bool Full
         {
-            get { return MaxSize > 0 && Count >= MaxSize; }
+            get { return HasMaxSize && Count >= MaxSize; }
         }
 
         /// <summary>

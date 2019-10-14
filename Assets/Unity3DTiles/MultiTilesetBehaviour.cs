@@ -19,6 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -143,36 +144,50 @@ namespace Unity3DTiles
         public string SceneManifestUrl = null;
         public Unity3DTilesetOptions[] TilesetOptionsArray = new Unity3DTilesetOptions[] { };
         private Dictionary<string, Unity3DTileset> Tilesets = new Dictionary<string, Unity3DTileset>();
-        private Queue<Unity3DTile> postDownloadQueue = new Queue<Unity3DTile>();
+
+        private int startIndex = 0;
 
         protected override void _lateUpdate()
         {
-            foreach (var t in Tilesets.Values)
+            // Rotate processing order of tilesets each frame to avoid starvation (only upon request queue / cache full)
+            var tempList = Tilesets.Values.ToList(); 
+            var tilesetList = tempList.Skip(startIndex).ToList();
+            tilesetList.AddRange(tempList.Take(startIndex));
+            if(++startIndex >= tilesetList.Count)
+            {
+                startIndex = 0;
+            }
+            // Update
+            foreach(var t in tilesetList)
             {
                 t.Update();
             }
+        }
+
+        protected override void updateStats()
+        {
             Stats = Unity3DTilesetStatistics.aggregate(Tilesets.Values.Select(t => t.Statistics).ToArray());
         }
 
-        public bool AddTileset(string tilesetName, string tilesetURL, Matrix4x4 rootTransform, RequestManager requestManager = null)
+        public bool AddTileset(string tilesetName, string tilesetURL, Matrix4x4 rootTransform)
         {
             Unity3DTilesetOptions options = new Unity3DTilesetOptions();
             options.Name = tilesetName;
             options.Url = tilesetURL;
             options.Show = true;
             options.Transform = rootTransform;
-            return AddTileset(options, requestManager);
+            return AddTileset(options);
         }
 
-        public bool AddTileset(Unity3DTilesetOptions options, RequestManager requestManager = null)
+        public bool AddTileset(Unity3DTilesetOptions options)
         {
             if(Tilesets.ContainsKey(name))
             {
                 Debug.LogWarning(String.Format("Attempt to add tileset with duplicate name {0} failed.", name));
                 return false;
             }
-            var rm = requestManager ?? new RequestManager(MaxConcurrentRequests);
-            Tilesets.Add(options.Name, new Unity3DTileset(options, this, rm, postDownloadQueue, LRUCache));
+            this.requestManager = this.requestManager ?? new RequestManager(MaxConcurrentRequests);
+            Tilesets.Add(options.Name, new Unity3DTileset(options, this, requestManager, postDownloadQueue, LRUCache));
             updateOptionsAndStats();
             return true;
         }
@@ -188,7 +203,7 @@ namespace Unity3DTiles
         private void updateOptionsAndStats()
         {
             this.TilesetOptionsArray = Tilesets.Values.ToList().Select(t => t.TilesetOptions).ToArray();
-            Stats = Unity3DTilesetStatistics.aggregate(this.Tilesets.Values.Select(t => t.Statistics).ToArray());
+            updateStats();
         }
 
         public IEnumerable<Unity3DTileset> GetTilesets()

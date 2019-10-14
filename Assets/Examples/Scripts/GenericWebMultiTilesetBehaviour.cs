@@ -177,6 +177,7 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
             Unity3DTilesetOptions opts = new Unity3DTilesetOptions();
             opts.Name = url;
             opts.Url = url;
+            AddTileset(opts);
         }
     }
 }
