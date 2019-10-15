@@ -143,6 +143,7 @@ namespace Unity3DTiles
     {
         public string SceneManifestUrl = null;
         public Unity3DTilesetOptions[] TilesetOptionsArray = new Unity3DTilesetOptions[] { };
+        public Shader OverrideShader;
         private Dictionary<string, Unity3DTileset> Tilesets = new Dictionary<string, Unity3DTileset>();
 
         private int startIndex = 0;
@@ -185,6 +186,10 @@ namespace Unity3DTiles
             {
                 Debug.LogWarning(String.Format("Attempt to add tileset with duplicate name {0} failed.", name));
                 return false;
+            }
+            if (OverrideShader != null)
+            {
+                options.GLTFShaderOverride = OverrideShader;
             }
             this.requestManager = this.requestManager ?? new RequestManager(MaxConcurrentRequests);
             Tilesets.Add(options.Name, new Unity3DTileset(options, this, requestManager, postDownloadQueue, LRUCache));
