@@ -483,7 +483,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.1
-  far clip plane: 10000
+  far clip plane: 6000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -510,7 +510,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1438352743}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 0, y: 2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -565,7 +565,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1485971526}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
@@ -587,6 +587,7 @@ MonoBehaviour:
   SceneOptions:
     ClippingCameras:
     - {fileID: 1438352746}
+    MaximumTilesToProcessPerFrame: 1
     LRUCacheTargetSize: 600
     LRUCacheMaxSize: 800
     LRUMaxFrameUnloadRatio: 0.2
@@ -612,12 +613,11 @@ MonoBehaviour:
   MaxConcurrentRequests: 16
   TilesetOptions:
     Name: 
-    Url: https://landlords-dev.s3-us-west-1.amazonaws.com/rcrocco/tt4new/tileset.json
+    Url: 
     Show: 1
     ShadowCastingMode: 1
     RecieveShadows: 1
     CreateColliders: 1
-    MaximumTilesToProcessPerFrame: 1
     MaximumScreenSpaceError: 16
     SkipScreenSpaceErrorMultiplier: 16
     LoadSiblings: 1
@@ -641,7 +641,8 @@ MonoBehaviour:
     MaxDepth: 0
     GLTFMultithreadedLoad: 1
     GLTFMaximumLOD: 300
-    GLTFShaderOverride: {fileID: 0}
+    GLTFShaderOverride: {fileID: 4800000, guid: 9836e4430eb58204086d7d1440e16a4f,
+      type: 3}
     DebugDrawBounds: 0
 --- !u!1 &1931381442
 GameObject:
