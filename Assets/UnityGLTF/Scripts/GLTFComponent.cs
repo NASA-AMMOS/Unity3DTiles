@@ -57,7 +57,7 @@ namespace UnityGLTF
             else
             {
                 string directoryPath = URIHelper.GetDirectoryName(GLTFUri);
-                loader = new WebRequestLoader(directoryPath);
+                loader = AbstractWebRequestLoader.CreateDefaultRequestLoader(directoryPath);
                 sceneImporter = new GLTFSceneImporter(
                     URIHelper.GetFileFromUri(new Uri(GLTFUri)),
                     loader

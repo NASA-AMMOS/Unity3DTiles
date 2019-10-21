@@ -19,6 +19,7 @@ using System;
 using RSG;
 using System.Text.RegularExpressions;
 using UnityEngine.Networking;
+using UnityGLTF.Loader;
 
 namespace Unity3DTiles
 {
@@ -130,23 +131,21 @@ namespace Unity3DTiles
 
         IEnumerator DownloadTilesetJson(string url, Promise<string> promise)
         {
-            using (var uwr = UnityWebRequest.Get(url))
+            Action<string, string> onDownload = new Action<string, string>((text, error) =>
             {
-
-#if UNITY_2017_2_OR_NEWER
-                yield return uwr.SendWebRequest();
-#else
-			    yield return uwr.Send();
-#endif
-                if (uwr.isNetworkError || uwr.isHttpError)
+                if (error == null || error == "")
                 {
-                    promise.Reject(new System.Exception("Error downloading " + url + " " + uwr.error));
+                    promise.Resolve(text);
+                    
                 }
                 else
                 {
-                    promise.Resolve(uwr.downloadHandler.text);
+                    promise.Reject(new System.Exception("Error downloading " + url + " " + error));
                 }
-            }
+            });
+
+            UnityWebRequestLoader wrapper = new UnityWebRequestLoader("");
+            yield return wrapper.Send(url, "", onDownloadString: onDownload);
         }
 
         private Unity3DTile LoadTileset(string tilesetUrl, Schema.Tileset tileset, Unity3DTile parentTile)
