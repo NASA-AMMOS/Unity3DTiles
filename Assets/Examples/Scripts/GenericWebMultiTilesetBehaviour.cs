@@ -129,10 +129,7 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
         }
         if (!string.IsNullOrEmpty(SceneManifestUrl))
         {
-            LoadSceneJson(SceneManifestUrl).Done(json =>
-            {
-                MakeTilesetsFromSceneFile();
-            });
+            MakeTilesetsFromSceneFile();
         }
         else
         {
