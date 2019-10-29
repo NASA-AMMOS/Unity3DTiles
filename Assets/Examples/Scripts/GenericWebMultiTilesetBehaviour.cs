@@ -131,8 +131,6 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
         {
             LoadSceneJson(SceneManifestUrl).Done(json =>
             {
-                SceneFormat.Scene scene = SceneFormat.Scene.FromJson(json);
-                Matrix4x4 transform = scene.GetTransform(scene.tilesets[0].frame_id);
                 MakeTilesetsFromSceneFile();
             });
         }
