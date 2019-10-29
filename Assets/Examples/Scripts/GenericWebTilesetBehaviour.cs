@@ -47,7 +47,7 @@ public class GenericWebTilesetBehaviour : TilesetBehaviour
     }
 #endif
 
-    public override void Start()
+    protected override void _start()
     {
         string maxRequests = getURLParameter("MaxConcurrentRequests");
         if (!string.IsNullOrEmpty(maxRequests))
@@ -88,11 +88,14 @@ public class GenericWebTilesetBehaviour : TilesetBehaviour
 
             try
             {
+                LegacyTilesetOptions options = new LegacyTilesetOptions();
                 //use PopulateObject() so that the downloaded options can be partial
-                JsonConvert.PopulateObject(www.downloadHandler.text, TilesetOptions);
+                JsonConvert.PopulateObject(www.downloadHandler.text, options);
                 Debug.Log("set tileset options from " + optionsURL + ":\n" + www.downloadHandler.text);
-                Debug.Log(JsonConvert.SerializeObject(TilesetOptions, Formatting.Indented,
-                                                      new JsonConverter[] {new StringEnumConverter()}));
+                Debug.Log(JsonConvert.SerializeObject(options, Formatting.Indented,
+                                                      new JsonConverter[] { new StringEnumConverter() }));
+                SceneOptions = options.GetSceneOptions();
+                TilesetOptions = options.GetTilesetOptions();
             }
             catch (System.Exception ex)
             {
@@ -103,7 +106,7 @@ public class GenericWebTilesetBehaviour : TilesetBehaviour
         MakeTileset();
     }
 
-    protected override void MakeTileset()
+    public override void MakeTileset()
     {
         string tilesetURL = getURLParameter("TilesetURL");
         if (!string.IsNullOrEmpty(tilesetURL))

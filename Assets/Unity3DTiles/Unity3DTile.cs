@@ -36,6 +36,12 @@ namespace Unity3DTiles
         Unknown
     }
 
+    public class TileParentInfo : MonoBehaviour
+    {
+        public Unity3DTile Parent;
+        public Unity3DTileset Tileset;
+    }
+
     public class Unity3DTile
     {
 
@@ -180,13 +186,14 @@ namespace Unity3DTiles
             // TODO: Consider using a double percision Matrix library for doing 3d tiles root transform calculations
             // Set the local transform for this tile, default to identity matrix
             this.transform = this.tile.UnityTransform();
-            
-            var parentTransform = (parent != null) ? parent.computedTransform : Matrix4x4.identity;
+            var parentTransform = (parent != null) ? parent.computedTransform : tileset.TilesetOptions.Transform;
             this.computedTransform = parentTransform * this.transform;
+
             this.BoundingVolume = CreateBoundingVolume(tile.BoundingVolume, this.computedTransform);
+
             // TODO: Add 2D bounding volumes
 
-            if(tile.Content != null && tile.Content.BoundingVolume.IsDefined())
+            if (tile.Content != null && tile.Content.BoundingVolume.IsDefined())
             {
                 // Non-leaf tiles may have a content bounding-volume, which is a tight-fit bounding volume
                 // around only the features in the tile.  This box is useful for culling for rendering,
@@ -227,15 +234,15 @@ namespace Unity3DTiles
             this.HasTilesetContent = false;
         }
 
-        public void Process()
+        public bool Process()
         {
             if (this.ContentState == Unity3DTileContentState.PROCESSING)
             {
                 this.ContentState = Unity3DTileContentState.READY;
-                // We add this once the tile is ready instead of when we request, this way we don't try to unload nodes before the download
-                this.tileset.LRUContent.Add(this);
-                this.Content.Initialize(this.tileset.Options.CreateColliders);
+                this.Content.Initialize(this.tileset.TilesetOptions.CreateColliders);
+                return true;
             }
+            return false;
         }
 
         /// <summary>
@@ -244,7 +251,7 @@ namespace Unity3DTiles
         /// <param name="priority"></param>
         public void RequestContent(float priority)
         {
-            if(this.tileset.RequestManager.Full())
+            if (this.tileset.RequestManager.Full())
             {
                 return;
             }
@@ -252,7 +259,7 @@ namespace Unity3DTiles
             {
                 return;
             }
-            if(this.ContentState == Unity3DTileContentState.UNLOADED ||
+            if (this.ContentState == Unity3DTileContentState.UNLOADED ||
                this.ContentState == Unity3DTileContentState.EXPIRED)
             {
                 this.ContentState = Unity3DTileContentState.LOADING;
@@ -265,10 +272,19 @@ namespace Unity3DTiles
                     if (success)
                     {
                         this.ContentState = Unity3DTileContentState.PROCESSING;
-                        this.tileset.ProcessingQueue.Enqueue(this);
-                        this.Content.SetShadowMode(this.tileset.Options.ShadowCastingMode, this.tileset.Options.RecieveShadows);
+                        this.Content.SetShadowMode(this.tileset.TilesetOptions.ShadowCastingMode, this.tileset.TilesetOptions.RecieveShadows);
                         this.tileset.Statistics.LoadedContentCount += 1;
                         this.tileset.Statistics.TotalTilesLoaded += 1;
+                        // Track tile in cache as soon as it has downloaded content, but still queue it for processing
+                        CacheRequestStatus status = this.tileset.LRUContent.Add(this);
+                        if (status == CacheRequestStatus.ADDED)
+                        {
+                            this.tileset.ProcessingQueue.Enqueue(this);
+                        }
+                        else
+                        {
+                            UnloadContent();
+                        }                                             
                     }
                     else
                     {
@@ -281,20 +297,22 @@ namespace Unity3DTiles
                 {
                     GameObject go = new GameObject(Id);
                     go.transform.parent = this.tileset.Behaviour.transform;
-                    go.transform.localPosition = Vector3.zero;
-                    go.transform.localRotation = Quaternion.identity;
-                    go.transform.localScale = Vector3.one;
+                    go.transform.localPosition = new Vector3(this.computedTransform.m03, this.computedTransform.m13, this.computedTransform.m23);
+                    go.transform.localRotation = this.computedTransform.rotation;
                     go.layer = this.tileset.Behaviour.gameObject.layer;
                     go.SetActive(false);
+                    var info = go.AddComponent<TileParentInfo>();
+                    info.Parent = this.Parent;
+                    info.Tileset = this.tileset;
                     this.Content = new Unity3DTileContent(go);
 
                     if (ContentType == Unity3DTileContentType.B3DM)
                     {
                         B3DMComponent b3dmCo = go.AddComponent<B3DMComponent>();
                         b3dmCo.Url = this.ContentUrl;
-                        b3dmCo.Multithreaded = this.tileset.Options.GLTFMultithreadedLoad;
-                        b3dmCo.MaximumLod = this.tileset.Options.GLTFMaximumLOD;
-                        b3dmCo.ShaderOverride = this.tileset.Options.GLTFShaderOverride;
+                        b3dmCo.Multithreaded = this.tileset.TilesetOptions.GLTFMultithreadedLoad;
+                        b3dmCo.MaximumLod = this.tileset.TilesetOptions.GLTFMaximumLOD;
+                        b3dmCo.ShaderOverride = this.tileset.TilesetOptions.GLTFShaderOverride;
                         b3dmCo.addColliders = false;
                         b3dmCo.DownloadOnStart = false;
                         this.tileset.Behaviour.StartCoroutine(b3dmCo.Download(finished));

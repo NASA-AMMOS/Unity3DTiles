@@ -483,7 +483,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.1
-  far clip plane: 6000
+  far clip plane: 1000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -581,7 +581,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1485971526}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a95d7a9c6fa08074d88b0563689fbf46, type: 3}
+  m_Script: {fileID: 11500000, guid: 2dcf9d26c0c328c4fa251ca0697c8a95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   SceneOptions:
@@ -611,39 +611,9 @@ MonoBehaviour:
     RequestsThisFrame: 0
     NetworkError: 0
   MaxConcurrentRequests: 16
-  TilesetOptions:
-    Name: 
-    Url: 
-    Show: 1
-    ShadowCastingMode: 1
-    RecieveShadows: 1
-    CreateColliders: 1
-    MaximumScreenSpaceError: 16
-    SkipScreenSpaceErrorMultiplier: 16
-    LoadSiblings: 1
-    Transform:
-      e00: 1
-      e01: 0
-      e02: 0
-      e03: 0
-      e10: 0
-      e11: 1
-      e12: 0
-      e13: 0
-      e20: 0
-      e21: 0
-      e22: 1
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    MaxDepth: 0
-    GLTFMultithreadedLoad: 1
-    GLTFMaximumLOD: 300
-    GLTFShaderOverride: {fileID: 4800000, guid: 9836e4430eb58204086d7d1440e16a4f,
-      type: 3}
-    DebugDrawBounds: 0
+  SceneManifestUrl: https://landlords-dev.s3-us-west-1.amazonaws.com/tt4-tactical-scene/scene.json
+  TilesetOptionsArray: []
+  OverrideShader: {fileID: 4800000, guid: 9836e4430eb58204086d7d1440e16a4f, type: 3}
 --- !u!1 &1931381442
 GameObject:
   m_ObjectHideFlags: 0

@@ -19,6 +19,7 @@ using System;
 using RSG;
 using System.Text.RegularExpressions;
 using UnityEngine.Networking;
+using UnityGLTF.Loader;
 
 namespace Unity3DTiles
 {
@@ -29,7 +30,7 @@ namespace Unity3DTiles
     /// </summary>
     public class Unity3DTileset
     {
-        public Unity3DTilesetOptions Options { private set; get; }
+        public Unity3DTilesetOptions TilesetOptions { private set; get; }
         public Unity3DTile Root { get; private set; }
 
         private string basePath;
@@ -37,9 +38,10 @@ namespace Unity3DTiles
         private int previousTilesRemaining = 0;
 
         private Schema.Tileset tileset;
-        public Queue<Unity3DTile> ProcessingQueue = new Queue<Unity3DTile>();           // Tiles whose content is being loaded/processed
+        public Queue<Unity3DTile> ProcessingQueue;           // Tiles whose content is being loaded/processed
 
         public MonoBehaviour Behaviour { get; private set; }
+        //public Transform TilesetTransform;
 
         /// <summary>
         /// Maintians a least recently used list of tiles that have content
@@ -86,25 +88,27 @@ namespace Unity3DTiles
             }
         }
 
-        public Unity3DTileset(Unity3DTilesetOptions options, MonoBehaviour behaviour, RequestManager requestManager)
+        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour, 
+            RequestManager requestManager, Queue<Unity3DTile> processingQueue, LRUCache<Unity3DTile> cache = null)
         {
-            this.Options = options;
+            this.TilesetOptions = tilesetOptions;
             this.Behaviour = behaviour;
             this.RequestManager = requestManager;
-            this.traversal = new Unity3DTilesetTraversal(this);
-            this.LRUContent = new LRUCache<Unity3DTile>();
+            this.ProcessingQueue = processingQueue;
+            this.traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
+            this.LRUContent = cache ?? new LRUCache<Unity3DTile>();
             this.DeepestDepth = 0;
-            
+
             // TODO: Detect data Uri?
-            if (Path.GetExtension(options.Url) == ".json")
+            if (Path.GetExtension(tilesetOptions.Url) == ".json")
             {
-                this.tilesetUrl = this.Options.Url;
-                this.basePath = UriHelper.GetBaseUri(this.Options.Url, true);
+                this.tilesetUrl = this.TilesetOptions.Url;
+                this.basePath = UriHelper.GetBaseUri(this.TilesetOptions.Url, true);
             }
             else
             {
-                this.basePath = this.Options.Url;
-                this.tilesetUrl = UriHelper.JoinUrls(this.Options.Url, "tileset.json", true);
+                this.basePath = this.TilesetOptions.Url;
+                this.tilesetUrl = UriHelper.JoinUrls(this.TilesetOptions.Url, "tileset.json", true);
             }
             LoadTilesetJson(this.tilesetUrl).Then(json =>
             {
@@ -127,23 +131,21 @@ namespace Unity3DTiles
 
         IEnumerator DownloadTilesetJson(string url, Promise<string> promise)
         {
-            using (var uwr = UnityWebRequest.Get(url))
+            Action<string, string> onDownload = new Action<string, string>((text, error) =>
             {
-
-#if UNITY_2017_2_OR_NEWER
-                yield return uwr.SendWebRequest();
-#else
-			    yield return uwr.Send();
-#endif
-                if (uwr.isNetworkError || uwr.isHttpError)
+                if (error == null || error == "")
                 {
-                    promise.Reject(new System.Exception("Error downloading " + url + " " + uwr.error));
+                    promise.Resolve(text);
+                    
                 }
                 else
                 {
-                    promise.Resolve(uwr.downloadHandler.text);
+                    promise.Reject(new System.Exception("Error downloading " + url + " " + error));
                 }
-            }
+            });
+
+            UnityWebRequestLoader wrapper = new UnityWebRequestLoader("");
+            yield return wrapper.Send(url, "", onDownloadString: onDownload);
         }
 
         private Unity3DTile LoadTileset(string tilesetUrl, Schema.Tileset tileset, Unity3DTile parentTile)
@@ -226,7 +228,7 @@ namespace Unity3DTiles
                 LoadProgress(remaining);
             }
             previousTilesRemaining = remaining;
-            if (this.Options.DebugDrawBounds)
+            if (this.TilesetOptions.DebugDrawBounds)
             {
                 traversal.DrawDebug();
             }

@@ -19,33 +19,29 @@ using UnityEngine;
 
 namespace Unity3DTiles
 {
-
-    public class TilesetBehaviour : MonoBehaviour
+    public class TilesetBehaviour : AbstractTilesetBehaviour
     {
         public Unity3DTilesetOptions TilesetOptions = new Unity3DTilesetOptions();
         public Unity3DTileset Tileset;
-        public Unity3DTilesetStatistics Stats;
 
-        public int MaxConcurrentRequests = 6;
+        public virtual void MakeTileset()
+        {
+            this.requestManager = new RequestManager(MaxConcurrentRequests);
+            Tileset = new Unity3DTileset(TilesetOptions, this, this.requestManager, this.postDownloadQueue, this.LRUCache);
+            Stats = Tileset.Statistics;
+        }
 
-        public virtual void Start()
+        protected override void _start()
         {
             MakeTileset();
         }
 
-        public virtual void LateUpdate()
+        protected override void _lateUpdate()
         {
             if (Tileset != null)
             {
                 Tileset.Update();
             }
-        }
-
-        protected virtual void MakeTileset()
-        {
-            RequestManager rm = new RequestManager(MaxConcurrentRequests);
-            Tileset = new Unity3DTileset(TilesetOptions, this, rm);
-            Stats = Tileset.Statistics;
         }
     }
 }

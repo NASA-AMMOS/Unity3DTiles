@@ -13,18 +13,27 @@
  */
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Unity3DTiles
 {
+    public enum CacheRequestStatus
+    {
+        ADDED,
+        DUPLICATE,
+        FULL
+    }
+
     /// <summary>
     /// Represents a least recently used (LRU) cache
     /// </summary>
     public class LRUCache<T> where T : class
     {
+        public int MaxSize = -1; //unbounded
 
         // List looks like this
-        // [ unused, sential, used ]
+        // [ unused, sentinal, used ]
 
         LinkedList<T> list = new LinkedList<T>();
         LinkedListNode<T> sentinal = new LinkedListNode<T>(null);
@@ -37,6 +46,16 @@ namespace Unity3DTiles
         public int Count
         {
             get { return list.Count - 1; }
+        }
+
+        public bool HasMaxSize
+        {
+            get { return MaxSize > 0;  }
+        }
+
+        public bool Full
+        {
+            get { return HasMaxSize && Count >= MaxSize; }
         }
 
         /// <summary>
@@ -82,15 +101,20 @@ namespace Unity3DTiles
         /// </summary>
         /// <param name="element"></param>
         /// <returns></returns>
-        public void Add(T element)
+        public CacheRequestStatus Add(T element)
         {
             if (nodeLookup.ContainsKey(element))
             {
-                return;
+                return CacheRequestStatus.DUPLICATE;
+            }
+            if (this.Full)
+            {
+                return CacheRequestStatus.FULL;
             }
             LinkedListNode<T> node = new LinkedListNode<T>(element);
             nodeLookup.Add(element, node);
             list.AddLast(node);
+            return CacheRequestStatus.ADDED;
         }
 
         /// <summary>
@@ -149,6 +173,31 @@ namespace Unity3DTiles
             return list;
         }
 
+        AsyncOperation lastUnloadAssets = null;
+
+        /// <summary>
+        /// Unloads content from unused nodes
+        /// </summary>
+        public void UnloadUnusedContent(int targetSize, float unloadPercent, System.Func<T, float> Priority, System.Action<T> OnRemove)
+        {
+            if (this.Count > targetSize && this.Unused > 0)
+            {
+                List<T> unused = this.GetUnused();
+                var sortedUnused = unused.OrderBy(node => Priority(node)).ToArray();
+                int nodesToUnload = (int)(targetSize * unloadPercent);
+                nodesToUnload = System.Math.Min(sortedUnused.Length, nodesToUnload);
+                for (int i = 0; i < nodesToUnload; i++)
+                {
+                    Remove(sortedUnused[i]);
+                    OnRemove?.Invoke(sortedUnused[i]);
+                }
+                if (lastUnloadAssets == null || lastUnloadAssets.isDone)
+                {
+                    lastUnloadAssets = Resources.UnloadUnusedAssets();
+                } //TODO: schedule unload instead of skip
+            }
+        }
+
         /// <summary>
         /// Returns a list of unused nodes but does not remove them
         /// </summary>
@@ -177,7 +226,6 @@ namespace Unity3DTiles
                 nodeLookup.Remove(element);
                 this.list.Remove(node);
             }
-
         }
     }
 }

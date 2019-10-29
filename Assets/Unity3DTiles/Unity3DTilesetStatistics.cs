@@ -54,6 +54,46 @@ namespace Unity3DTiles
             }
         }
 
+        public static Unity3DTilesetStatistics aggregate(params Unity3DTilesetStatistics[] stats)
+        {
+            Unity3DTilesetStatistics ret = new Unity3DTilesetStatistics();
+            ret.Clear();
+
+            if(stats.Length == 0)
+            {
+                return ret;
+            }
+
+            ret.NumberOfTilesTotal = 0;
+            ret.LoadedContentCount = 0;         
+            ret.RequestQueueLength = stats[0].RequestQueueLength; //Cache informed statistics shared between tilesets, do not sum
+            ret.ConcurrentRequests = stats[0].ConcurrentRequests;
+            ret.ProcessingTiles = stats[0].ProcessingTiles; //Single queue for all tilesets
+            ret.TilesLeftToLoad = ret.RequestQueueLength + ret.ConcurrentRequests + ret.ProcessingTiles;
+            ret.TotalTilesLoaded = 0;
+
+            foreach (var stat in stats)
+            {
+                ret.FrustumSetCount += stat.FrustumSetCount;
+                ret.UsedSetCount += stat.UsedSetCount;
+                ret.VisibleTileCount += stat.VisibleTileCount;
+                ret.ColliderTileCount += stat.ColliderTileCount;
+                ret.VisibleFaces += stat.VisibleFaces;
+                ret.VisibleTextures += stat.VisibleTextures;
+                ret.VisiblePixels += stat.VisiblePixels;
+                         
+                ret.NumberOfTilesTotal += stat.NumberOfTilesTotal;
+                ret.LoadedContentCount += stat.LoadedContentCount;
+                ret.TotalTilesLoaded += stat.TotalTilesLoaded;
+                ret.LeafContentRequired += stat.LeafContentRequired;
+                ret.LeafContentLoaded += stat.LeafContentLoaded;
+                ret.RequestsThisFrame += stat.RequestsThisFrame;
+                ret.NetworkError = ret.NetworkError || stat.NetworkError;
+            }
+            
+            return ret;
+        }
+
         public void Clear()
         {
             FrustumSetCount = 0;

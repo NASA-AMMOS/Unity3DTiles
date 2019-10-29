@@ -54,7 +54,7 @@ namespace Unity3DTiles
 
             string directoryPath = URIHelper.GetDirectoryName(Url);
             string relativePath = Url.Replace(directoryPath, "");
-            var wrl = new B3DMLoader(new WebRequestLoader(directoryPath));
+            var wrl = new B3DMLoader(AbstractWebRequestLoader.CreateDefaultRequestLoader(directoryPath));
             GLTFSceneImporter sceneImporter = new GLTFSceneImporter(
                     relativePath,
                     wrl

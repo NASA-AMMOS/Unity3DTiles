@@ -36,9 +36,10 @@ public class StreamingAssetRelativePathUpdated : MonoBehaviour {
                 }
                 else if(tileset != null)
                 {
-                    if (!tileset.TilesetOptions.Url.ToLower().StartsWith("http"))
+                    Unity3DTilesetOptions tilesetOptions = tileset.TilesetOptions;
+                    if (!tilesetOptions.Url.ToLower().StartsWith("http"))
                     {
-                        tileset.TilesetOptions.Url = Path.Combine(Application.dataPath, Path.Combine("StreamingAssets", tileset.TilesetOptions.Url));
+                        tilesetOptions.Url = Path.Combine(Application.dataPath, Path.Combine("StreamingAssets", tilesetOptions.Url));
                     }
                 }
                 go.gameObject.SetActive(true);
