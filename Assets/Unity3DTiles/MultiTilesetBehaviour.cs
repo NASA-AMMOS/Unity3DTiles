@@ -73,10 +73,10 @@ namespace SceneFormat
 
     public class SceneFrame
     {
-        public string frame_id;
+        public string id;
         public Vector3Serializer translation;
-        public QuaternionSerializer rotation;
-        public Vector3Serializer scale;
+        public QuaternionSerializer rotation = new QuaternionSerializer { x = 0, y = 0, z = 0, w = 1 };
+        public Vector3Serializer scale = new Vector3Serializer { x = 1, y = 1, z = 1 };
         public string parent_id;
     }
 
@@ -109,7 +109,7 @@ namespace SceneFormat
         {
             foreach(SceneFrame frame in this.frames)
             {
-                if(string.Compare(frame_id, frame.frame_id) == 0)
+                if(string.Compare(frame_id, frame.id) == 0)
                 {
                     return frame;
                 }
@@ -125,10 +125,11 @@ namespace SceneFormat
             {
                 throw new Exception("Could not get a transform for frame: " + frame_id);
             }
-            if(frame.parent_id == "")
+            if (string.IsNullOrEmpty(frame.parent_id))
             {
                 return Matrix4x4.TRS(frame.translation, frame.rotation, frame.scale);
-            } else
+            }
+            else
             {
                 Matrix4x4 transform = Matrix4x4.TRS(frame.translation, frame.rotation, frame.scale);
                 return GetTransform(frame.parent_id) * transform; //Apply this transform before parent transform
