@@ -26,8 +26,7 @@ namespace Unity3DTiles
 
         public virtual void MakeTileset()
         {
-            this.requestManager = new RequestManager(MaxConcurrentRequests);
-            Tileset = new Unity3DTileset(TilesetOptions, this, this.requestManager, this.postDownloadQueue, this.LRUCache);
+            Tileset = new Unity3DTileset(TilesetOptions, this);
             Stats = Tileset.Statistics;
         }
 

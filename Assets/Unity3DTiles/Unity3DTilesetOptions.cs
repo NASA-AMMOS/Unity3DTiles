@@ -22,12 +22,18 @@ namespace Unity3DTiles
     {
         //Options unique to a single tileset 
 
-        [Tooltip("Full path URL to the tileset. Can be a local file or url as long as it is a full path")]
+        [Tooltip("Unique name of tileset. Defaults to Url if null or empty.")]
         public string Name = null;
+
+        [Tooltip("Full path URL to the tileset. Can be a local file or url as long as it is a full path, or can start with StreamingAssets.")]
         public string Url = null;
+
+        [Tooltip("Whether tileset is initially visible.")]
         public bool Show = true;
+
         public UnityEngine.Rendering.ShadowCastingMode ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         public bool RecieveShadows = true;
+
         public bool CreateColliders = true;
 
         [Tooltip("Controls the level of detail the tileset will be loaded to by specifying the allowed amount of on screen geometric error allowed in pixels")]
@@ -36,18 +42,15 @@ namespace Unity3DTiles
         [Tooltip("Controls what parent tiles will be skipped when loading a tileset.  This number will be multipled by MaximumScreenSpaceError and any tile with an on screen error larger than this will be skipped by the loading and rendering algorithm")]
         public double SkipScreenSpaceErrorMultiplier = 16;
 
+        [Tooltip("If a tile is in view and needs to be rendered, also load its siblings even if they are not visible.  Especially useful when using colliders so that raycasts outside the users field of view can succeed.  Increases load time and number of tiles that need to be stored in memory.")]
         public bool LoadSiblings = true;
 
         public Matrix4x4 Transform = Matrix4x4.identity;
 
         [Tooltip("Max child depth that we should render. If this is zero, disregard")]
-        /// <summary>
-        /// "Max child depth that we should render. If this is zero, disregard"
-        /// </summary>
         public int MaxDepth = 0;
 
         [Header("GLTF Loader Settings")]
-        // Options for B3DM files
         public bool GLTFMultithreadedLoad = true;
         public int GLTFMaximumLOD = 300;
         public Shader GLTFShaderOverride;
@@ -59,6 +62,8 @@ namespace Unity3DTiles
         {
             return (float)(tile.Depth - 1.0 / tile.FrameState.DistanceToCamera);
         });
+
+        public Unity3DTilesetOptions() { Show = true; }
     }
 
     [System.Serializable]
@@ -66,26 +71,22 @@ namespace Unity3DTiles
     {
         //Options shared between tilesets in a scene
 
-        public List<Camera> ClippingCameras;
-
         [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrese load time but may increase frame lurches when loading tiles.")]
         public int MaximumTilesToProcessPerFrame = 1;
 
         [Tooltip("Sets the target maximum number of tiles that can be loaded into memory at any given time.  Beyond this limit, unused tiles will be unloaded as new requests are made.")]
-        /// <summary>
-        /// Target max number of items in LRU cache
-        /// </summary>
         public int LRUCacheTargetSize = 600;
 
         [Tooltip("Sets the maximum number of tiles (hard limit) that can be loaded into memory at any given time. Requests that would exceed this limit fail.")]
         public int LRUCacheMaxSize = 700;
 
-        /// <summary>
-        /// Controls the maximum number of unused tiles that will be unloaded at a time
-        /// When the cache is full.  This is specified as a ratio of the LRUMaxCacheSize.
-        /// For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will
-        /// unload 120 (0.2*600) tiles in a single frame.
-        /// </summary>
+        [Tooltip("Controls the maximum number of unused tiles that will be unloaded at a time when the cache is full.  This is specified as a ratio of the LRUMaxCacheSize. For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will unload 120 (0.2*600) tiles in a single frame.")]
         public float LRUMaxFrameUnloadRatio = 0.2f;
+
+        public int MaxConcurrentRequests = 6;
+
+        public List<Camera> ClippingCameras;
+
+        public Shader GLTFShaderOverride;
     }
 }

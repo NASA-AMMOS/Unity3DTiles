@@ -126,6 +126,15 @@ namespace Unity3DTiles
             }
             return builder.ToString();
         }
-    }
 
+        public static string ReplaceDataProtocol(string url)
+        {
+            string dataProtocol = "data://";
+            if (url.StartsWith(dataProtocol, StringComparison.OrdinalIgnoreCase))
+            {
+                url = Application.streamingAssetsPath + "/" + url.Substring(dataProtocol.Length);
+            }
+            return url;
+        }
+    }
 }

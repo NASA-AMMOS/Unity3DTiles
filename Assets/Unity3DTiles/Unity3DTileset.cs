@@ -88,28 +88,29 @@ namespace Unity3DTiles
             }
         }
 
-        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour, 
-            RequestManager requestManager, Queue<Unity3DTile> processingQueue, LRUCache<Unity3DTile> cache = null)
+        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour)
         {
             this.TilesetOptions = tilesetOptions;
             this.Behaviour = behaviour;
-            this.RequestManager = requestManager;
-            this.ProcessingQueue = processingQueue;
+            this.RequestManager = behaviour.RequestManager;
+            this.ProcessingQueue = behaviour.ProcessingQueue;
+            this.LRUContent = behaviour.LRUCache;
             this.traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
-            this.LRUContent = cache ?? new LRUCache<Unity3DTile>();
             this.DeepestDepth = 0;
 
-            // TODO: Detect data Uri?
-            if (Path.GetExtension(tilesetOptions.Url) == ".json")
+            string url = UriHelper.ReplaceDataProtocol(tilesetOptions.Url);
+
+            if (Path.GetExtension(url) == ".json")
             {
-                this.tilesetUrl = this.TilesetOptions.Url;
-                this.basePath = UriHelper.GetBaseUri(this.TilesetOptions.Url, true);
+                this.basePath = UriHelper.GetBaseUri(url, true);
+                this.tilesetUrl = url;
             }
             else
             {
-                this.basePath = this.TilesetOptions.Url;
-                this.tilesetUrl = UriHelper.JoinUrls(this.TilesetOptions.Url, "tileset.json", true);
+                this.basePath = url;
+                this.tilesetUrl = UriHelper.JoinUrls(url, "tileset.json", true);
             }
+
             LoadTilesetJson(this.tilesetUrl).Then(json =>
             {
                 // Load Tileset (main tileset or a reference tileset)

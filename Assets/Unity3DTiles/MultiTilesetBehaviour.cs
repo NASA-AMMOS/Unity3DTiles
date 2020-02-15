@@ -13,141 +13,62 @@
  */
 
 using Newtonsoft.Json;
-using RSG;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
-
-namespace SceneFormat
-{
-    //Serializers taken from https://forum.unity.com/threads/vector3-not-serializable.7766/
-    [Serializable]
-    public struct Vector3Serializer
-    {
-        public float x;
-        public float y;
-        public float z;
-
-        public static implicit operator Vector3(Vector3Serializer v3s)
-        {
-            return new Vector3(v3s.x, v3s.y, v3s.z);
-        }
-    }
-
-    [Serializable]
-    public struct QuaternionSerializer
-    {
-        public float x;
-        public float y;
-        public float z;
-        public float w;
-
-        public static implicit operator Quaternion(QuaternionSerializer qs)
-        {
-            return new Quaternion(qs.x, qs.y, qs.z, qs.w);
-        }
-    }
-
-    public class SceneTileset
-    {
-        public string id;
-        public string uri;
-        public string frame_id;
-        public bool show;
-    }
-
-    public class SceneImage
-    {
-        public string id;
-        public string uri;
-        public string frame_id;
-        public int width;
-        public int height;
-        public int bands;
-    }
-
-    public class SceneFrame
-    {
-        public string id;
-        public Vector3Serializer translation;
-        public QuaternionSerializer rotation = new QuaternionSerializer { x = 0, y = 0, z = 0, w = 1 };
-        public Vector3Serializer scale = new Vector3Serializer { x = 1, y = 1, z = 1 };
-        public string parent_id;
-    }
-
-    public class Scene
-    {
-        public string version;
-        public List<SceneTileset> tilesets;
-        public List<SceneImage> images;
-        public List<SceneFrame> frames;
-
-        public Scene()
-        {
-            this.version = "1.0";
-            this.tilesets = new List<SceneTileset>();
-            this.images = new List<SceneImage>();
-            this.frames = new List<SceneFrame>();
-        }
-
-        public string ToJson()
-        {
-            return JsonConvert.SerializeObject(this);
-        }
-
-        public static Scene FromJson(string data)
-        {
-            return JsonConvert.DeserializeObject<Scene>(data);
-        }
-
-        private SceneFrame GetFrame(string frame_id)
-        {
-            foreach(SceneFrame frame in this.frames)
-            {
-                if(string.Compare(frame_id, frame.id) == 0)
-                {
-                    return frame;
-                }
-            }
-            Debug.LogWarning("Could not find frame: " + frame_id);
-            return null;
-        }
-
-        public Matrix4x4 GetTransform(string frame_id)
-        {
-            SceneFrame frame = this.GetFrame(frame_id);
-            if (frame == null)
-            {
-                throw new Exception("Could not get a transform for frame: " + frame_id);
-            }
-            if (string.IsNullOrEmpty(frame.parent_id))
-            {
-                return Matrix4x4.TRS(frame.translation, frame.rotation, frame.scale);
-            }
-            else
-            {
-                Matrix4x4 transform = Matrix4x4.TRS(frame.translation, frame.rotation, frame.scale);
-                return GetTransform(frame.parent_id) * transform; //Apply this transform before parent transform
-            }
-        }
-    }
-}
+using Unity3DTiles.SceneManifest;
 
 namespace Unity3DTiles
 {
-    public class MultiTilesetBehaviour : AbstractTilesetBehaviour
+public class MultiTilesetBehaviour : AbstractTilesetBehaviour
+#if UNITY_EDITOR
+    , ISerializationCallbackReceiver
+#endif
     {
-        public string SceneManifestUrl = null;
-        public Unity3DTilesetOptions[] TilesetOptionsArray = new Unity3DTilesetOptions[] { };
-        public Shader OverrideShader;
+        //mainly for inspecting/modifying tilesets when running in unity editor
+        public List<Unity3DTilesetOptions> TilesetOptions = new List<Unity3DTilesetOptions>();
+
+#if UNITY_EDITOR
+        //workaround Unity editor not respecting defaults when adding element to a list
+        //https://forum.unity.com/threads/lists-default-values.206956/
+        private static Thread mainThread = Thread.CurrentThread;
+        private int numTilesetsWas = 0;
+        public void OnBeforeSerialize()
+        {
+            numTilesetsWas = TilesetOptions.Count;
+        }
+        public void OnAfterDeserialize()
+        {
+            int added = TilesetOptions.Count - numTilesetsWas;
+            if (added > 0 && Thread.CurrentThread == mainThread)
+            {
+                for (int i = 0; i < added; i++)
+                {
+                    //init fields of newly added elements to defaults
+                    TilesetOptions[TilesetOptions.Count - i - 1] = new Unity3DTilesetOptions();
+                }
+            }
+            numTilesetsWas = TilesetOptions.Count;
+        }
+#endif
+
         private Dictionary<string, Unity3DTileset> Tilesets = new Dictionary<string, Unity3DTileset>();
 
         private int startIndex = 0;
+
+        protected override void _start()
+        {
+            foreach (var opts in TilesetOptions)
+            {
+                AddTileset(opts);
+            }
+        }
 
         protected override void _lateUpdate()
         {
@@ -166,35 +87,48 @@ namespace Unity3DTiles
             }
         }
 
-        protected override void updateStats()
+        protected override void UpdateStats()
         {
             Stats = Unity3DTilesetStatistics.aggregate(Tilesets.Values.Select(t => t.Statistics).ToArray());
         }
 
-        public bool AddTileset(string tilesetName, string tilesetURL, Matrix4x4 rootTransform)
+        public bool AddTileset(string name, string url, Matrix4x4 rootTransform, bool show,
+                               Unity3DTilesetOptions options = null)
         {
-            Unity3DTilesetOptions options = new Unity3DTilesetOptions();
-            options.Name = tilesetName;
-            options.Url = tilesetURL;
-            options.Show = true;
+            options = options ?? new Unity3DTilesetOptions();
+            options.Name = name;
+            options.Url = url;
             options.Transform = rootTransform;
+            options.Show = show;
             return AddTileset(options);
         }
 
         public bool AddTileset(Unity3DTilesetOptions options)
         {
-            if(Tilesets.ContainsKey(name))
+            if (string.IsNullOrEmpty(options.Name))
             {
-                Debug.LogWarning(String.Format("Attempt to add tileset with duplicate name {0} failed.", name));
+                options.Name = options.Url;
+            }
+            if (string.IsNullOrEmpty(options.Name) || string.IsNullOrEmpty(options.Url))
+            {
+                Debug.LogWarning("Attempt to add tileset with null or empty name or url failed.");
                 return false;
             }
-            if (OverrideShader != null)
+            if (Tilesets.ContainsKey(options.Name))
             {
-                options.GLTFShaderOverride = OverrideShader;
+                Debug.LogWarning(String.Format("Attempt to add tileset with duplicate name {0} failed.", options.Name));
+                return false;
             }
-            this.requestManager = this.requestManager ?? new RequestManager(MaxConcurrentRequests);
-            Tilesets.Add(options.Name, new Unity3DTileset(options, this, requestManager, postDownloadQueue, LRUCache));
-            updateOptionsAndStats();
+            if (SceneOptions.GLTFShaderOverride != null && options.GLTFShaderOverride == null)
+            {
+                options.GLTFShaderOverride = SceneOptions.GLTFShaderOverride;
+            }
+            Tilesets.Add(options.Name, new Unity3DTileset(options, this));
+            if (!TilesetOptions.Contains(options))
+            {
+                TilesetOptions.Add(options);
+            }
+            UpdateStats();
             return true;
         }
 
@@ -202,14 +136,9 @@ namespace Unity3DTiles
         {
             var tileset = GetTileset(name);
             Tilesets.Remove(name);
-            updateOptionsAndStats();
+            TilesetOptions.Remove(tileset.TilesetOptions); //ok if it wasn't there
+            UpdateStats();
             return tileset;
-        }
-
-        private void updateOptionsAndStats()
-        {
-            this.TilesetOptionsArray = Tilesets.Values.ToList().Select(t => t.TilesetOptions).ToArray();
-            updateStats();
         }
 
         public IEnumerable<Unity3DTileset> GetTilesets()
@@ -251,13 +180,12 @@ namespace Unity3DTiles
             }
         }
 
-        protected virtual void MakeTilesetFromScene(SceneFormat.Scene scene)
+        public void AddScene(Scene scene)
         {
-            //Create unity tilesets
-            foreach (SceneFormat.SceneTileset tileset in scene.tilesets)
+            foreach (var tileset in scene.tilesets)
             {
-                var transform = scene.GetTransform(tileset.frame_id);
-                AddTileset(tileset.id, tileset.uri, transform);
+                var rootTransform = scene.GetTransform(tileset.frame_id);
+                AddTileset(tileset.id, tileset.uri, rootTransform, tileset.show, tileset.options);
             }
         }
     }

@@ -585,12 +585,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SceneOptions:
-    ClippingCameras:
-    - {fileID: 1438352746}
     MaximumTilesToProcessPerFrame: 1
     LRUCacheTargetSize: 600
     LRUCacheMaxSize: 800
     LRUMaxFrameUnloadRatio: 0.2
+    MaxConcurrentRequests: 6
+    ClippingCameras:
+    - {fileID: 1438352746}
+    GLTFShaderOverride: {fileID: 4800000, guid: 9836e4430eb58204086d7d1440e16a4f,
+      type: 3}
   Stats:
     FrustumSetCount: 0
     UsedSetCount: 0
@@ -610,10 +613,8 @@ MonoBehaviour:
     LeafContentLoaded: 0
     RequestsThisFrame: 0
     NetworkError: 0
-  MaxConcurrentRequests: 16
-  SceneManifestUrl: 
-  TilesetOptionsArray: []
-  OverrideShader: {fileID: 4800000, guid: 9836e4430eb58204086d7d1440e16a4f, type: 3}
+  TilesetOptions: []
+  SceneUrl: 
 --- !u!1 &1931381442
 GameObject:
   m_ObjectHideFlags: 0
