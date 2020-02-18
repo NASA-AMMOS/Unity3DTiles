@@ -26,7 +26,7 @@ namespace Unity3DTiles
 
         public override bool Ready()
         {
-            return Tileset.Ready;
+            return Tileset != null && Tileset.Ready;
         }
 
         public override BoundingSphere BoundingSphere()
