@@ -24,6 +24,11 @@ namespace Unity3DTiles
         public Unity3DTilesetOptions TilesetOptions = new Unity3DTilesetOptions();
         public Unity3DTileset Tileset;
 
+        public override bool Ready()
+        {
+            return Tileset.Ready;
+        }
+
         public override BoundingSphere BoundingSphere()
         {
             return Tileset.Root.BoundingVolume.BoundingSphere();

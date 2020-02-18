@@ -47,6 +47,8 @@ namespace Unity3DTiles
             set { SceneOptions.MaxConcurrentRequests = value; } 
         }
 
+        public abstract bool Ready();
+
         public abstract BoundingSphere BoundingSphere();
 
         public void Update()

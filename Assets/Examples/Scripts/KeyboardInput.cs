@@ -15,6 +15,7 @@ class KeyboardInput : MonoBehaviour
     
     private Vector3? lastMouse;
     private bool hasFocus = true;
+    private bool didReset = false;
 
     public void OnApplicationFocus(bool focusStatus)
     {
@@ -23,6 +24,12 @@ class KeyboardInput : MonoBehaviour
 
     public void Update()
     {
+        if (tileset != null && tileset.Ready() && !didReset)
+        {
+            ResetView();
+            didReset = true;
+        }
+
         bool flyNav = mouseFly != null && mouseFly.enabled;
         bool rotNav = mouseRotate != null && mouseRotate.enabled;
         bool hasPick = pointer != null && pointer.activeSelf;
@@ -92,7 +99,7 @@ class KeyboardInput : MonoBehaviour
             {
                 mouseRotate.pivot = pointer.transform.position;
             }
-            else
+            else if (tileset && tileset.Ready())
             {
                 mouseRotate.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
             } 
@@ -138,7 +145,7 @@ class KeyboardInput : MonoBehaviour
             cam.eulerAngles = tileset.SceneOptions.DefaultCameraRotation;
             cam.localScale = Vector3.one;
 
-            if (mouseRotate != null)
+            if (mouseRotate != null && tileset.Ready())
             {
                 mouseRotate.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
             }
@@ -147,7 +154,7 @@ class KeyboardInput : MonoBehaviour
 
     public void FitView()
     {
-        if (tileset != null)
+        if (tileset != null && tileset.Ready())
         {
             var cam = Camera.main.transform;
             var sph = tileset.BoundingSphere();

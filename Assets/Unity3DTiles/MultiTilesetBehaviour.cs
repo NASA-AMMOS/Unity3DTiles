@@ -92,6 +92,11 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             Stats = Unity3DTilesetStatistics.aggregate(Tilesets.Values.Select(t => t.Statistics).ToArray());
         }
 
+        public override bool Ready()
+        {
+            return Tilesets.Count > 0 && Tilesets.Values.All(ts => ts.Ready);
+        }
+
         public override BoundingSphere BoundingSphere()
         {
             if (Tilesets.Count == 0)
