@@ -96,6 +96,11 @@ namespace Unity3DTiles
 
         public void Start()
         {
+            if (SceneOptions.ClippingCameras.Count == 0)
+            {
+                SceneOptions.ClippingCameras.Add(Camera.main);
+            }
+
             _start();
         }
 

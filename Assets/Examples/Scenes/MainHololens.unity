@@ -717,8 +717,7 @@ MonoBehaviour:
     LRUCacheMaxSize: 700
     LRUMaxFrameUnloadRatio: 0.2
     MaxConcurrentRequests: 6
-    ClippingCameras:
-    - {fileID: 1438352746}
+    ClippingCameras: []
     GLTFShaderOverride: {fileID: 0}
     DefaultCameraPosition: {x: 0, y: 0, z: -30}
     DefaultCameraRotation: {x: 0, y: 0, z: 0}
