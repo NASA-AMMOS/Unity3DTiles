@@ -107,14 +107,14 @@ namespace SceneManifest
                 {
                     if (!tileset.uri.Contains("://"))
                     {
-                        tileset.uri = UriHelper.JoinUrls(baseUrl, tileset.uri, true);
+                        tileset.uri = UriHelper.JoinUrls(baseUrl, tileset.uri);
                     }
                 }
                 foreach (var image in scene.images)
                 {
                     if (!image.uri.Contains("://"))
                     {
-                        image.uri = UriHelper.JoinUrls(baseUrl, image.uri, true);
+                        image.uri = UriHelper.JoinUrls(baseUrl, image.uri);
                     }
                 }
             }

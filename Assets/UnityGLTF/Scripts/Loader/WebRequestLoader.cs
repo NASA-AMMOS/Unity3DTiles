@@ -30,9 +30,17 @@ namespace UnityGLTF.Loader
                 throw new Exception("Send must use either string or byte[] data type");
             }
 
-            UnityWebRequest www = new UnityWebRequest(Path.Combine(rootUri, httpRequestPath), "GET",
-                new DownloadHandlerBuffer(), null);
+            string uri = rootUri.Replace("\\", "/").TrimEnd('/');
+            string path = httpRequestPath != null ? httpRequestPath.Replace("\\", "/").TrimStart('/') : null;
+            if (!string.IsNullOrEmpty(path))
+            {
+                uri = uri + "/" + path;
+            }
+
+            UnityWebRequest www = new UnityWebRequest(uri, "GET", new DownloadHandlerBuffer(), null);
+
             www.timeout = 5000;
+
 #if UNITY_2017_2_OR_NEWER
             yield return www.SendWebRequest();
 #else

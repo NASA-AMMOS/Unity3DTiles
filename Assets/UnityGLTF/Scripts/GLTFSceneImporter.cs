@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Linq;
 #if WINDOWS_UWP
 using System.Threading.Tasks;
@@ -75,6 +76,37 @@ namespace UnityGLTF
         protected AsyncAction _asyncAction;
         protected ILoader _loader;
         private bool _isRunning = false;
+
+        private const string Base64StringInitializer = "^data:[a-z-]+/[a-z-\\.]+;base64,";
+
+        /// <summary>
+        /// Tries to parse the uri as a base 64 encoded string
+        /// </summary>
+        /// <param name="uri">The string that represents the data</param>
+        /// <param name="bufferData">Returns the deencoded bytes</param>
+        public static void TryParseBase64(string uri, out byte[] bufferData)
+        {
+            Regex regex = new Regex(Base64StringInitializer);
+            Match match = regex.Match(uri);
+            bufferData = null;
+            if (match.Success)
+            {
+                var base64Data = uri.Substring(match.Length);
+			bufferData = Convert.FromBase64String(base64Data);
+            }
+        }
+        
+        /// <summary>
+        /// Returns whether the input uri is base64 encoded
+        /// </summary>
+        /// <param name="uri">The uri data</param>
+        /// <returns>Whether the uri is base64</returns>
+        public static bool IsBase64Uri(string uri)
+        {
+            Regex regex = new Regex(Base64StringInitializer);
+            Match match = regex.Match(uri);
+            return match.Success;
+        }
 
         /// <summary>
         /// Creates a GLTFSceneBuilder object which will be able to construct a scene based off a url
@@ -263,7 +295,7 @@ namespace UnityGLTF
                 GLTF.Schema.Image image = _gltfRoot.Images[sourceId];
 
                 // we only load the streams if not a base64 uri, meaning the data is in the uri
-                if (image.Uri != null && !URIHelper.IsBase64Uri(image.Uri))
+                if (image.Uri != null && !IsBase64Uri(image.Uri))
                 {
                     yield return _loader.LoadStream(image.Uri);
                     _assetCache.ImageStreamCache[sourceId] = _loader.LoadedStream;
@@ -387,7 +419,7 @@ namespace UnityGLTF
                 var uri = buffer.Uri;
 
                 byte[] bufferData;
-                URIHelper.TryParseBase64(uri, out bufferData);
+                TryParseBase64(uri, out bufferData);
                 if (bufferData != null)
                 {
                     bufferDataStream = new MemoryStream(bufferData, 0, bufferData.Length, false, true);
@@ -421,7 +453,7 @@ namespace UnityGLTF
             {
                 string uri = image.Uri;
                 byte[] bufferData;
-                URIHelper.TryParseBase64(uri, out bufferData);
+                TryParseBase64(uri, out bufferData);
                 if (bufferData != null)
                 {
                     return bufferData;

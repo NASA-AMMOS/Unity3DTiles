@@ -97,7 +97,7 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
         if (!string.IsNullOrEmpty(sceneManifestUrl))
         {
             Debug.Log("loading scene from URL: " + sceneManifestUrl);
-            string baseUrl = UriHelper.ReplaceDataProtocol(UriHelper.GetBaseUri(sceneManifestUrl, true));
+            string baseUrl = UriHelper.ReplaceDataProtocol(UriHelper.GetBaseUri(sceneManifestUrl));
             DownloadText(sceneManifestUrl, json => AddScene(Scene.FromJson(json, baseUrl)));
         }
         else if (!string.IsNullOrEmpty(singleTilesetUrl))

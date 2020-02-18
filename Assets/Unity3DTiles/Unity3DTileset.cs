@@ -102,13 +102,13 @@ namespace Unity3DTiles
 
             if (Path.GetExtension(url) == ".json")
             {
-                this.basePath = UriHelper.GetBaseUri(url, true);
+                this.basePath = UriHelper.GetBaseUri(url);
                 this.tilesetUrl = url;
             }
             else
             {
                 this.basePath = url;
-                this.tilesetUrl = UriHelper.JoinUrls(url, "tileset.json", true);
+                this.tilesetUrl = UriHelper.JoinUrls(url, "tileset.json");
             }
 
             LoadTilesetJson(this.tilesetUrl).Then(json =>
@@ -177,7 +177,7 @@ namespace Unity3DTiles
             }
             // A tileset.json referenced from a tile may exist in a different directory than the root tileset.
             // Get the basePath relative to the external tileset.
-            string basePath = UriHelper.GetBaseUri(tilesetUrl, true);
+            string basePath = UriHelper.GetBaseUri(tilesetUrl);
             Unity3DTile rootTile = new Unity3DTile(this, basePath, tileset.Root, parentTile);
             Statistics.NumberOfTilesTotal++;
 

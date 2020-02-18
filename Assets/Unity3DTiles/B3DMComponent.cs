@@ -17,13 +17,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityGLTF;
-using Newtonsoft.Json;
-using RSG;
 using UnityGLTF.Loader;
+using RSG;
 
 namespace Unity3DTiles
 {
@@ -31,62 +28,41 @@ namespace Unity3DTiles
     {
         public string Url;
         public bool Multithreaded = true;
-
         public int MaximumLod = 300;
-
         public Shader ShaderOverride = null;
-
-        public bool addColliders = false;
-
+        public bool AddColliders = false;
         public bool DownloadOnStart = true;
 
-        void Start()
+        public void Start()
         {
-            if (this.DownloadOnStart)
+            if (DownloadOnStart)
             {
                 StartCoroutine(Download(null));
             }
-
         }
 
         public IEnumerator Download(Promise<bool> loadComplete)
         {
+            string url = UriHelper.ReplaceDataProtocol(Url);
+            string dir = UriHelper.GetBaseUri(url);
+            string file = UriHelper.GetLastPathSegment(url);
 
-            string directoryPath = URIHelper.GetDirectoryName(Url);
-            string relativePath = Url.Replace(directoryPath, "");
-            var wrl = new B3DMLoader(AbstractWebRequestLoader.CreateDefaultRequestLoader(directoryPath));
-            GLTFSceneImporter sceneImporter = new GLTFSceneImporter(
-                    relativePath,
-                    wrl
-            );
+            ILoader loader = AbstractWebRequestLoader.CreateDefaultRequestLoader(dir); //.glb, .gltf
+            if (file.EndsWith(".b3dm", StringComparison.OrdinalIgnoreCase))
+            {
+                loader = new B3DMLoader(loader);
+            }
+            var sceneImporter = new GLTFSceneImporter(file, loader);
+
             sceneImporter.SceneParent = gameObject.transform;
             sceneImporter.CustomShaderName = ShaderOverride ? ShaderOverride.name : null;
             sceneImporter.MaximumLod = MaximumLod;
-            if (addColliders)
-            {
-                sceneImporter.Collider = GLTFSceneImporter.ColliderType.Mesh;
-            }
-            yield return sceneImporter.LoadScene(-1, Multithreaded, sceneObject =>
-            {
-                if (sceneObject != null)
-                {
-                    loadComplete.Resolve(true);                    
-                }
-                else
-                {                
-                    loadComplete.Resolve(false);
-                }
-                Destroy(this);
-            });
-            // Override the shaders on all materials if a shader is provided
-            if (ShaderOverride != null)
-            {
-                Renderer[] renderers = gameObject.GetComponentsInChildren<Renderer>();
-                foreach (Renderer renderer in renderers)
-                {
-                    renderer.sharedMaterial.shader = ShaderOverride;
-                }
-            }
+            sceneImporter.Collider =
+                AddColliders ? GLTFSceneImporter.ColliderType.Mesh : GLTFSceneImporter.ColliderType.None;
+
+            loadComplete = loadComplete ?? new Promise<bool>();
+            yield return sceneImporter.LoadScene(-1, Multithreaded,
+                                                 sceneObject => loadComplete.Resolve(sceneObject != null));
         }
     }
 }

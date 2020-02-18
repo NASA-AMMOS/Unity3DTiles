@@ -313,7 +313,7 @@ namespace Unity3DTiles
                         b3dmCo.Multithreaded = this.tileset.TilesetOptions.GLTFMultithreadedLoad;
                         b3dmCo.MaximumLod = this.tileset.TilesetOptions.GLTFMaximumLOD;
                         b3dmCo.ShaderOverride = this.tileset.TilesetOptions.GLTFShaderOverride;
-                        b3dmCo.addColliders = false;
+                        b3dmCo.AddColliders = false;
                         b3dmCo.DownloadOnStart = false;
                         this.tileset.Behaviour.StartCoroutine(b3dmCo.Download(finished));
                     }

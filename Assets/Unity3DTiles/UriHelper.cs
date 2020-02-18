@@ -20,7 +20,6 @@ namespace Unity3DTiles
 {
     public class UriHelper
     {
-
         public static string RemoveQuery(string url)
         {
             int i = url.IndexOf('?');
@@ -31,14 +30,18 @@ namespace Unity3DTiles
             return url;
         }
 
+        public static string SetQuery(string url, string query)
+        {
+            var builder = new UriBuilder(new Uri(url));
+            builder.Query = query;
+            return builder.ToString();
+        }
+
         /// <summary>
-        /// Removes the last segment of a url (everything after and including the last /)
-        /// but optionally retrains qurey (?) and fragments (#)
+        /// Removes the last segment of a url (last path component including the /)
+        /// but retains query (?) and fragments (#) by default
         /// </summary>
-        /// <param name="url"></param>
-        /// <param name="includeQuery"></param>
-        /// <returns></returns>
-        public static string GetBaseUri(string url, bool includeQuery)
+        public static string GetBaseUri(string url, bool includeQuery = true)
         {
             Uri uri = new Uri(url);
             string noLastSegment = "";
@@ -57,73 +60,51 @@ namespace Unity3DTiles
             return builder.Uri.ToString();
         }
 
-
-        public static string SetQuery(string url, string query)
+        public static string GetLastPathSegment(string url)
         {
-            var builder = new UriBuilder(new Uri(url));
-            builder.Query = query;
-            return builder.ToString();
+            Uri uri = new Uri(url);
+            return uri.Segments[uri.Segments.Length - 1];
         }
 
         /// <summary>
-        /// Appends one url onto another
+        /// Appends a relative URL onto an absolute base url, combining query parameters of both.
+        /// If the relative URL has a fragment, it is used, otherwise if the base URL has a fragment, it is used.
         /// </summary>
-        /// <param name="url1"></param>
-        /// <param name="url2"></param>
-        /// <returns></returns>
-        public static string JoinUrls(string first, string second, bool appendSlash = false)
+        public static string JoinUrls(string absBase, string relPath)
         {
-            if(appendSlash)
-            {
-                first = first.TrimEnd('/') + '/';
-            }
-            Uri f = new Uri(first, UriKind.RelativeOrAbsolute);
-            Uri s = new Uri(second, UriKind.RelativeOrAbsolute);
+            absBase = absBase.Replace("\\", "/").TrimEnd('/') + "/";
+            relPath = relPath.Replace("\\", "/").TrimStart('/');
+
+            var baseUri = new Uri(absBase, UriKind.Absolute);
+            var relUri = new Uri(relPath, UriKind.Relative);
+
+            var builder = new UriBuilder(new Uri(baseUri, relUri));
    
-            // Early out in the case of data uris
-            if (f.Scheme == "data")
+            // This will allow us to access scheme and fragments of relPath
+            var relUriAsAbs = new UriBuilder(baseUri.Scheme, baseUri.Host, baseUri.Port, relPath).Uri;
+
+            if (!string.IsNullOrEmpty(baseUri.Query) && !string.IsNullOrEmpty(relUriAsAbs.Query))
             {
-                return f.ToString();
+                builder.Query = baseUri.Query.TrimStart('?') + "&" + relUriAsAbs.Query.TrimStart('?');
             }
-            if (s.IsAbsoluteUri && s.Scheme == "data")
+            else if (!string.IsNullOrEmpty(baseUri.Query))
             {
-                return s.ToString();
+                builder.Query = baseUri.Query.TrimStart('?');
             }
-            
-            // Make this absolute (its okay we are done using its earlier elements
-            // This will allow us to query scheme and fragments
-            if (!s.IsAbsoluteUri)
+            else if (!string.IsNullOrEmpty(relUriAsAbs.Query))
             {
-                s = new UriBuilder(f.Scheme, f.Host, f.Port, second).Uri;
+                builder.Query = relUriAsAbs.Query.TrimStart('?');
             }
 
-            // We use second string here because we don't want s which we may have made absolute
-            Uri r;
-            Uri.TryCreate(f, second, out r);
-            UriBuilder builder = new UriBuilder(r);
+            if (!string.IsNullOrEmpty(relUriAsAbs.Fragment))
+            {
+                builder.Fragment = relUriAsAbs.Fragment.TrimStart('#');
+            }
+            else if (!string.IsNullOrEmpty(baseUri.Fragment))
+            {
+                builder.Fragment = baseUri.Fragment.TrimStart('#');
+            }
 
-            // Query
-            if (f.Query != null && s.Query != null)
-            {
-                builder.Query = f.Query.TrimStart('?') + s.Query.Replace('?', '&');
-            }
-            else if (!string.IsNullOrEmpty(f.Query) && string.IsNullOrEmpty(s.Query))
-            {
-                builder.Query = f.Query.TrimStart('?');
-            }
-            else if (string.IsNullOrEmpty(f.Query) && !string.IsNullOrEmpty(s.Query))
-            {
-                builder.Query = s.Query.TrimStart('?');
-            }
-            // Fragment
-            if (!string.IsNullOrEmpty(f.Fragment) && String.IsNullOrEmpty(s.Fragment))
-            {
-                builder.Fragment = f.Fragment.TrimStart('#');
-            }
-            else if (!string.IsNullOrEmpty(s.Fragment))
-            {
-                builder.Fragment = s.Fragment.TrimStart('#');
-            }
             return builder.ToString();
         }
 
