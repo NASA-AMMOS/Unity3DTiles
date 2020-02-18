@@ -435,7 +435,6 @@ GameObject:
   - component: {fileID: 1438352746}
   - component: {fileID: 1438352745}
   - component: {fileID: 1438352744}
-  - component: {fileID: 1438352748}
   - component: {fileID: 1438352749}
   m_Layer: 0
   m_Name: Camera
@@ -516,18 +515,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1438352748
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1438352743}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c14b2ce73ca4724a8d880d6e087e590, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1438352749
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -551,6 +538,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1485971527}
   - component: {fileID: 1485971528}
+  - component: {fileID: 1485971531}
+  - component: {fileID: 1485971530}
+  - component: {fileID: 1485971529}
   m_Layer: 0
   m_Name: GenericWebTileset
   m_TagString: Untagged
@@ -594,6 +584,8 @@ MonoBehaviour:
     - {fileID: 1438352746}
     GLTFShaderOverride: {fileID: 4800000, guid: 9836e4430eb58204086d7d1440e16a4f,
       type: 3}
+    DefaultCameraPosition: {x: 0, y: 0, z: -30}
+    DefaultCameraRotation: {x: 0, y: 0, z: 0}
   Stats:
     FrustumSetCount: 0
     UsedSetCount: 0
@@ -615,6 +607,72 @@ MonoBehaviour:
     NetworkError: 0
   TilesetOptions: []
   SceneUrl: 
+--- !u!114 &1485971529
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1485971526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6551e1c668008d044b4d380b72192ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tileset: {fileID: 0}
+  hud: {fileID: 1931381444}
+  mouseFly: {fileID: 0}
+  mouseRotate: {fileID: 0}
+--- !u!114 &1485971530
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1485971526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60803ead571d37d4f939338bba47695a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotateButton: 0
+  scaleButton: 2
+  rotateModifier: 4
+  scaleModifier: 2
+  accelModifier: 1
+  rotSpeed: 2
+  zoomSpeed: 1
+  accelFactor: 2
+  minScale: 0.1
+  maxScale: 10
+  debug: 0
+--- !u!114 &1485971531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1485971526}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54f406ea90e7b4e43bc8986e16607ff3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotateButton: 0
+  scaleButton: 2
+  rotateModifier: 4
+  scaleModifier: 2
+  accelModifier: 1
+  rotSpeed: 2
+  zoomSpeed: 1
+  accelFactor: 2
+  minScale: 0.1
+  maxScale: 10
+  debug: 0
+  scaleMode: 0
+  minFOV: 1
+  maxFOV: 120
+  transSpeed: 3
 --- !u!1 &1931381442
 GameObject:
   m_ObjectHideFlags: 0
@@ -666,7 +724,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tileset: {fileID: 1485971528}
+  message: 
   frameRange: 60
+  text: {fileID: 0}
 --- !u!114 &1931381445
 MonoBehaviour:
   m_ObjectHideFlags: 0

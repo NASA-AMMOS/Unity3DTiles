@@ -89,6 +89,9 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
             DownloadText(sceneOptionsUrl, json => JsonConvert.PopulateObject(json, SceneOptions));
         }
 
+        Camera.main.transform.position = SceneOptions.DefaultCameraPosition;
+        Camera.main.transform.eulerAngles = SceneOptions.DefaultCameraRotation;
+
         string sceneManifestUrl = getURLParameter("Scene") ?? SceneUrl;
         string singleTilesetUrl = getURLParameter("Tileset");
         if (!string.IsNullOrEmpty(sceneManifestUrl))

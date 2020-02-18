@@ -88,5 +88,9 @@ namespace Unity3DTiles
         public List<Camera> ClippingCameras;
 
         public Shader GLTFShaderOverride;
+
+        [Header("Camera Settings")]
+        public Vector3 DefaultCameraPosition = new Vector3(0, 0, -30);
+        public Vector3 DefaultCameraRotation = Vector3.zero;
     }
 }

@@ -69,7 +69,9 @@ Scene options:
 * LRU Max Frame Unload Ratio - Controls the number of tiles that will be unloaded per frame when the cache becomes too full.  Setting too high can cause choppy performance.  Setting too low will slow the loading of new tiles as they will wait for old tiles to be unloaded.
 *  Max Concurrent Requests - Manages how many downloads can occurs simultaneously.  Larger results in faster load times but this should be tuned for the particular platform you are deploying to.
 * Clipping cameras - the set of cameras that should be used to determine which tiles to load.  Typically this will just be the main camera.  Adding more cameras will decrease performance.
-  * GLTF Shader Override - Overrides shader override of individual tilesets.
+* GLTF Shader Override - Overrides shader override of individual tilesets.
+* DefaultCameraPosition - Default camera position for scene.
+* DefaultCameraRotation - Default camera Euler angles for scene.
 
 Tileset options:
 
