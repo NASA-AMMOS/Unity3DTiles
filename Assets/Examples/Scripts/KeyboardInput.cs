@@ -8,18 +8,30 @@ class KeyboardInput : MonoBehaviour
     public Unity3DTilesetStatsHud hud;
     public MouseFly mouseFly;
     public MouseRotate mouseRotate;
+    public GameObject pointer;
 #pragma warning restore 0649
+
+    public float pointerRadiusPixels = 10;
+    
+    private Vector3? lastMouse;
+    private bool hasFocus = true;
+
+    public void OnApplicationFocus(bool focusStatus)
+    {
+        hasFocus = focusStatus;
+    }
 
     public void Update()
     {
         bool flyNav = mouseFly != null && mouseFly.enabled;
         bool rotNav = mouseRotate != null && mouseRotate.enabled;
+        bool hasPick = pointer != null && pointer.activeSelf;
 
         if (hud != null)
         {
             hud.message = "press h to toggle HUD";
             hud.message += ", v for default view";
-            hud.message += ", f to fit view";
+            hud.message += ", f to fit";
 
             if (flyNav || rotNav)
             {
@@ -32,6 +44,7 @@ class KeyboardInput : MonoBehaviour
                 else if (rotNav)
                 {
                     scaleMod = mouseRotate.scaleModifier;
+                    hud.message += "\nc to rotate about " + (hasPick ? "clicked point" : "centroid");
                 }
                 hud.message += "\ndrag mouse to rotate";
                 hud.message += "\nmouse wheel to scale";
@@ -72,6 +85,48 @@ class KeyboardInput : MonoBehaviour
                 mouseRotate.enabled = !mouseRotate.enabled;
             }
         }
+
+        if (rotNav && Input.GetKeyDown(KeyCode.C))
+        {
+            if (hasPick)
+            {
+                mouseRotate.pivot = pointer.transform.position;
+            }
+            else
+            {
+                mouseRotate.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+            } 
+        }
+
+        if (hasFocus && !MouseNavBase.MouseOnUI())
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                lastMouse = Input.mousePosition;
+            }
+            else if (!Input.GetMouseButton(0) && lastMouse != null && lastMouse.Value == Input.mousePosition)
+            {
+                OnClick(Input.mousePosition);
+                lastMouse = null;
+            }
+        }
+        else
+        {
+            lastMouse = null;
+        }
+
+        if (hasPick)
+        {
+            var cam = Camera.main.transform;
+            var w2cScale = cam.worldToLocalMatrix.lossyScale;
+            var minScale = Mathf.Min(w2cScale.x, w2cScale.y, w2cScale.z);
+            var vfov = Camera.main.fieldOfView * Mathf.Deg2Rad;
+            var hfov = vfov * Camera.main.aspect;
+            var maxRadPerPixel = Mathf.Max(vfov / Screen.height, hfov / Screen.width);
+            pointer.transform.localScale = (1.0f / minScale) * Vector3.one *
+                Vector3.Distance(pointer.transform.position, cam.position) *
+                Mathf.Tan(pointerRadiusPixels * maxRadPerPixel);
+        }
     }
 
     public void ResetView()
@@ -83,7 +138,8 @@ class KeyboardInput : MonoBehaviour
             cam.eulerAngles = tileset.SceneOptions.DefaultCameraRotation;
             cam.localScale = Vector3.one;
 
-            if (mouseRotate != null) {
+            if (mouseRotate != null)
+            {
                 mouseRotate.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
             }
         }
@@ -111,7 +167,29 @@ class KeyboardInput : MonoBehaviour
             var dist = radiusInCam / Mathf.Tan(minFov / 2);
             cam.Translate(cam.forward * (Vector3.Distance(cam.position, ctrInWorld) - dist), Space.World);
 
-            if (mouseRotate != null) mouseRotate.pivot = ctrInWorld;
+            if (mouseRotate != null)
+            {
+                mouseRotate.pivot = ctrInWorld;
+            }
+        }
+    }
+
+    public void OnClick(Vector3 mousePosition)
+    {
+        if (Physics.Raycast(Camera.main.ScreenPointToRay(mousePosition), out RaycastHit hit))
+        {
+            if (pointer != null)
+            {
+                pointer.SetActive(true);
+                pointer.transform.position = hit.point;
+            }
+        }
+        else
+        {
+            if (pointer != null)
+            {
+                pointer.SetActive(false);
+            }
         }
     }
 }
