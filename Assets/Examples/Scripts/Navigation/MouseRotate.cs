@@ -2,24 +2,30 @@ using UnityEngine;
 
 public class MouseRotate : MouseNavBase {
 
+    public Vector3 pivot = Vector3.zero; //in world
+
     public override void Update() {
 
         base.Update();
 
-        //rotate
-        if (mouseDiff.x != 0 || mouseDiff.y != 0) {
-            Quaternion rotX = Quaternion.AngleAxis(rotSpeed * mouseDiff.x, dirX);
-            Quaternion rotY = Quaternion.AngleAxis(rotSpeed * mouseDiff.y, dirY);
-            transform.localRotation = rotY * rotX * transform.localRotation;
+        var cam = Camera.main.transform;
+
+        cam.Translate(Vector3.ProjectOnPlane(pivot - cam.position, cam.forward), Space.World);
+
+        if (mouseDiff.x != 0)
+        {
+            cam.RotateAround(pivot, cam.up, rotSpeed * mouseDiff.x);
         }
 
-        //scale
-        if (mouseDiff.z != 0) {
-            Vector3 s = transform.localScale;
-            float sx = s.x - zoomSpeed * mouseDiff.z;
-            sx = Mathf.Clamp(sx, minScale, maxScale);
-            float ds = sx / s.x;
-            transform.localScale *= ds;
+        if (mouseDiff.y != 0)
+        {
+            cam.RotateAround(pivot, -cam.right, rotSpeed * mouseDiff.y);
+        }
+
+        if (mouseDiff.z != 0)
+        {
+            float r = Vector3.Distance(pivot, cam.position);
+            cam.Translate(-cam.forward * zoomSpeed * mouseDiff.z * 0.1f * r, Space.World);
         }
     }
 }

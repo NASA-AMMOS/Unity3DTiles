@@ -19,7 +19,7 @@ using UnityEngine;
 
 namespace Unity3DTiles
 {
-    public class AbstractTilesetBehaviour : MonoBehaviour
+    public abstract class AbstractTilesetBehaviour : MonoBehaviour
     {
         public Unity3DTilesetSceneOptions SceneOptions = new Unity3DTilesetSceneOptions();
 
@@ -46,6 +46,8 @@ namespace Unity3DTiles
             get { return SceneOptions.MaxConcurrentRequests; } 
             set { SceneOptions.MaxConcurrentRequests = value; } 
         }
+
+        public abstract BoundingSphere BoundingSphere();
 
         public void Update()
         {

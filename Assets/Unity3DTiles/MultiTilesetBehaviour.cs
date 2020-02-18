@@ -92,6 +92,19 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             Stats = Unity3DTilesetStatistics.aggregate(Tilesets.Values.Select(t => t.Statistics).ToArray());
         }
 
+        public override BoundingSphere BoundingSphere()
+        {
+            if (Tilesets.Count == 0)
+            {
+                return new BoundingSphere(Vector3.zero, 0.0f);
+            }
+            var spheres = Tilesets.Values.Select(ts => ts.Root.BoundingVolume.BoundingSphere()).ToList();
+            var ctr = spheres.Aggregate(Vector3.zero, (sum, sph) => sum += sph.position);
+            ctr *= 1.0f / spheres.Count;
+            var radius = spheres.Max(sph => Vector3.Distance(ctr, sph.position) + sph.radius);
+            return new BoundingSphere(ctr, radius);
+        }
+
         public bool AddTileset(string name, string url, Matrix4x4 rootTransform, bool show,
                                Unity3DTilesetOptions options = null)
         {

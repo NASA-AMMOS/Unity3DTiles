@@ -605,10 +605,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6551e1c668008d044b4d380b72192ee6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tileset: {fileID: 0}
+  tileset: {fileID: 1485971528}
   hud: {fileID: 1931381444}
-  mouseFly: {fileID: 0}
-  mouseRotate: {fileID: 0}
+  mouseFly: {fileID: 1485971531}
+  mouseRotate: {fileID: 1485971530}
 --- !u!114 &1485971530
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -632,6 +632,7 @@ MonoBehaviour:
   minScale: 0.1
   maxScale: 10
   debug: 0
+  pivot: {x: 0, y: 0, z: 0}
 --- !u!114 &1485971531
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -136,6 +136,8 @@ namespace Unity3DTiles
 
         public abstract float MaximumHeight();
 
+        public abstract BoundingSphere BoundingSphere();
+
         public PlaneClipMask IntersectPlanes(Plane[] planes)
         {
             return IntersectPlanes(planes, PlaneClipMask.GetDefaultMask());
@@ -177,15 +179,12 @@ namespace Unity3DTiles
         public Vector3 HalfAxesY;
         public Vector3 HalfAxesZ;
 
-        //private TileBoundingSphere boundingSphere;
-
         public TileOrientedBoundingBox(Vector3 center, Vector3 halfAxesX, Vector3 halfAxesY, Vector3 halfAxesZ)
         {
             this.Center = center;
             this.HalfAxesX = halfAxesX;
             this.HalfAxesY = halfAxesY;
             this.HalfAxesZ = halfAxesZ;
-            //this.boundingSphere = new TileBoundingSphere(this);
         }
 
         public override void DebugDraw(Color col, Transform t)
@@ -328,6 +327,11 @@ namespace Unity3DTiles
             return this.Center.y - HalfAxesY.y; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
         }
 
+        public override BoundingSphere BoundingSphere()
+        {
+            return new TileBoundingSphere(this).BoundingSphere();
+        }
+
         public void Transform(Matrix4x4 transform)
         {
             // Find the transformed center and halfAxes
@@ -335,7 +339,6 @@ namespace Unity3DTiles
             this.HalfAxesX = transform.MultiplyVector(this.HalfAxesX);
             this.HalfAxesY = transform.MultiplyVector(this.HalfAxesY);
             this.HalfAxesZ = transform.MultiplyVector(this.HalfAxesZ);
-            //this.boundingSphere = new TileBoundingSphere(this); // TODO: Consider using TileBoundingSphere.Transform instead
         }
     }
 
@@ -404,6 +407,11 @@ namespace Unity3DTiles
             return this.Center.y - Radius; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
         }
 
+        public override BoundingSphere BoundingSphere()
+        {
+            return new BoundingSphere(Center, Radius);
+        }
+
         public override void DebugDraw(Color c, Transform t)
         {
             throw new NotImplementedException();
@@ -413,6 +421,7 @@ namespace Unity3DTiles
     // TODO: Add support for bounding regions
     public class TileBoundingRegion : Unity3DTileBoundingVolume
     {
+
         public TileBoundingRegion()
         {
             throw new NotImplementedException();
@@ -442,7 +451,10 @@ namespace Unity3DTiles
         {
             throw new NotImplementedException();
         }
+
+        public override BoundingSphere BoundingSphere()
+        {
+            throw new NotImplementedException();
+        }
     }
-
-
 }

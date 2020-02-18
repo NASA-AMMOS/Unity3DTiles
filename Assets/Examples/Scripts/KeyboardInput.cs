@@ -26,7 +26,7 @@ class KeyboardInput : MonoBehaviour
                 MouseNavBase.Modifier scaleMod = MouseNavBase.Modifier.None;
                 if (flyNav)
                 {
-                    hud.message += "\nw/s/a/d to translate forward/back/left/right";
+                    hud.message += "\nw/s/a/d/q/e to translate forward/back/left/right/up/down";
                     scaleMod = mouseFly.scaleModifier;
                 }
                 else if (rotNav)
@@ -59,13 +59,17 @@ class KeyboardInput : MonoBehaviour
             ResetView();
         }
 
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            FitView();
+        }
+
         if (Input.GetKeyDown(KeyCode.N))
         {
             if (mouseFly != null && mouseRotate != null)
             {
                 mouseFly.enabled = !mouseFly.enabled;
                 mouseRotate.enabled = !mouseRotate.enabled;
-                ResetView();
             }
         }
     }
@@ -79,9 +83,35 @@ class KeyboardInput : MonoBehaviour
             cam.eulerAngles = tileset.SceneOptions.DefaultCameraRotation;
             cam.localScale = Vector3.one;
 
-            tileset.transform.position = Vector3.zero;
-            tileset.transform.eulerAngles = Vector3.zero;
-            tileset.transform.localScale = Vector3.one;
+            if (mouseRotate != null) {
+                mouseRotate.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+            }
+        }
+    }
+
+    public void FitView()
+    {
+        if (tileset != null)
+        {
+            var cam = Camera.main.transform;
+            var sph = tileset.BoundingSphere();
+
+            var ctrInWorld = tileset.transform.TransformPoint(sph.position);
+            cam.Translate(Vector3.ProjectOnPlane(ctrInWorld - cam.position, cam.forward), Space.World);
+
+            var tilesetToCam = tileset.transform.localToWorldMatrix * cam.worldToLocalMatrix; //row major compose l->r
+            var t2cScale = tilesetToCam.lossyScale;
+            var maxScale = Mathf.Max(t2cScale.x, t2cScale.y, t2cScale.z);
+            var radiusInCam = sph.radius * maxScale;
+
+            var vfov = Camera.main.fieldOfView * Mathf.Deg2Rad;
+            var hfov = vfov * Camera.main.aspect;
+            var minFov = Mathf.Min(vfov, hfov);
+
+            var dist = radiusInCam / Mathf.Tan(minFov / 2);
+            cam.Translate(cam.forward * (Vector3.Distance(cam.position, ctrInWorld) - dist), Space.World);
+
+            if (mouseRotate != null) mouseRotate.pivot = ctrInWorld;
         }
     }
 }
