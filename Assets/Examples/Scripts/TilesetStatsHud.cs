@@ -82,9 +82,6 @@ public class TilesetStatsHud : MonoBehaviour {
             builder.AppendLine();
         }
 #endif        
-        builder.Append("Visible Tiles: ");
-        builder.Append(stats.VisibleTileCount);
-        builder.AppendLine();
         builder.Append("Active Colliders: ");
         builder.Append(stats.ColliderTileCount);
         builder.AppendLine();
@@ -101,6 +98,16 @@ public class TilesetStatsHud : MonoBehaviour {
         builder.AppendLine();
         builder.Append("Tiles Remaining: ");
         builder.Append(stats.TilesLeftToLoad);
+        builder.AppendLine();
+        builder.Append("Visible Tiles: ");
+        builder.Append(stats.VisibleTileCount);
+        builder.Append(" (depth ");
+        builder.Append(stats.MinVisibleTileDepth);
+        builder.Append("-");
+        builder.Append(stats.MaxVisibleTileDepth);
+        builder.Append(" / ");
+        builder.Append(tileset.DeepestDepth());
+        builder.Append(")");
         builder.AppendLine();
         builder.Append("Visible Faces: ");
         builder.Append(stats.VisibleFaces / 1000);

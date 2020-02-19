@@ -89,7 +89,7 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
 
         protected override void UpdateStats()
         {
-            Stats = Unity3DTilesetStatistics.aggregate(Tilesets.Values.Select(t => t.Statistics).ToArray());
+            Stats = Unity3DTilesetStatistics.Aggregate(Tilesets.Values.Select(t => t.Statistics).ToArray());
         }
 
         public override bool Ready()
@@ -108,6 +108,15 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             ctr *= 1.0f / spheres.Count;
             var radius = spheres.Max(sph => Vector3.Distance(ctr, sph.position) + sph.radius);
             return new BoundingSphere(ctr, radius);
+        }
+
+        public override int DeepestDepth()
+        {
+            if (Tilesets.Count == 0)
+            {
+                return 0;
+            }
+            return Tilesets.Values.Max(ts => ts.DeepestDepth);
         }
 
         public bool AddTileset(string name, string url, Matrix4x4 rootTransform, bool show,

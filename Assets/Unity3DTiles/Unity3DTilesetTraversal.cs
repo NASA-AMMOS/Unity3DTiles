@@ -267,7 +267,7 @@ namespace Unity3DTiles
                     if (tile.FrameState.InFrustumSet)
                     {
                         tile.FrameState.InRenderSet = true;
-                        UpdateVisibleStatstics(tile);
+                        tileset.Statistics.TallyVisibleTile(tile);
                     }
                     tile.FrameState.InColliderSet = true;
                     this.tileset.Statistics.ColliderTileCount += 1;
@@ -303,7 +303,7 @@ namespace Unity3DTiles
                 if (tile.FrameState.InFrustumSet)
                 {
                     tile.FrameState.InRenderSet = true;
-                    UpdateVisibleStatstics(tile);
+                    tileset.Statistics.TallyVisibleTile(tile);
                 }
                 tile.FrameState.InColliderSet = true;
                 this.tileset.Statistics.ColliderTileCount += 1;
@@ -371,17 +371,6 @@ namespace Unity3DTiles
                 {
                     ToggleTiles(tile.Children[i]);
                 }
-            }
-        }
-
-        void UpdateVisibleStatstics(Unity3DTile tile)
-        {
-            tileset.Statistics.VisibleTileCount += 1;
-            if(tile.Content != null)
-            {
-                tileset.Statistics.VisibleFaces += tile.Content.FaceCount;
-                tileset.Statistics.VisibleTextures += tile.Content.TextureCount;
-                tileset.Statistics.VisiblePixels += tile.Content.PixelCount;
             }
         }
 

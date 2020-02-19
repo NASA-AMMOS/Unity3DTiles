@@ -31,7 +31,12 @@ namespace Unity3DTiles
 
         public override BoundingSphere BoundingSphere()
         {
-            return Tileset.Root.BoundingVolume.BoundingSphere();
+            return Tileset != null ? Tileset.Root.BoundingVolume.BoundingSphere() : new BoundingSphere(Vector3.zero, 0);
+        }
+
+        public override int DeepestDepth()
+        {
+            return Tileset != null ? Tileset.DeepestDepth : 0;
         }
 
         public virtual void MakeTileset()

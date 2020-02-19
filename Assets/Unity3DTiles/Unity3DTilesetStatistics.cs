@@ -28,6 +28,9 @@ namespace Unity3DTiles
         public int VisibleFaces;
         public int VisibleTextures;
         public int VisiblePixels;
+
+        public int MinVisibleTileDepth;
+        public int MaxVisibleTileDepth;
         
         [Header("Dataset statistics")]
         public int NumberOfTilesTotal; // Number of tiles in tileset.json (and other tileset.json files as they are loaded)
@@ -54,7 +57,20 @@ namespace Unity3DTiles
             }
         }
 
-        public static Unity3DTilesetStatistics aggregate(params Unity3DTilesetStatistics[] stats)
+        public void TallyVisibleTile(Unity3DTile tile)
+        {
+            VisibleTileCount += 1;
+            if (tile.Content != null)
+            {
+                VisibleFaces += tile.Content.FaceCount;
+                VisibleTextures += tile.Content.TextureCount;
+                VisiblePixels += tile.Content.PixelCount;
+                MinVisibleTileDepth = MinPositive(MinVisibleTileDepth, tile.Depth);
+                MaxVisibleTileDepth = MaxPositive(MaxVisibleTileDepth, tile.Depth);
+            }
+        }
+
+        public static Unity3DTilesetStatistics Aggregate(params Unity3DTilesetStatistics[] stats)
         {
             Unity3DTilesetStatistics ret = new Unity3DTilesetStatistics();
             ret.Clear();
@@ -81,6 +97,9 @@ namespace Unity3DTiles
                 ret.VisibleFaces += stat.VisibleFaces;
                 ret.VisibleTextures += stat.VisibleTextures;
                 ret.VisiblePixels += stat.VisiblePixels;
+
+                ret.MinVisibleTileDepth = MinPositive(ret.MinVisibleTileDepth, stat.MinVisibleTileDepth);
+                ret.MaxVisibleTileDepth = MaxPositive(ret.MaxVisibleTileDepth, stat.MaxVisibleTileDepth);
                          
                 ret.NumberOfTilesTotal += stat.NumberOfTilesTotal;
                 ret.LoadedContentCount += stat.LoadedContentCount;
@@ -103,10 +122,46 @@ namespace Unity3DTiles
             VisibleFaces = 0;
             VisibleTextures = 0;
             VisiblePixels = 0;
+            MinVisibleTileDepth = -1;
+            MaxVisibleTileDepth = -1;
             LeafContentRequired = 0;
             LeafContentLoaded = 0;
             RequestsThisFrame = 0;
             NetworkError = false;
+        }
+
+        private static int MinPositive(int a, int b)
+        {
+            if (a > 0 && b < 0)
+            {
+                return a;
+            }
+            if (a < 0 && b > 0)
+            {
+                return b;
+            }
+            if (a <= b)
+            {
+                return a;
+            }
+            return b;
+        }
+    
+        private static int MaxPositive(int a, int b)
+        {
+            if (a > 0 && b < 0)
+            {
+                return a;
+            }
+            if (a < 0 && b > 0)
+            {
+                return b;
+            }
+            if (a >= b)
+            {
+                return a;
+            }
+            return b;
         }
     }
 }

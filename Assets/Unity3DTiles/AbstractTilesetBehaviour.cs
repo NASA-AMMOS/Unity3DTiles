@@ -51,6 +51,8 @@ namespace Unity3DTiles
 
         public abstract BoundingSphere BoundingSphere();
 
+        public abstract int DeepestDepth();
+
         public void Update()
         {
             this._update();
