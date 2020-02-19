@@ -1,3 +1,7 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Unity3DTiles;
 
@@ -14,6 +18,7 @@ class DemoUX : MonoBehaviour
     public float pointerRadiusPixels = 10;
 
     public Unity3DTile selectedTile;
+    public Stack<Unity3DTile> selectedStack = new Stack<Unity3DTile>();
     
     private Vector3? lastMouse;
     private bool hasFocus = true;
@@ -108,6 +113,23 @@ class DemoUX : MonoBehaviour
                     hud.message += "max " + tc.MaxTextureSize.x + "x" + tc.MaxTextureSize.y;
                 }
                 hud.message += "\nb to toggle bounds";
+                if (selectedTile.Parent != null)
+                {
+                    hud.message += "\nup/left/right";
+                    if (selectedTile.Children != null)
+                    {
+                        hud.message += "/down";
+                    }
+                    hud.message += " to select parent/sibling";
+                    if (selectedTile.Children != null)
+                    {
+                        hud.message += "/child";
+                    }
+                }
+                else if (selectedTile.Children.Count > 0)
+                {
+                    hud.message += "\ndown to select child";
+                }
             }
 
             if (drawSelectedBounds)
@@ -146,6 +168,40 @@ class DemoUX : MonoBehaviour
                     drawSelectedBounds = drawParentBounds = false;
                 }
             }
+
+            if (selectedTile.Parent != null && Input.GetKeyDown(KeyCode.UpArrow))
+            {
+                selectedStack.Push(selectedTile);
+                selectedTile = selectedTile.Parent;
+            }
+
+            if (selectedTile.Children.Count > 0 && Input.GetKeyDown(KeyCode.DownArrow))
+            {
+                selectedTile = selectedStack.Count > 0 ? selectedStack.Pop() : selectedTile.Children.First();
+            }
+
+            if (selectedTile.Parent != null && Input.GetKeyDown(KeyCode.LeftArrow))
+            {
+                int idx = selectedTile.Parent.Children.FindIndex(c => c == selectedTile) - 1;
+                if (idx < 0)
+                {
+                    idx = selectedTile.Parent.Children.Count -1;
+                }
+                selectedTile = selectedTile.Parent.Children[idx];
+            }
+
+            if (selectedTile.Parent != null && Input.GetKeyDown(KeyCode.RightArrow))
+            {
+                int idx = selectedTile.Parent.Children.FindIndex(c => c == selectedTile) + 1;
+                if (idx == selectedTile.Parent.Children.Count)
+                {
+                    idx = 0;
+                }
+                selectedTile = selectedTile.Parent.Children[idx];
+            }
+
+            selectedTile.Tileset.Traversal.ForceTiles.Clear();
+            selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
         }
 
         //toggle hud
@@ -264,7 +320,12 @@ class DemoUX : MonoBehaviour
 
     public void OnClick(Vector3 mousePosition)
     {
+        if (selectedTile != null)
+        {
+            selectedTile.Tileset.Traversal.ForceTiles.Clear();
+        }
         selectedTile = null;
+        selectedStack.Clear();
         if (Physics.Raycast(Camera.main.ScreenPointToRay(mousePosition), out RaycastHit hit))
         {
             if (pointer != null)

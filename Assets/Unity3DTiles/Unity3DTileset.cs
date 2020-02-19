@@ -57,7 +57,7 @@ namespace Unity3DTiles
         public Unity3DTilesetStatistics Statistics = new Unity3DTilesetStatistics();
 
 
-        private Unity3DTilesetTraversal traversal;
+        public Unity3DTilesetTraversal Traversal;
         private Promise<Unity3DTileset> readyPromise = new Promise<Unity3DTileset>();
 
         public delegate void LoadProgressDelegate(int tilesRemaining);
@@ -94,7 +94,7 @@ namespace Unity3DTiles
             this.RequestManager = behaviour.RequestManager;
             this.ProcessingQueue = behaviour.ProcessingQueue;
             this.LRUContent = behaviour.LRUCache;
-            this.traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
+            this.Traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
             this.DeepestDepth = 0;
 
             string url = UriHelper.ReplaceDataProtocol(tilesetOptions.Url);
@@ -206,7 +206,7 @@ namespace Unity3DTiles
                 return;
             }            
             Statistics.Clear();
-            traversal.Run();
+            Traversal.Run();
             Statistics.RequestQueueLength = this.RequestManager.QueueSize();
             Statistics.ConcurrentRequests = this.RequestManager.RequestsInProgress();
             Statistics.ProcessingTiles = this.ProcessingQueue.Count;
@@ -230,7 +230,7 @@ namespace Unity3DTiles
             previousTilesRemaining = remaining;
             if (this.TilesetOptions.DebugDrawBounds)
             {
-                traversal.DrawDebug();
+                Traversal.DrawDebug();
             }
         }
     }
