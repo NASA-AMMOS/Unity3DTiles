@@ -1,11 +1,11 @@
 using UnityEngine;
 using Unity3DTiles;
 
-class KeyboardInput : MonoBehaviour
+class DemoUX : MonoBehaviour
 {
 #pragma warning disable 0649
     public AbstractTilesetBehaviour tileset;
-    public Unity3DTilesetStatsHud hud;
+    public TilesetStatsHud hud;
     public MouseFly mouseFly;
     public MouseRotate mouseRotate;
     public GameObject pointer;
@@ -43,14 +43,17 @@ class KeyboardInput : MonoBehaviour
             if (flyNav || rotNav)
             {
                 MouseNavBase.Modifier scaleMod = MouseNavBase.Modifier.None;
+                MouseNavBase.Modifier rollMod = MouseNavBase.Modifier.None;
                 if (flyNav)
                 {
                     hud.message += "\nw/s/a/d/q/e to translate forward/back/left/right/up/down";
                     scaleMod = mouseFly.scaleModifier;
+                    rollMod = mouseFly.rollModifier;
                 }
                 else if (rotNav)
                 {
                     scaleMod = mouseRotate.scaleModifier;
+                    rollMod = mouseRotate.rollModifier;
                     hud.message += "\nc to rotate about " + (hasPick ? "clicked point" : "centroid");
                 }
                 hud.message += "\ndrag mouse to rotate";
@@ -59,6 +62,12 @@ class KeyboardInput : MonoBehaviour
                 {
                     hud.message += " (or " + scaleMod + "-drag)";
                 }
+                hud.message += "\nright mouse to roll";
+                if (rollMod != MouseNavBase.Modifier.None)
+                {
+                    hud.message += " (or " + rollMod + "-drag)";
+                }
+
                 if (mouseFly != null && mouseRotate != null)
                 {
                     hud.message += "\nn to switch navigation";

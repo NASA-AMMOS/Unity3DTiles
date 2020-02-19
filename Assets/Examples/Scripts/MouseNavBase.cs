@@ -19,19 +19,18 @@ public class MouseNavBase : MonoBehaviour
     //c) mouse wheel
     public Button scaleButton = Button.Middle;
 
+    public Button rollButton = Button.Right;
+
     public enum Modifier { Control = 0, Shift, Alt, Space, None };
     protected bool[] mods = new bool[4];
 
     public Modifier rotateModifier = Modifier.None;
     public Modifier scaleModifier = Modifier.Alt;
     public Modifier accelModifier = Modifier.Shift;
+    public Modifier rollModifier = Modifier.Control;
 
-    public float rotSpeed = 2.0f, zoomSpeed = 8.0f;
+    public float rotSpeed = 2.0f, zoomSpeed = 8.0f, transSpeed = 1.0f;
     public float accelFactor = 2.0f;
-
-    public float minScale = 0.1f, maxScale = 10.0f;
-
-    protected Vector3 dirX = new Vector3(0, -1, 0), dirY = new Vector3(1, 0, 0);
 
     protected bool hasFocus = true;
     public void OnApplicationFocus(bool focusStatus)
@@ -40,9 +39,7 @@ public class MouseNavBase : MonoBehaviour
     }
 
     protected Vector3 lastMouse;
-    protected Vector3 mouseDiff;
-
-    public bool debug = false;
+    protected Vector4 mouseDiff; //x = pitch, y = yaw, z = zoom, w = roll
 
     public virtual void Start()
     {
@@ -66,15 +63,10 @@ public class MouseNavBase : MonoBehaviour
              es.IsPointerOverGameObject(Input.GetTouch(0).fingerId));
     }
 
-    //derived class Update() should call this first
-    //it sets buttons, mods, and mouseDiff
-    //(also sets lastMouse and hasFocus)
-    //mouseDiff.{x,y} should be used to rotate
-    //mouseDiff.z should be used to scale
     public virtual void Update()
     {
 
-        mouseDiff = Vector3.zero;
+        mouseDiff = Vector4.zero;
 
         for (int i = 0; i < mods.Length; i++)
         {
@@ -95,11 +87,6 @@ public class MouseNavBase : MonoBehaviour
         mods[(int)Modifier.Shift] = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         mods[(int)Modifier.Alt] = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
         mods[(int)Modifier.Space] = Input.GetKey(KeyCode.Space);
-        if (debug && mods.Any(m => m))
-        {
-            Debug.Log("ctrl=" + mods[(int)Modifier.Control] + ", shift=" + mods[(int)Modifier.Shift] +
-                      ", alt=" + mods[(int)Modifier.Alt] + ", space=" + mods[(int)Modifier.Space]);
-        }
 
         //if the button just went down this frame then don't count it
         //because for the workaround below the very first mouseDiff during a drag will be bogus
@@ -107,30 +94,33 @@ public class MouseNavBase : MonoBehaviour
         buttons[(int)Button.Right] = Input.GetMouseButton(1) && !Input.GetMouseButtonDown(1);
         buttons[(int)Button.Middle] = Input.GetMouseButton(2) && !Input.GetMouseButtonDown(2);
         bool anyButton = buttons.Any(b => b);
-        if (debug && anyButton)
-        {
-            Debug.Log("mouse left=" + buttons[(int)Button.Left] + ", right=" + buttons[(int)Button.Right] +
-                      ", middle=" + buttons[(int)Button.Middle]);
-        }
 
         //workaround regular Input APIs may not work for mouse movement over remote desktop
         //https://forum.unity.com/threads/input-getaxis-mouse-x-and-y-axis-equivalent-dont-work-in-remote-desktop.115526
         //mouseDiff.x = Input.GetAxis("Mouse X");
         //mouseDiff.y = Input.GetAxis("Mouse Y");
         Vector3 mouse = Input.mousePosition;
-        mouseDiff = mouse - lastMouse;
+        mouseDiff.x = mouse.x - lastMouse.x;
+        mouseDiff.y = mouse.y - lastMouse.y;
         lastMouse = mouse;
 
         //scale on mouse wheel
         mouseDiff.z = Input.GetAxis("Mouse ScrollWheel");
 
-        //override scale if dragging scaleButton or any button with scaleModifier
         bool scaling = scaleButton != Button.None && buttons[(int)scaleButton];
         scaling |= anyButton && scaleModifier != Modifier.None && mods[(int)scaleModifier];
         if (scaling)
         {
             mouseDiff.z = 0.01f * mouseDiff.y;
             mouseDiff.x = mouseDiff.y = 0;
+        }
+
+        bool rolling = rollButton == Button.None || buttons[(int)rollButton];
+        rolling |= anyButton && rollModifier != Modifier.None && mods[(int)rollModifier];
+        if (rolling)
+        {
+            mouseDiff.w = mouseDiff.x;
+            mouseDiff.x = mouseDiff.y = mouseDiff.z = 0;
         }
 
         bool rotating = rotateButton == Button.None || buttons[(int)rotateButton];
@@ -143,11 +133,6 @@ public class MouseNavBase : MonoBehaviour
         if (accelModifier != Modifier.None && mods[(int)accelModifier])
         {
             mouseDiff *= accelFactor;
-        }
-
-        if (debug && mouseDiff.magnitude != 0)
-        {
-            Debug.Log("mouse diff: " + mouseDiff);
         }
     }
 }

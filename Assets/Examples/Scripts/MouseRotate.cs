@@ -4,6 +4,8 @@ public class MouseRotate : MouseNavBase {
 
     public Vector3 pivot = Vector3.zero; //in world
 
+    public float minZoom = 0.5f;
+
     public override void Update() {
 
         base.Update();
@@ -25,7 +27,17 @@ public class MouseRotate : MouseNavBase {
         if (mouseDiff.z != 0)
         {
             float r = Vector3.Distance(pivot, cam.position);
-            cam.Translate(-cam.forward * zoomSpeed * mouseDiff.z * 0.1f * r, Space.World);
+            float d = zoomSpeed * mouseDiff.z * 0.1f * r;
+            if (Mathf.Abs(d) < minZoom)
+            {
+                d = Mathf.Sign(d) * minZoom;
+            }
+            cam.Translate(-cam.forward * d, Space.World);
+        }
+
+        if (mouseDiff.w != 0)
+        {
+            cam.RotateAround(pivot, cam.forward, rotSpeed * mouseDiff.w);
         }
     }
 }

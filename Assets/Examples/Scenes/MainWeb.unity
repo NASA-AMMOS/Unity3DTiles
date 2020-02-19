@@ -294,7 +294,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!23 &983294638
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -432,6 +432,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1385839225}
+  - component: {fileID: 1385839228}
+  - component: {fileID: 1385839227}
+  - component: {fileID: 1385839226}
   m_Layer: 0
   m_Name: Tilesets
   m_TagString: Untagged
@@ -454,6 +457,72 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1385839226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1385839224}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54f406ea90e7b4e43bc8986e16607ff3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotateButton: 0
+  scaleButton: 2
+  rollButton: 1
+  rotateModifier: 4
+  scaleModifier: 2
+  accelModifier: 1
+  rollModifier: 0
+  rotSpeed: 2
+  zoomSpeed: 8
+  transSpeed: 1
+  accelFactor: 2
+--- !u!114 &1385839227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1385839224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60803ead571d37d4f939338bba47695a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotateButton: 0
+  scaleButton: 2
+  rollButton: 1
+  rotateModifier: 4
+  scaleModifier: 2
+  accelModifier: 1
+  rollModifier: 0
+  rotSpeed: 2
+  zoomSpeed: 8
+  transSpeed: 1
+  accelFactor: 2
+  pivot: {x: 0, y: 0, z: 0}
+  minZoom: 0.5
+--- !u!114 &1385839228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1385839224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6551e1c668008d044b4d380b72192ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tileset: {fileID: 1485971528}
+  hud: {fileID: 1931381444}
+  mouseFly: {fileID: 1385839226}
+  mouseRotate: {fileID: 1385839227}
+  pointer: {fileID: 983294637}
+  pointerRadiusPixels: 10
 --- !u!1 &1438352743
 GameObject:
   m_ObjectHideFlags: 0
@@ -466,8 +535,6 @@ GameObject:
   - component: {fileID: 1438352746}
   - component: {fileID: 1438352745}
   - component: {fileID: 1438352744}
-  - component: {fileID: 1438352748}
-  - component: {fileID: 1438352749}
   m_Layer: 0
   m_Name: Camera
   m_TagString: MainCamera
@@ -547,31 +614,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1438352748
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1438352743}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c14b2ce73ca4724a8d880d6e087e590, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1438352749
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1438352743}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56ea5f6b4405f3b43a040f407ffa1b58, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  pointer: {fileID: 983294637}
 --- !u!1 &1485971526
 GameObject:
   m_ObjectHideFlags: 0

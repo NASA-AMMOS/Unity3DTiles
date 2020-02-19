@@ -17,7 +17,7 @@ using System.Text;
 using UnityEngine;
 using Unity3DTiles;
 
-public class Unity3DTilesetStatsHud : MonoBehaviour {
+public class TilesetStatsHud : MonoBehaviour {
 
     public AbstractTilesetBehaviour tileset;
     public string message;

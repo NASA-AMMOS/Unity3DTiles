@@ -624,16 +624,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rotateButton: 0
   scaleButton: 2
+  rollButton: 1
   rotateModifier: 4
   scaleModifier: 2
   accelModifier: 1
+  rollModifier: 0
   rotSpeed: 2
   zoomSpeed: 1
+  transSpeed: 1
   accelFactor: 2
-  minScale: 0.1
-  maxScale: 10
-  debug: 0
   pivot: {x: 0, y: 0, z: 0}
+  minZoom: 0.5
 --- !u!114 &1485971531
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -648,15 +649,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rotateButton: 0
   scaleButton: 2
+  rollButton: 1
   rotateModifier: 4
   scaleModifier: 2
   accelModifier: 1
+  rollModifier: 0
   rotSpeed: 2
   zoomSpeed: 1
+  transSpeed: 1
   accelFactor: 2
-  minScale: 0.1
-  maxScale: 10
-  debug: 0
 --- !u!1 &1931381442
 GameObject:
   m_ObjectHideFlags: 0

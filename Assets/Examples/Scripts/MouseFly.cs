@@ -23,36 +23,41 @@ public class MouseFly : MouseNavBase {
             cam.Translate(-cam.forward * zoomSpeed * mouseDiff.z, Space.World);
         }
 
+        if (mouseDiff.w != 0)
+        {
+            cam.RotateAround(cam.position, cam.forward, rotSpeed * mouseDiff.w);
+        }
+
         var t = Vector3.zero;
 
         if (Input.GetKey(KeyCode.W))
         {
-            t += cam.forward * accelFactor * zoomSpeed;
+            t += cam.forward * accelFactor * transSpeed;
         }
 
         if (Input.GetKey(KeyCode.S))
         {
-            t -= cam.forward * accelFactor * zoomSpeed;
+            t -= cam.forward * accelFactor * transSpeed;
         }
 
         if (Input.GetKey(KeyCode.A))
         {
-            t -= cam.right * accelFactor * zoomSpeed;
+            t -= cam.right * accelFactor * transSpeed;
         }
 
         if (Input.GetKey(KeyCode.D))
         {
-            t = cam.right * accelFactor * zoomSpeed;
+            t = cam.right * accelFactor * transSpeed;
         }
 
         if (Input.GetKey(KeyCode.Q))
         {
-            t = cam.up * accelFactor * zoomSpeed;
+            t = cam.up * accelFactor * transSpeed;
         }
 
         if (Input.GetKey(KeyCode.E))
         {
-            t -= cam.up * accelFactor * zoomSpeed;
+            t -= cam.up * accelFactor * transSpeed;
         }
 
         cam.Translate(t, Space.World);
