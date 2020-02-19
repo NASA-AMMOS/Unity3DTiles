@@ -14,7 +14,6 @@ class DemoUX : MonoBehaviour
     public float pointerRadiusPixels = 10;
 
     public Unity3DTile selectedTile;
-    public Unity3DTileset selectedTileset;
     
     private Vector3? lastMouse;
     private bool hasFocus = true;
@@ -113,10 +112,10 @@ class DemoUX : MonoBehaviour
 
             if (drawSelectedBounds)
             {
-                selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTileset.Behaviour.transform);
+                selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTile.Tileset.Behaviour.transform);
                 if (cbv >= 0 && cbv != bv)
                 {
-                    selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTileset.Behaviour.transform);
+                    selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTile.Tileset.Behaviour.transform);
                 }
             }
 
@@ -125,10 +124,10 @@ class DemoUX : MonoBehaviour
                 var parent = selectedTile.Parent;
                 float pbv = parent.BoundingVolume.Volume();
                 float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
-                parent.BoundingVolume.DebugDraw(Color.cyan, selectedTileset.Behaviour.transform);
+                parent.BoundingVolume.DebugDraw(Color.cyan, selectedTile.Tileset.Behaviour.transform);
                 if (pcbv >= 0 && pcbv != pbv)
                 {
-                    parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTileset.Behaviour.transform);
+                    parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
                 }
             }
 
@@ -266,7 +265,6 @@ class DemoUX : MonoBehaviour
     public void OnClick(Vector3 mousePosition)
     {
         selectedTile = null;
-        selectedTileset = null;
         if (Physics.Raycast(Camera.main.ScreenPointToRay(mousePosition), out RaycastHit hit))
         {
             if (pointer != null)
@@ -277,11 +275,10 @@ class DemoUX : MonoBehaviour
             var go = hit.collider.transform.gameObject;
             while (go != null)
             {
-                var tpi = go.GetComponent<TileParentInfo>();
-                if (tpi != null)
+                var ti = go.GetComponent<TileInfo>();
+                if (ti != null)
                 {
-                    selectedTile = tpi.Parent;
-                    selectedTileset = tpi.Tileset;
+                    selectedTile = ti.Tile;
                     break;
                 }
                 go = go.transform.parent != null ? go.transform.parent.gameObject : null;
