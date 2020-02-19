@@ -37,6 +37,8 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
 #if UNITY_EDITOR
         //workaround Unity editor not respecting defaults when adding element to a list
         //https://forum.unity.com/threads/lists-default-values.206956/
+        //this is a nasty hack but it is only for dev use in editor
+        //and it makes it a lot more friendly to use the editor inspector to add tilesets
         private static Thread mainThread = Thread.CurrentThread;
         private int numTilesetsWas = 0;
         public void OnBeforeSerialize()
@@ -45,13 +47,12 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
         }
         public void OnAfterDeserialize()
         {
-            int added = TilesetOptions.Count - numTilesetsWas;
-            if (added > 0 && Thread.CurrentThread == mainThread)
+            if (numTilesetsWas == 0 && Thread.CurrentThread == mainThread)
             {
-                for (int i = 0; i < added; i++)
+                //init fields first new element to defaults
+                if (string.IsNullOrEmpty(TilesetOptions[0].Url))
                 {
-                    //init fields of newly added elements to defaults
-                    TilesetOptions[TilesetOptions.Count - i - 1] = new Unity3DTilesetOptions();
+                    TilesetOptions[0] = new Unity3DTilesetOptions();
                 }
             }
             numTilesetsWas = TilesetOptions.Count;
