@@ -12,10 +12,15 @@ class DemoUX : MonoBehaviour
 #pragma warning restore 0649
 
     public float pointerRadiusPixels = 10;
+
+    public Unity3DTile selectedTile;
+    public Unity3DTileset selectedTileset;
     
     private Vector3? lastMouse;
     private bool hasFocus = true;
     private bool didReset = false;
+
+    private bool drawSelectedBounds, drawParentBounds;
 
     public void OnApplicationFocus(bool focusStatus)
     {
@@ -67,20 +72,87 @@ class DemoUX : MonoBehaviour
                 {
                     hud.message += " (or " + rollMod + "-drag)";
                 }
-
                 if (mouseFly != null && mouseRotate != null)
                 {
                     hud.message += "\nn to switch navigation";
                 }
             }
         }
-
-        if (Input.GetKeyDown(KeyCode.H))
+        
+        if (selectedTile != null)
         {
+            float bv = selectedTile.BoundingVolume.Volume();
+            float cbv = -1;
+            if (selectedTile.ContentBoundingVolume != null)
+            {
+                cbv = selectedTile.ContentBoundingVolume.Volume();
+            }
+
             if (hud != null)
             {
-                hud.text.enabled = !hud.text.enabled;
+                hud.message += "\nselected tile " + selectedTile.Id;
+                hud.message += ", depth " + selectedTile.Depth;
+                hud.message += ", " + selectedTile.Children.Count + " children";
+                hud.message += ", geometric error " + selectedTile.GeometricError.ToString("F3");
+                
+                hud.message += "\nbounds vol " + bv + ": " + selectedTile.BoundingVolume.SizeString();
+                if (cbv >= 0 && cbv != bv)
+                {
+                    hud.message += ", content vol " + cbv;
+                }
+                
+                var tc = selectedTile.Content;
+                if (tc != null && selectedTile.ContentState == Unity3DTileContentState.READY)
+                {
+                    hud.message += "\n" + FmtKMG(tc.FaceCount) + " tris, " + FmtKMG(tc.PixelCount) + " pixels, ";
+                    hud.message += tc.TextureCount + " textures, ";
+                    hud.message += "max " + tc.MaxTextureSize.x + "x" + tc.MaxTextureSize.y;
+                }
+                hud.message += "\nb to toggle bounds";
             }
+
+            if (drawSelectedBounds)
+            {
+                selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTileset.Behaviour.transform);
+                if (cbv >= 0 && cbv != bv)
+                {
+                    selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTileset.Behaviour.transform);
+                }
+            }
+
+            if (drawParentBounds && selectedTile.Parent != null)
+            {
+                var parent = selectedTile.Parent;
+                float pbv = parent.BoundingVolume.Volume();
+                float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
+                parent.BoundingVolume.DebugDraw(Color.cyan, selectedTileset.Behaviour.transform);
+                if (pcbv >= 0 && pcbv != pbv)
+                {
+                    parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTileset.Behaviour.transform);
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.B))
+            {
+                if (!drawSelectedBounds && !drawParentBounds)
+                {
+                    drawSelectedBounds = true;
+                }
+                else if (drawSelectedBounds && !drawParentBounds)
+                {
+                    drawParentBounds = true;
+                }
+                else
+                {
+                    drawSelectedBounds = drawParentBounds = false;
+                }
+            }
+        }
+
+        //toggle hud
+        if (hud != null && Input.GetKeyDown(KeyCode.H))
+        {
+            hud.text.enabled = !hud.text.enabled;
         }
 
         if (Input.GetKeyDown(KeyCode.V))
@@ -93,15 +165,14 @@ class DemoUX : MonoBehaviour
             FitView();
         }
 
-        if (Input.GetKeyDown(KeyCode.N))
+        //toggle nav mode
+        if (mouseFly != null && mouseRotate != null && Input.GetKeyDown(KeyCode.N))
         {
-            if (mouseFly != null && mouseRotate != null)
-            {
-                mouseFly.enabled = !mouseFly.enabled;
-                mouseRotate.enabled = !mouseRotate.enabled;
-            }
+            mouseFly.enabled = !mouseFly.enabled;
+            mouseRotate.enabled = !mouseRotate.enabled;
         }
 
+        //set rotNav pivot
         if (rotNav && Input.GetKeyDown(KeyCode.C))
         {
             if (hasPick)
@@ -114,6 +185,7 @@ class DemoUX : MonoBehaviour
             } 
         }
 
+        //handle mouse clicks
         if (hasFocus && !MouseNavBase.MouseOnUI())
         {
             if (Input.GetMouseButtonDown(0))
@@ -131,6 +203,7 @@ class DemoUX : MonoBehaviour
             lastMouse = null;
         }
 
+        //scale pointer to pointerRadiusPixels
         if (hasPick)
         {
             var cam = Camera.main.transform;
@@ -192,12 +265,26 @@ class DemoUX : MonoBehaviour
 
     public void OnClick(Vector3 mousePosition)
     {
+        selectedTile = null;
+        selectedTileset = null;
         if (Physics.Raycast(Camera.main.ScreenPointToRay(mousePosition), out RaycastHit hit))
         {
             if (pointer != null)
             {
                 pointer.SetActive(true);
                 pointer.transform.position = hit.point;
+            }
+            var go = hit.collider.transform.gameObject;
+            while (go != null)
+            {
+                var tpi = go.GetComponent<TileParentInfo>();
+                if (tpi != null)
+                {
+                    selectedTile = tpi.Parent;
+                    selectedTileset = tpi.Tileset;
+                    break;
+                }
+                go = go.transform.parent != null ? go.transform.parent.gameObject : null;
             }
         }
         else
@@ -207,5 +294,13 @@ class DemoUX : MonoBehaviour
                 pointer.SetActive(false);
             }
         }
+    }
+
+    public static string FmtKMG(float b, float k = 1e3f)
+    {
+        if (Mathf.Abs(b) < k) return b.ToString("f0");
+        else if (Mathf.Abs(b) < k*k) return string.Format("{0:f1}k", b/k);
+        else if (Mathf.Abs(b) < k*k*k) return string.Format("{0:f1}M", b/(k*k));
+        else return string.Format("{0:f1}G", b/(k*k*k));
     }
 }

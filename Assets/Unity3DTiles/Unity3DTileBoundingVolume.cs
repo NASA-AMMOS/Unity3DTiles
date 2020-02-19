@@ -138,6 +138,10 @@ namespace Unity3DTiles
 
         public abstract BoundingSphere BoundingSphere();
 
+        public abstract float Volume();
+
+        public abstract string SizeString();
+
         public PlaneClipMask IntersectPlanes(Plane[] planes)
         {
             return IntersectPlanes(planes, PlaneClipMask.GetDefaultMask());
@@ -207,30 +211,18 @@ namespace Unity3DTiles
             g = t.TransformPoint(g);
             h = t.TransformPoint(h);
 
-            //ab
-            Debug.DrawLine(a, b, col);
-            //ac
-            Debug.DrawLine(a, c, col);
-            //cd
-            Debug.DrawLine(c, d, col);
-            //bd
-            Debug.DrawLine(b, d, col);
-            //ef
-            Debug.DrawLine(e, f, col);
-            //eg
-            Debug.DrawLine(e, g, col);
-            //gh
-            Debug.DrawLine(g, h, col);
-            //fh
-            Debug.DrawLine(f, h, col);
-            //ae
-            Debug.DrawLine(a, e, col);
-            //bf
-            Debug.DrawLine(b, f, col);
-            //cg
-            Debug.DrawLine(c, g, col);
-            //dh
-            Debug.DrawLine(d, h, col);
+            Unity3DTilesDebug.DrawLine(a, b, col);
+            Unity3DTilesDebug.DrawLine(a, c, col);
+            Unity3DTilesDebug.DrawLine(c, d, col);
+            Unity3DTilesDebug.DrawLine(b, d, col);
+            Unity3DTilesDebug.DrawLine(e, f, col);
+            Unity3DTilesDebug.DrawLine(e, g, col);
+            Unity3DTilesDebug.DrawLine(g, h, col);
+            Unity3DTilesDebug.DrawLine(f, h, col);
+            Unity3DTilesDebug.DrawLine(a, e, col);
+            Unity3DTilesDebug.DrawLine(b, f, col);
+            Unity3DTilesDebug.DrawLine(c, g, col);
+            Unity3DTilesDebug.DrawLine(d, h, col);
         }
 
         public override float DistanceTo(Vector3 point)
@@ -332,6 +324,18 @@ namespace Unity3DTiles
             return new TileBoundingSphere(this).BoundingSphere();
         }
 
+        public override float Volume()
+        {
+            var d = 2 * (HalfAxesX + HalfAxesY + HalfAxesZ);
+            return Mathf.Abs(d.x) * Mathf.Abs(d.y) * Mathf.Abs(d.z);
+        }
+
+        public override string SizeString()
+        {
+            var d = 2 * (HalfAxesX + HalfAxesY + HalfAxesZ);
+            return string.Format("{0:f3}x{1:f3}x{2:f3}", Mathf.Abs(d.x), Mathf.Abs(d.y), Mathf.Abs(d.z));
+        }
+
         public void Transform(Matrix4x4 transform)
         {
             // Find the transformed center and halfAxes
@@ -412,6 +416,16 @@ namespace Unity3DTiles
             return new BoundingSphere(Center, Radius);
         }
 
+        public override float Volume()
+        {
+            return (4.0f / 3.0f) * Mathf.PI * Radius * Radius * Radius;
+        }
+
+        public override string SizeString()
+        {
+            return string.Format("d={0:f3}", Radius);
+        }
+
         public override void DebugDraw(Color c, Transform t)
         {
             throw new NotImplementedException();
@@ -453,6 +467,16 @@ namespace Unity3DTiles
         }
 
         public override BoundingSphere BoundingSphere()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override float Volume()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string SizeString()
         {
             throw new NotImplementedException();
         }

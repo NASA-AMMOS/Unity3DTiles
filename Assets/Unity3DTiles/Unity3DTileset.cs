@@ -45,7 +45,6 @@ namespace Unity3DTiles
 
         /// <summary>
         /// Maintians a least recently used list of tiles that have content
-        /// A tile is 
         /// </summary>
         public LRUCache<Unity3DTile> LRUContent { get; private set; }
 

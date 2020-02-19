@@ -24,6 +24,7 @@ namespace Unity3DTiles
         public int FaceCount { get; private set; }
         public int PixelCount { get; private set; }
         public int TextureCount { get; private set; }
+        public Vector2Int MaxTextureSize { get; private set; }
         private bool collidersEnabled;
         private bool renderersEnabled;
         private ShadowCastingMode? shadowMode;
@@ -81,7 +82,8 @@ namespace Unity3DTiles
                     this.FaceCount += m.triangles.Length / 3;
                 }
             }
-            
+
+            int maxPixels = 0;
             for (int i = 0; i < this.renderers.Length; i++)
             {
                 var r = this.renderers[i];
@@ -92,7 +94,12 @@ namespace Unity3DTiles
                         var t = r.materials[j].mainTexture;
                         if (t != null)
                         {
-                            this.PixelCount += t.width * t.height;
+                            int pixels = t.width * t.height;
+                            if (pixels > maxPixels)
+                            {
+                                this.MaxTextureSize = new Vector2Int(t.width, t.height);
+                            }
+                            this.PixelCount += pixels;
                             this.TextureCount += 1;
                         }
                     }
