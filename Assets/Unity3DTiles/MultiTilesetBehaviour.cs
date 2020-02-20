@@ -47,9 +47,9 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
         }
         public void OnAfterDeserialize()
         {
-            if (numTilesetsWas == 0 && Thread.CurrentThread == mainThread)
+            if (TilesetOptions.Count == 1 && numTilesetsWas == 0 && Thread.CurrentThread == mainThread)
             {
-                //init fields first new element to defaults
+                //init first new element to defaults
                 if (string.IsNullOrEmpty(TilesetOptions[0].Url))
                 {
                     TilesetOptions[0] = new Unity3DTilesetOptions();
