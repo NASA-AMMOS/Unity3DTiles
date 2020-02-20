@@ -53,6 +53,8 @@ namespace Unity3DTiles
 
         public abstract int DeepestDepth();
 
+        public abstract void ClearForcedTiles();
+
         public void Update()
         {
             this._update();

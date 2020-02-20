@@ -120,6 +120,14 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             return Tilesets.Values.Max(ts => ts.DeepestDepth);
         }
 
+        public override void ClearForcedTiles()
+        {
+            foreach (var tileset in Tilesets.Values)
+            {
+                tileset.Traversal.ForceTiles.Clear();
+            }
+        }
+
         public bool AddTileset(string name, string url, Matrix4x4 rootTransform, bool show,
                                Unity3DTilesetOptions options = null)
         {

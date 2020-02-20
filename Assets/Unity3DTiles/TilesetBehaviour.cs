@@ -39,6 +39,14 @@ namespace Unity3DTiles
             return Tileset != null ? Tileset.DeepestDepth : 0;
         }
 
+        public override void ClearForcedTiles()
+        {
+            if (Tileset != null)
+            {
+                Tileset.Traversal.ForceTiles.Clear();
+            }
+        }
+
         public virtual void MakeTileset()
         {
             Tileset = new Unity3DTileset(TilesetOptions, this);

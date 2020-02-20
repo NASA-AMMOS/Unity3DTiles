@@ -84,7 +84,12 @@ class DemoUX : MonoBehaviour
                 }
             }
         }
-        
+
+        if (tileset != null)
+        {
+            tileset.ClearForcedTiles();
+        }
+
         if (selectedTile != null)
         {
             float bv = selectedTile.BoundingVolume.Volume();
@@ -118,12 +123,12 @@ class DemoUX : MonoBehaviour
                 if (selectedTile.Parent != null)
                 {
                     hud.message += "\nup/left/right";
-                    if (selectedTile.Children != null)
+                    if (selectedTile.Children.Count > 0)
                     {
                         hud.message += "/down";
                     }
                     hud.message += " to select parent/sibling";
-                    if (selectedTile.Children != null)
+                    if (selectedTile.Children.Count > 0)
                     {
                         hud.message += "/child";
                     }
@@ -182,27 +187,19 @@ class DemoUX : MonoBehaviour
                 selectedTile = selectedStack.Count > 0 ? selectedStack.Pop() : selectedTile.Children.First();
             }
 
-            if (selectedTile.Parent != null && Input.GetKeyDown(KeyCode.LeftArrow))
+            int sibling = Input.GetKeyDown(KeyCode.LeftArrow) ? -1 : Input.GetKeyDown(KeyCode.RightArrow) ? 1 : 0;
+            if (selectedTile.Parent != null && sibling != 0)
             {
-                int idx = selectedTile.Parent.Children.FindIndex(c => c == selectedTile) - 1;
-                if (idx < 0)
+                var siblings = selectedTile.Parent.Children;
+                int idx = siblings.FindIndex(c => c == selectedTile) + sibling;
+                idx = idx < 0 ? siblings.Count - 1 : idx == siblings.Count ? 0 : idx;
+                if (siblings[idx] != selectedTile)
                 {
-                    idx = selectedTile.Parent.Children.Count -1;
+                    selectedStack.Clear();
                 }
-                selectedTile = selectedTile.Parent.Children[idx];
+                selectedTile = siblings[idx];
             }
 
-            if (selectedTile.Parent != null && Input.GetKeyDown(KeyCode.RightArrow))
-            {
-                int idx = selectedTile.Parent.Children.FindIndex(c => c == selectedTile) + 1;
-                if (idx == selectedTile.Parent.Children.Count)
-                {
-                    idx = 0;
-                }
-                selectedTile = selectedTile.Parent.Children[idx];
-            }
-
-            selectedTile.Tileset.Traversal.ForceTiles.Clear();
             selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
         }
 
@@ -330,10 +327,6 @@ class DemoUX : MonoBehaviour
 
     public void OnClick(Vector3 mousePosition)
     {
-        if (selectedTile != null)
-        {
-            selectedTile.Tileset.Traversal.ForceTiles.Clear();
-        }
         selectedTile = null;
         selectedStack.Clear();
         if (Physics.Raycast(Camera.main.ScreenPointToRay(mousePosition), out RaycastHit hit))
