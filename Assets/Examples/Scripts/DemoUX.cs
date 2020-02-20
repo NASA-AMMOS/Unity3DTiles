@@ -21,6 +21,8 @@ class DemoUX : MonoBehaviour
     public Stack<Unity3DTile> selectedStack = new Stack<Unity3DTile>();
     
     private Vector3? lastMouse;
+    private Vector2 mouseIntegral;
+
     private bool hasFocus = true;
     private bool didReset = false;
 
@@ -246,8 +248,16 @@ class DemoUX : MonoBehaviour
             if (Input.GetMouseButtonDown(0))
             {
                 lastMouse = Input.mousePosition;
+                mouseIntegral = Vector3.zero;
             }
-            else if (!Input.GetMouseButton(0) && lastMouse != null && lastMouse.Value == Input.mousePosition)
+            else if (Input.GetMouseButton(0) && lastMouse.HasValue)
+            {
+                var mouseDiff = Input.mousePosition - lastMouse.Value;
+                mouseIntegral.x += Mathf.Abs(mouseDiff.x);
+                mouseIntegral.y += Mathf.Abs(mouseDiff.y);
+                lastMouse = Input.mousePosition;
+            }
+            else if (lastMouse.HasValue && mouseIntegral == Vector2.zero)
             {
                 OnClick(Input.mousePosition);
                 lastMouse = null;

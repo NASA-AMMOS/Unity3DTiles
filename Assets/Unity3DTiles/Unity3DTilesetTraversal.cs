@@ -44,12 +44,15 @@ namespace Unity3DTiles
                 return;
             }
 
-            foreach (var tile in ForceTiles)
+            foreach (var ft in ForceTiles)
             {
-                tile.FrameState.Reset(frameCount);
-                tile.MarkUsed();
-                tile.FrameState.InFrustumSet = true;
-                tileset.Statistics.FrustumSetCount += 1;
+                for (var tile = ft; tile != null; tile = tile.Parent)
+                {
+                    tile.FrameState.Reset(frameCount);
+                    tile.MarkUsed();
+                    tile.FrameState.InFrustumSet = true;
+                    tileset.Statistics.FrustumSetCount += 1;
+                }
             }
             
             SSECalculator sse = new SSECalculator(this.tileset);
