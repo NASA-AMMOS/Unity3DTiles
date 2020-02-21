@@ -37,7 +37,7 @@ public class TilesetStatsHud : MonoBehaviour
     {
         if (Text != null)
         {
-            Text.enabled = true;
+            Text.transform.parent.gameObject.SetActive(true);
         }
     }
 
@@ -45,7 +45,7 @@ public class TilesetStatsHud : MonoBehaviour
     {
         if (Text != null)
         {
-            Text.enabled = false;
+            Text.transform.parent.gameObject.SetActive(false);
         }
     }
 

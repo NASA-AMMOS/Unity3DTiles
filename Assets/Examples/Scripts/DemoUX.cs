@@ -26,6 +26,7 @@ class DemoUX : MonoBehaviour
 
     private Unity3DTile selectedTile;
     private Stack<Unity3DTile> selectedStack = new Stack<Unity3DTile>();
+    private Stack<Unity3DTileset> showStack = new Stack<Unity3DTileset>();
     
     private Vector3? lastMouse;
     private Vector2 mouseIntegral;
@@ -35,6 +36,18 @@ class DemoUX : MonoBehaviour
 
     private StringBuilder builder = new StringBuilder();
 
+    private List<KeyCode> alphaNumerals = new List<KeyCode>()
+    {
+        KeyCode.Alpha0, KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4,
+        KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9
+    };
+
+    private List<KeyCode> keypadNumerals = new List<KeyCode>()
+    {
+        KeyCode.Keypad0, KeyCode.Keypad1, KeyCode.Keypad2, KeyCode.Keypad3, KeyCode.Keypad4,
+        KeyCode.Keypad5, KeyCode.Keypad6, KeyCode.Keypad7, KeyCode.Keypad8, KeyCode.Keypad9
+    };
+    
     public void OnApplicationFocus(bool focusStatus)
     {
         hasFocus = focusStatus;
@@ -92,6 +105,84 @@ class DemoUX : MonoBehaviour
             }
         }
 
+        List<Unity3DTileset> tilesets = null;
+        if (tileset is MultiTilesetBehaviour)
+        {
+            tilesets = ((MultiTilesetBehaviour)tileset).GetTilesets().ToList();
+        }
+
+        if (tilesets != null && tilesets.Count > 1)
+        {
+            string mods = "";
+            if (tilesets.Count > 10)
+            {
+                mods += "[shift]+";
+            }
+            if (tilesets.Count > 20)
+            {
+                mods = "[ctrl]" + mods;
+            }
+            if (tilesets.Count > 40)
+            {
+                mods = "[alt]" + mods;
+            }
+            builder.Append("\npress " + mods + "0-9 to hide/show a tileset");
+            int offset = 0;
+            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+            {
+                offset += 10;
+            }
+            if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+            {
+                offset += 20;
+            }
+            if (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt))
+            {
+                offset += 40;
+            }
+            int idx = Mathf.Max(alphaNumerals.FindIndex(code => Input.GetKeyDown(code)),
+                                keypadNumerals.FindIndex(code => Input.GetKeyDown(code)));
+            if (idx >= 0)
+            {
+                idx += offset;
+                if (idx < tilesets.Count)
+                {
+                    tilesets[idx].TilesetOptions.Show = !tilesets[idx].TilesetOptions.Show;
+                    if (!tilesets[idx].TilesetOptions.Show)
+                    {
+                        showStack.Push(tilesets[idx]);
+                        if (selectedTile != null && selectedTile.Tileset == tilesets[idx])
+                        {
+                            selectedTile = null;
+                            selectedStack.Clear();
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!showStack.Any(ts => !ts.TilesetOptions.Show))
+        {
+            showStack.Clear();
+        }
+
+        if (showStack.Count > 0)
+        {
+            builder.Append("\npress o to show last hidden tileset");
+            if (Input.GetKeyDown(KeyCode.O))
+            {
+                while (showStack.Count > 0)
+                {
+                    var ts = showStack.Pop();
+                    if (!ts.TilesetOptions.Show)
+                    {
+                        ts.TilesetOptions.Show = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         if (selectedTile != null)
         {
             float bv = selectedTile.BoundingVolume.Volume();
@@ -101,7 +192,15 @@ class DemoUX : MonoBehaviour
                 cbv = selectedTile.ContentBoundingVolume.Volume();
             }
 
-            builder.Append("\n\nselected tile " + selectedTile.Id + ", depth " + selectedTile.Depth);
+            builder.Append("\n");
+
+            if (tilesets.Count > 0)
+            {
+                var sts = selectedTile.Tileset;
+                builder.Append("\nselected tileset " + sts.TilesetOptions.Name + " (" + tilesets.FindIndex(ts => ts == sts) + ")");
+            }
+
+            builder.Append("\nselected tile " + selectedTile.Id + ", depth " + selectedTile.Depth);
             builder.Append(", " + selectedTile.Children.Count + " children");
             builder.Append(", geometric error " + selectedTile.GeometricError.ToString("F3"));
             
@@ -196,6 +295,18 @@ class DemoUX : MonoBehaviour
                 if (pcbv >= 0 && pcbv != pbv)
                 {
                     parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
+                }
+            }
+
+            if (tilesets != null && tilesets.Count > 0)
+            {
+                builder.Append("\npress i to hide tileset");
+                if (Input.GetKeyDown(KeyCode.I))
+                {
+                    selectedTile.Tileset.TilesetOptions.Show = false;
+                    showStack.Push(selectedTile.Tileset);
+                    selectedTile = null;
+                    selectedStack.Clear();
                 }
             }
 

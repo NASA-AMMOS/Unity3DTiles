@@ -59,7 +59,8 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
         }
 #endif
 
-        private Dictionary<string, Unity3DTileset> Tilesets = new Dictionary<string, Unity3DTileset>();
+        private List<Unity3DTileset> tilesets = new List<Unity3DTileset>();
+        private Dictionary<string, Unity3DTileset> nameToTileset = new Dictionary<string, Unity3DTileset>();
 
         private int startIndex = 0;
 
@@ -74,37 +75,35 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
         protected override void _lateUpdate()
         {
             // Rotate processing order of tilesets each frame to avoid starvation (only upon request queue / cache full)
-            var tempList = Tilesets.Values.ToList(); 
-            var tilesetList = tempList.Skip(startIndex).ToList();
-            tilesetList.AddRange(tempList.Take(startIndex));
-            if(++startIndex >= tilesetList.Count)
-            {
-                startIndex = 0;
-            }
-            // Update
-            foreach(var t in tilesetList)
+            startIndex = Mathf.Clamp(startIndex, 0, tilesets.Count - 1);
+            foreach (var t in tilesets.Skip(startIndex))
             {
                 t.Update();
             }
+            foreach (var t in tilesets.Take(startIndex))
+            {
+                t.Update();
+            }
+            startIndex++;
         }
 
         protected override void UpdateStats()
         {
-            Stats = Unity3DTilesetStatistics.Aggregate(Tilesets.Values.Select(t => t.Statistics).ToArray());
+            Stats = Unity3DTilesetStatistics.Aggregate(tilesets.Select(t => t.Statistics).ToArray());
         }
 
         public override bool Ready()
         {
-            return Tilesets.Count > 0 && Tilesets.Values.All(ts => ts.Ready);
+            return tilesets.Count > 0 && tilesets.All(ts => ts.Ready);
         }
 
         public override BoundingSphere BoundingSphere()
         {
-            if (Tilesets.Count == 0)
+            if (tilesets.Count == 0)
             {
                 return new BoundingSphere(Vector3.zero, 0.0f);
             }
-            var spheres = Tilesets.Values.Select(ts => ts.Root.BoundingVolume.BoundingSphere()).ToList();
+            var spheres = tilesets.Select(ts => ts.Root.BoundingVolume.BoundingSphere()).ToList();
             var ctr = spheres.Aggregate(Vector3.zero, (sum, sph) => sum += sph.position);
             ctr *= 1.0f / spheres.Count;
             var radius = spheres.Max(sph => Vector3.Distance(ctr, sph.position) + sph.radius);
@@ -113,16 +112,16 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
 
         public override int DeepestDepth()
         {
-            if (Tilesets.Count == 0)
+            if (tilesets.Count == 0)
             {
                 return 0;
             }
-            return Tilesets.Values.Max(ts => ts.DeepestDepth);
+            return tilesets.Max(ts => ts.DeepestDepth);
         }
 
         public override void ClearForcedTiles()
         {
-            foreach (var tileset in Tilesets.Values)
+            foreach (var tileset in tilesets)
             {
                 tileset.Traversal.ForceTiles.Clear();
             }
@@ -150,7 +149,7 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
                 Debug.LogWarning("Attempt to add tileset with null or empty name or url failed.");
                 return false;
             }
-            if (Tilesets.ContainsKey(options.Name))
+            if (nameToTileset.ContainsKey(options.Name))
             {
                 Debug.LogWarning(String.Format("Attempt to add tileset with duplicate name {0} failed.", options.Name));
                 return false;
@@ -159,7 +158,9 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             {
                 options.GLTFShaderOverride = SceneOptions.GLTFShaderOverride;
             }
-            Tilesets.Add(options.Name, new Unity3DTileset(options, this));
+            var tileset = new Unity3DTileset(options, this);
+            tilesets.Add(tileset);
+            nameToTileset[options.Name] = tileset;
             if (!TilesetOptions.Contains(options))
             {
                 TilesetOptions.Add(options);
@@ -170,25 +171,29 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
 
         public Unity3DTileset RemoveTileset(string name)
         {
-            var tileset = GetTileset(name);
-            Tilesets.Remove(name);
-            TilesetOptions.Remove(tileset.TilesetOptions); //ok if it wasn't there
+            if (!nameToTileset.ContainsKey(name))
+            {
+                return null;
+            }
+            var tileset = nameToTileset[name];
+            nameToTileset.Remove(name);
+            tilesets.Remove(tileset);
+            TilesetOptions.Remove(tileset.TilesetOptions);
             UpdateStats();
             return tileset;
         }
 
         public IEnumerable<Unity3DTileset> GetTilesets()
         {
-            return Tilesets.Values;
+            return tilesets;
         }
 
         public Unity3DTileset GetTileset(string name)
         {
-            if (Tilesets.ContainsKey(name))
+            if (nameToTileset.ContainsKey(name))
             {
-                return Tilesets[name];
+                return nameToTileset[name];
             }
-            Debug.LogWarning(String.Format("No tileset: {0}", name));
             return null;
         }
 
@@ -196,7 +201,7 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
         {
             foreach (string name in names)
             {
-                Tilesets[name].TilesetOptions.Show = true;
+                nameToTileset[name].TilesetOptions.Show = true;
             }
         }
 
@@ -204,7 +209,7 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
         {
             foreach (string name in names)
             {
-                Tilesets[name].TilesetOptions.Show = false;
+                nameToTileset[name].TilesetOptions.Show = false;
             }
         }
 
@@ -212,7 +217,7 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
         {
             foreach (string name in names)
             {
-                yield return Tilesets[name].Statistics;
+                yield return nameToTileset[name].Statistics;
             }
         }
 
