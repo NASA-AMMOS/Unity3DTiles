@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class MouseRotate : MouseNavBase {
+public class MouseOrbit : MouseNavBase {
 
     public Vector3 pivot = Vector3.zero; //in world
 

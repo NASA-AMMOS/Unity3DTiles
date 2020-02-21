@@ -15,61 +15,65 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.UI;
 using Unity3DTiles;
 
-public class TilesetStatsHud : MonoBehaviour {
-
+public class TilesetStatsHud : MonoBehaviour
+{
     public AbstractTilesetBehaviour tileset;
-    public string message;
+    public Text Text;
+
+    public string ExtraMessage;
 
     [Tooltip("How many frames should we consider into our average calculation?")]
-    [SerializeField]
-    private int frameRange = 60;
+    public int FPSFrameRange = 60;
 
-    private int averageFps;
     private int[] fpsBuffer;
     private int fpsBufferIndex;
 
-    private static readonly string[] StringsFrom00To99 =
-    {
-            "00", "01", "02", "03", "04", "05", "06", "07", "08", "09",
-            "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-            "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
-            "30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
-            "40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
-            "50", "51", "52", "53", "54", "55", "56", "57", "58", "59",
-            "60", "61", "62", "63", "64", "65", "66", "67", "68", "69",
-            "70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
-            "80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
-            "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"
-    };
-    public UnityEngine.UI.Text text;
-    StringBuilder builder = new StringBuilder();
+    private StringBuilder builder = new StringBuilder();
 
-	// Use this for initialization
-	void Start ()
+    public void OnEnable()
     {
-        text = GetComponent<UnityEngine.UI.Text>();
-	}
-	
-	// Update is called once per frame
-	void Update ()
-    {
-        if(tileset == null || tileset.Stats == null || !tileset.enabled || !tileset.gameObject.activeInHierarchy)
+        if (Text != null)
         {
-            text.text = "";
+            Text.enabled = true;
+        }
+    }
+
+    public void OnDisable()
+    {
+        if (Text != null)
+        {
+            Text.enabled = false;
+        }
+    }
+
+	public void Update ()
+    {
+        if (Text == null)
+        {
             return;
         }
-        if (fpsBuffer == null || fpsBuffer.Length != frameRange)
+
+        if (tileset == null || tileset.Stats == null || !tileset.enabled || !tileset.gameObject.activeInHierarchy)
         {
-            InitBuffer();
+            Text.text = "";
+            return;
         }
-        UpdateFrameBuffer();
-        CalculateFps();
-        string fpsString = GetFPSString(averageFps);
+
+        if (fpsBuffer == null || fpsBuffer.Length != FPSFrameRange)
+        {
+            InitFPSBuffer();
+        }
+
+        UpdateFPSBuffer();
+
+        string fpsString = GetFPSString(CalculateFps());
 
         var stats = tileset.Stats;
-        builder.Remove(0, builder.Length);
+
+        builder.Clear();
         builder.Append("FPS: ");
         builder.Append(fpsString);
         builder.AppendLine();
@@ -119,48 +123,61 @@ public class TilesetStatsHud : MonoBehaviour {
         builder.Append("Visible Megapixels: ");
         builder.Append((stats.VisiblePixels / 1000000f).ToString("0.00"));
         builder.AppendLine();
-        if (!string.IsNullOrEmpty(message))
+        if (!string.IsNullOrEmpty(ExtraMessage))
         {
-            builder.Append(message);
+            builder.Append(ExtraMessage);
             builder.AppendLine();
         }
 
-        text.text = builder.ToString();
-
+        Text.text = builder.ToString();
     }   
 
-    private void InitBuffer()
+    private void InitFPSBuffer()
     {      
-        if (frameRange <= 0)
+        if (FPSFrameRange <= 0)
         {
-            frameRange = 1;
+            FPSFrameRange = 1;
         }
-        fpsBuffer = new int[frameRange];
+        fpsBuffer = new int[FPSFrameRange];
         fpsBufferIndex = 0;
     }
 
-    private string GetFPSString(int fps)
-    {
-        return StringsFrom00To99[Mathf.Clamp(fps, 0, 99)];
-    }
-
-    private void UpdateFrameBuffer()
+    private void UpdateFPSBuffer()
     {
         fpsBuffer[fpsBufferIndex++] = (int)(1f / Time.unscaledDeltaTime);
-        if (fpsBufferIndex >= frameRange)
+        if (fpsBufferIndex >= FPSFrameRange)
         {
             fpsBufferIndex = 0;
         }
     }
 
-    private void CalculateFps()
+    private float CalculateFps()
     {
         int sum = 0;
-        for (int i = 0; i < frameRange; i++)
+        for (int i = 0; i < FPSFrameRange; i++)
         {
             int fps = fpsBuffer[i];
             sum += fps;
         }
-        averageFps = sum / frameRange;
+        return sum / FPSFrameRange;
+    }
+
+    private static readonly string[] StringsFrom00To99 =
+    {
+            "00", "01", "02", "03", "04", "05", "06", "07", "08", "09",
+            "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+            "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+            "30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
+            "40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
+            "50", "51", "52", "53", "54", "55", "56", "57", "58", "59",
+            "60", "61", "62", "63", "64", "65", "66", "67", "68", "69",
+            "70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
+            "80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
+            "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"
+    };
+
+    private string GetFPSString(float fps)
+    {
+        return StringsFrom00To99[Mathf.Clamp((int)Mathf.Round(fps), 0, 99)];
     }
 }

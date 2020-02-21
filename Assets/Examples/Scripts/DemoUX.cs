@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 using Unity3DTiles;
 
@@ -11,14 +12,20 @@ class DemoUX : MonoBehaviour
     public AbstractTilesetBehaviour tileset;
     public TilesetStatsHud hud;
     public MouseFly mouseFly;
-    public MouseRotate mouseRotate;
+    public MouseOrbit mouseOrbit;
     public GameObject pointer;
 #pragma warning restore 0649
 
     public float pointerRadiusPixels = 10;
 
-    public Unity3DTile selectedTile;
-    public Stack<Unity3DTile> selectedStack = new Stack<Unity3DTile>();
+    public bool drawSelectedBounds, drawParentBounds;
+
+    public bool resetOrbitPivotOnNavChange = true;
+
+    public bool enablePicking = true;
+
+    private Unity3DTile selectedTile;
+    private Stack<Unity3DTile> selectedStack = new Stack<Unity3DTile>();
     
     private Vector3? lastMouse;
     private Vector2 mouseIntegral;
@@ -26,7 +33,7 @@ class DemoUX : MonoBehaviour
     private bool hasFocus = true;
     private bool didReset = false;
 
-    private bool drawSelectedBounds, drawParentBounds;
+    private StringBuilder builder = new StringBuilder();
 
     public void OnApplicationFocus(bool focusStatus)
     {
@@ -41,53 +48,48 @@ class DemoUX : MonoBehaviour
             didReset = true;
         }
 
-        bool flyNav = mouseFly != null && mouseFly.enabled;
-        bool rotNav = mouseRotate != null && mouseRotate.enabled;
-        bool hasPick = pointer != null && pointer.activeSelf;
+        bool pointerActive = pointer != null && pointer.activeSelf;
 
-        if (hud != null)
+        builder.Clear();
+
+        builder.Append("\npress h to toggle HUD, v for default view, f to fit");
+
+        MouseNavBase activeNav = null;
+        if (mouseFly != null && mouseFly.enabled)
         {
-            hud.message = "press h to toggle HUD";
-            hud.message += ", v for default view";
-            hud.message += ", f to fit";
-
-            if (flyNav || rotNav)
+            activeNav = mouseFly;
+            builder.Append("\nfly navigation");
+            if (mouseOrbit != null)
             {
-                MouseNavBase.Modifier scaleMod = MouseNavBase.Modifier.None;
-                MouseNavBase.Modifier rollMod = MouseNavBase.Modifier.None;
-                if (flyNav)
-                {
-                    hud.message += "\nw/s/a/d/q/e to translate forward/back/left/right/up/down";
-                    scaleMod = mouseFly.scaleModifier;
-                    rollMod = mouseFly.rollModifier;
-                }
-                else if (rotNav)
-                {
-                    scaleMod = mouseRotate.scaleModifier;
-                    rollMod = mouseRotate.rollModifier;
-                    hud.message += "\nc to rotate about " + (hasPick ? "clicked point" : "centroid");
-                }
-                hud.message += "\ndrag mouse to rotate";
-                hud.message += "\nmouse wheel to scale";
-                if (scaleMod != MouseNavBase.Modifier.None)
-                {
-                    hud.message += " (or " + scaleMod + "-drag)";
-                }
-                hud.message += "\nright mouse to roll";
-                if (rollMod != MouseNavBase.Modifier.None)
-                {
-                    hud.message += " (or " + rollMod + "-drag)";
-                }
-                if (mouseFly != null && mouseRotate != null)
-                {
-                    hud.message += "\nn to switch navigation";
-                }
+                builder.Append(", press n to switch to orbit");
             }
+            builder.Append("\nw/s/a/d/q/e to translate fwd/back/left/right/up/down");
+        }
+        else if (mouseOrbit != null && mouseOrbit.enabled)
+        {
+            activeNav = mouseOrbit;
+            builder.Append("\norbit navigation");
+            if (mouseFly != null)
+            {
+                builder.Append(", press n to switch to fly");
+            }
+            builder.Append("\npress c to rotate about ");
+            builder.Append(pointerActive ? "pick point" : "centroid");
         }
 
-        if (tileset != null)
+        if (activeNav != null)
         {
-            tileset.ClearForcedTiles();
+            builder.Append("\ndrag mouse to rotate");
+            builder.Append("\nmouse wheel to scale");
+            if (activeNav.scaleModifier != MouseNavBase.Modifier.None)
+            {
+                builder.Append(" (or " + activeNav.scaleModifier + "-drag)");
+            }
+            builder.Append("\nright mouse to roll");
+            if (activeNav.rollModifier != MouseNavBase.Modifier.None)
+            {
+                builder.Append(" (or " + activeNav.rollModifier + "-drag)");
+            }
         }
 
         if (selectedTile != null)
@@ -99,81 +101,39 @@ class DemoUX : MonoBehaviour
                 cbv = selectedTile.ContentBoundingVolume.Volume();
             }
 
-            if (hud != null)
+            builder.Append("\n\nselected tile " + selectedTile.Id + ", depth " + selectedTile.Depth);
+            builder.Append(", " + selectedTile.Children.Count + " children");
+            builder.Append(", geometric error " + selectedTile.GeometricError.ToString("F3"));
+            
+            builder.Append("\nbounds vol " + bv + ": " + selectedTile.BoundingVolume.SizeString());
+            if (cbv >= 0 && cbv != bv)
             {
-                hud.message += "\nselected tile " + selectedTile.Id;
-                hud.message += ", depth " + selectedTile.Depth;
-                hud.message += ", " + selectedTile.Children.Count + " children";
-                hud.message += ", geometric error " + selectedTile.GeometricError.ToString("F3");
-                
-                hud.message += "\nbounds vol " + bv + ": " + selectedTile.BoundingVolume.SizeString();
-                if (cbv >= 0 && cbv != bv)
-                {
-                    hud.message += ", content vol " + cbv;
-                }
-                
-                var tc = selectedTile.Content;
-                if (tc != null && selectedTile.ContentState == Unity3DTileContentState.READY)
-                {
-                    hud.message += "\n" + FmtKMG(tc.FaceCount) + " tris, " + FmtKMG(tc.PixelCount) + " pixels, ";
-                    hud.message += tc.TextureCount + " textures, ";
-                    hud.message += "max " + tc.MaxTextureSize.x + "x" + tc.MaxTextureSize.y;
-                }
-                hud.message += "\nb to toggle bounds";
-                if (selectedTile.Parent != null)
-                {
-                    hud.message += "\nup/left/right";
-                    if (selectedTile.Children.Count > 0)
-                    {
-                        hud.message += "/down";
-                    }
-                    hud.message += " to select parent/sibling";
-                    if (selectedTile.Children.Count > 0)
-                    {
-                        hud.message += "/child";
-                    }
-                }
-                else if (selectedTile.Children.Count > 0)
-                {
-                    hud.message += "\ndown to select child";
-                }
+                builder.Append(", content vol " + cbv);
+            }
+            
+            var tc = selectedTile.Content;
+            if (tc != null && selectedTile.ContentState == Unity3DTileContentState.READY)
+            {
+                builder.Append("\n" + FmtKMG(tc.FaceCount) + " tris, " + FmtKMG(tc.PixelCount) + " pixels, ");
+                builder.Append(tc.TextureCount + " textures, max " + tc.MaxTextureSize.x + "x" + tc.MaxTextureSize.y);
             }
 
-            if (drawSelectedBounds)
+            if (selectedTile.Parent != null)
             {
-                selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTile.Tileset.Behaviour.transform);
-                if (cbv >= 0 && cbv != bv)
+                builder.Append("\npress up/left/right");
+                if (selectedTile.Children.Count > 0)
                 {
-                    selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTile.Tileset.Behaviour.transform);
+                    builder.Append("/down");
+                }
+                builder.Append(" to select parent/sibling");
+                if (selectedTile.Children.Count > 0)
+                {
+                    builder.Append("/child");
                 }
             }
-
-            if (drawParentBounds && selectedTile.Parent != null)
+            else if (selectedTile.Children.Count > 0)
             {
-                var parent = selectedTile.Parent;
-                float pbv = parent.BoundingVolume.Volume();
-                float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
-                parent.BoundingVolume.DebugDraw(Color.cyan, selectedTile.Tileset.Behaviour.transform);
-                if (pcbv >= 0 && pcbv != pbv)
-                {
-                    parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.B))
-            {
-                if (!drawSelectedBounds && !drawParentBounds)
-                {
-                    drawSelectedBounds = true;
-                }
-                else if (drawSelectedBounds && !drawParentBounds)
-                {
-                    drawParentBounds = true;
-                }
-                else
-                {
-                    drawSelectedBounds = drawParentBounds = false;
-                }
+                builder.Append("\npress down to select child");
             }
 
             if (selectedTile.Parent != null && Input.GetKeyDown(KeyCode.UpArrow))
@@ -200,13 +160,62 @@ class DemoUX : MonoBehaviour
                 selectedTile = siblings[idx];
             }
 
-            selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
+            builder.Append("\npress b to toggle bounds");
+
+            if (Input.GetKeyDown(KeyCode.B))
+            {
+                if (!drawSelectedBounds && !drawParentBounds)
+                {
+                    drawSelectedBounds = true;
+                }
+                else if (drawSelectedBounds && !drawParentBounds)
+                {
+                    drawParentBounds = true;
+                }
+                else
+                {
+                    drawSelectedBounds = drawParentBounds = false;
+                }
+            }
+
+            if (drawSelectedBounds)
+            {
+                selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTile.Tileset.Behaviour.transform);
+                if (cbv >= 0 && cbv != bv)
+                {
+                    selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTile.Tileset.Behaviour.transform);
+                }
+            }
+
+            if (drawParentBounds && selectedTile.Parent != null)
+            {
+                var parent = selectedTile.Parent;
+                float pbv = parent.BoundingVolume.Volume();
+                float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
+                parent.BoundingVolume.DebugDraw(Color.cyan, selectedTile.Tileset.Behaviour.transform);
+                if (pcbv >= 0 && pcbv != pbv)
+                {
+                    parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
+                }
+            }
+
+            builder.Append("\npress esc to clear selection");
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                selectedTile = null;
+                selectedStack.Clear();
+            }
+        }
+
+        if (hud != null)
+        {
+            hud.ExtraMessage = builder.ToString();
         }
 
         //toggle hud
         if (hud != null && Input.GetKeyDown(KeyCode.H))
         {
-            hud.text.enabled = !hud.text.enabled;
+            hud.enabled = !hud.enabled;
         }
 
         if (Input.GetKeyDown(KeyCode.V))
@@ -220,27 +229,40 @@ class DemoUX : MonoBehaviour
         }
 
         //toggle nav mode
-        if (mouseFly != null && mouseRotate != null && Input.GetKeyDown(KeyCode.N))
+        if (mouseFly != null && mouseOrbit != null && Input.GetKeyDown(KeyCode.N))
         {
             mouseFly.enabled = !mouseFly.enabled;
-            mouseRotate.enabled = !mouseRotate.enabled;
+            mouseOrbit.enabled = !mouseOrbit.enabled;
+
+            if (mouseOrbit.enabled && resetOrbitPivotOnNavChange)
+            {
+                if (Physics.Raycast(Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2)),
+                                    out RaycastHit hit))
+                {
+                    mouseOrbit.pivot = hit.point;
+                }
+                else if (tileset && tileset.Ready())
+                {
+                    mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+                } 
+            }
         }
 
-        //set rotNav pivot
-        if (rotNav && Input.GetKeyDown(KeyCode.C))
+        //set orbit nav pivot
+        if (activeNav != null && activeNav == mouseOrbit && Input.GetKeyDown(KeyCode.C))
         {
-            if (hasPick)
+            if (pointerActive)
             {
-                mouseRotate.pivot = pointer.transform.position;
+                mouseOrbit.pivot = pointer.transform.position;
             }
             else if (tileset && tileset.Ready())
             {
-                mouseRotate.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+                mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
             } 
         }
 
         //handle mouse clicks
-        if (hasFocus && !MouseNavBase.MouseOnUI())
+        if (enablePicking && hasFocus && !MouseNavBase.MouseOnUI())
         {
             if (Input.GetMouseButtonDown(0))
             {
@@ -266,7 +288,7 @@ class DemoUX : MonoBehaviour
         }
 
         //scale pointer to pointerRadiusPixels
-        if (hasPick)
+        if (pointerActive)
         {
             var cam = Camera.main.transform;
             var w2cScale = cam.worldToLocalMatrix.lossyScale;
@@ -277,6 +299,16 @@ class DemoUX : MonoBehaviour
             pointer.transform.localScale = (1.0f / minScale) * Vector3.one *
                 Vector3.Distance(pointer.transform.position, cam.position) *
                 Mathf.Tan(pointerRadiusPixels * maxRadPerPixel);
+        }
+
+        //force rendering of selected tile
+        if (tileset != null)
+        {
+            tileset.ClearForcedTiles();
+        }
+        if (selectedTile != null)
+        {
+            selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
         }
     }
 
@@ -289,9 +321,9 @@ class DemoUX : MonoBehaviour
             cam.eulerAngles = tileset.SceneOptions.DefaultCameraRotation;
             cam.localScale = Vector3.one;
 
-            if (mouseRotate != null && tileset.Ready())
+            if (mouseOrbit != null && tileset.Ready())
             {
-                mouseRotate.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+                mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
             }
         }
     }
@@ -318,9 +350,9 @@ class DemoUX : MonoBehaviour
             var dist = radiusInCam / Mathf.Tan(minFov / 2);
             cam.Translate(cam.forward * (Vector3.Distance(cam.position, ctrInWorld) - dist), Space.World);
 
-            if (mouseRotate != null)
+            if (mouseOrbit != null)
             {
-                mouseRotate.pivot = ctrInWorld;
+                mouseOrbit.pivot = ctrInWorld;
             }
         }
     }
