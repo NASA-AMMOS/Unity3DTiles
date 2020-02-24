@@ -298,6 +298,7 @@ namespace Unity3DTiles
                     go.transform.parent = this.Tileset.Behaviour.transform;
                     go.transform.localPosition = new Vector3(this.computedTransform.m03, this.computedTransform.m13, this.computedTransform.m23);
                     go.transform.localRotation = this.computedTransform.rotation;
+                    go.transform.localScale = this.computedTransform.lossyScale;
                     go.layer = this.Tileset.Behaviour.gameObject.layer;
                     go.SetActive(false);
                     var info = go.AddComponent<TileInfo>();
