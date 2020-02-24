@@ -185,7 +185,7 @@ namespace Unity3DTiles
             // TODO: Consider using a double percision Matrix library for doing 3d tiles root transform calculations
             // Set the local transform for this tile, default to identity matrix
             this.transform = this.tile.UnityTransform();
-            var parentTransform = (parent != null) ? parent.computedTransform : tileset.TilesetOptions.Transform;
+            var parentTransform = (parent != null) ? parent.computedTransform : tileset.GetRootTransform();
             this.computedTransform = parentTransform * this.transform;
 
             this.BoundingVolume = CreateBoundingVolume(tile.BoundingVolume, this.computedTransform);

@@ -20,6 +20,7 @@ using RSG;
 using System.Text.RegularExpressions;
 using UnityEngine.Networking;
 using UnityGLTF.Loader;
+using UnityGLTF.Extensions;
 
 namespace Unity3DTiles
 {
@@ -41,7 +42,6 @@ namespace Unity3DTiles
         public Queue<Unity3DTile> ProcessingQueue;           // Tiles whose content is being loaded/processed
 
         public MonoBehaviour Behaviour { get; private set; }
-        //public Transform TilesetTransform;
 
         /// <summary>
         /// Maintians a least recently used list of tiles that have content
@@ -55,7 +55,6 @@ namespace Unity3DTiles
         public int DeepestDepth { get; private set; }
 
         public Unity3DTilesetStatistics Statistics = new Unity3DTilesetStatistics();
-
 
         public Unity3DTilesetTraversal Traversal;
         private Promise<Unity3DTileset> readyPromise = new Promise<Unity3DTileset>();
@@ -85,6 +84,25 @@ namespace Unity3DTiles
             {
                 return Math.Max((DateTime.UtcNow - this.loadTimestamp).TotalSeconds, 0);
             }
+        }
+
+        public void GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale,
+                                     bool convertToUnityFrame = true)
+        {
+            var m = TilesetOptions.Transform;
+            if (convertToUnityFrame)
+            {
+                m = m.UnityMatrix4x4Convert();
+            }
+            translation = new Vector3(m.m03, m.m13, m.m23);
+            rotation = m.rotation;
+            scale = m.lossyScale;
+        }
+
+        public Matrix4x4 GetRootTransform()
+        {
+            GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale);
+            return Matrix4x4.TRS(translation, rotation, scale);
         }
 
         public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour)
