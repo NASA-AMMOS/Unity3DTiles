@@ -92,7 +92,7 @@ namespace Unity3DTiles
             var m = TilesetOptions.Transform;
             if (convertToUnityFrame)
             {
-                m = m.UnityMatrix4x4Convert();
+                m = m.UnityMatrix4x4ConvertFromGLTF();
             }
             translation = new Vector3(m.m03, m.m13, m.m23);
             rotation = m.rotation;

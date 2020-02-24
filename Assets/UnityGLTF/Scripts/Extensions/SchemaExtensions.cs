@@ -162,15 +162,15 @@ namespace UnityGLTF.Extensions
 		/// <returns>unity matrix</returns>
 		public static Matrix4x4 ToUnityMatrix4x4Convert(this GLTF.Math.Matrix4x4 gltfMat)
 		{
-			return gltfMat.ToUnityMatrix4x4Raw().UnityMatrix4x4Convert();
+			return gltfMat.ToUnityMatrix4x4Raw().UnityMatrix4x4ConvertFromGLTF();
 		}
 
 		/// <summary>
-		/// Convert a unity matrix from gltf frame ot unity frame
+		/// Convert a unity matrix from gltf frame to unity frame
 		/// </summary>
 		/// <param name="gltfMat">gltf matrix</param>
 		/// <returns>unity matrix</returns>
-		public static Matrix4x4 UnityMatrix4x4Convert(this Matrix4x4 rawUnityMat)
+		public static Matrix4x4 UnityMatrix4x4ConvertFromGLTF(this Matrix4x4 rawUnityMat)
 		{
 			Vector3 coordinateSpaceConversionScale = CoordinateSpaceConversionScale.ToUnityVector3Raw();
 			Matrix4x4 convert = Matrix4x4.Scale(coordinateSpaceConversionScale);
