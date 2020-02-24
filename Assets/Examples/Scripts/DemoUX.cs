@@ -24,6 +24,9 @@ class DemoUX : MonoBehaviour
 
     public bool enablePicking = true;
 
+    public bool drawSelectedAxes, drawRootAxes;
+
+    private List<Unity3DTileset> tilesets;
     private Unity3DTile selectedTile;
     private Stack<Unity3DTile> selectedStack = new Stack<Unity3DTile>();
     private Stack<Unity3DTileset> showStack = new Stack<Unity3DTileset>();
@@ -31,8 +34,9 @@ class DemoUX : MonoBehaviour
     private Vector3? lastMouse;
     private Vector2 mouseIntegral;
 
+    private bool pointerActive;
     private bool hasFocus = true;
-    private bool didReset = false;
+    private bool didReset;
 
     private StringBuilder builder = new StringBuilder();
 
@@ -61,12 +65,45 @@ class DemoUX : MonoBehaviour
             didReset = true;
         }
 
-        bool pointerActive = pointer != null && pointer.activeSelf;
+        pointerActive = pointer != null && pointer.activeSelf;
 
         builder.Clear();
 
         builder.Append("\npress h to toggle HUD, v for default view, f to fit");
 
+        if (hud != null && Input.GetKeyDown(KeyCode.H))
+        {
+            hud.enabled = !hud.enabled;
+        }
+
+        if (Input.GetKeyDown(KeyCode.V))
+        {
+            ResetView();
+        }
+
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            FitView();
+        }
+
+        UpdateNav();
+
+        UpdateAxes();
+
+        UpdateTilesets();
+
+        UpdateSelectedTileset();
+
+        UpdatePicking();
+
+        if (hud != null)
+        {
+            hud.ExtraMessage = builder.ToString();
+        }
+    }
+
+    private void UpdateNav()
+    {
         MouseNavBase activeNav = null;
         if (mouseFly != null && mouseFly.enabled)
         {
@@ -105,7 +142,147 @@ class DemoUX : MonoBehaviour
             }
         }
 
-        List<Unity3DTileset> tilesets = null;
+        //toggle nav mode
+        if (mouseFly != null && mouseOrbit != null && Input.GetKeyDown(KeyCode.N))
+        {
+            mouseFly.enabled = !mouseFly.enabled;
+            mouseOrbit.enabled = !mouseOrbit.enabled;
+
+            if (mouseOrbit.enabled && resetOrbitPivotOnNavChange)
+            {
+                if (Physics.Raycast(Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2)),
+                                    out RaycastHit hit))
+                {
+                    mouseOrbit.pivot = hit.point;
+                }
+                else if (tileset && tileset.Ready())
+                {
+                    mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+                } 
+            }
+        }
+
+        //set orbit nav pivot
+        if (activeNav != null && activeNav == mouseOrbit && Input.GetKeyDown(KeyCode.C))
+        {
+            if (pointerActive)
+            {
+                mouseOrbit.pivot = pointer.transform.position;
+            }
+            else if (tileset && tileset.Ready())
+            {
+                mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+            } 
+        }
+    }
+
+    private void UpdateAxes()
+    {
+        bool rootAxesVisible = false;
+        if (tileset != null)
+        {
+            var axes = tileset.gameObject.GetComponent<AxesWidget>();
+            if (drawRootAxes)
+            {
+                if (axes == null)
+                {
+                    axes = tileset.gameObject.AddComponent<AxesWidget>();
+                    axes.Scale = 2;
+                }
+                axes.enabled = true;
+                rootAxesVisible = true;
+            }
+            else if (axes != null)
+            {
+                axes.enabled = false;
+            }
+        }
+        else
+        {
+            drawRootAxes = false;
+        }
+           
+        bool selectedAxesVisible = false;
+        if (selectedTile != null)
+        {
+            var got = selectedTile.Tileset.Behaviour.transform.Find("AxesWidget");
+            var go = got != null ? got.gameObject : null;
+            if (drawSelectedAxes)
+            {
+                if (go == null)
+                {
+                    go = new GameObject("AxesWidget");
+                    go.transform.parent = selectedTile.Tileset.Behaviour.transform;
+                    go.AddComponent<AxesWidget>().enabled = true;
+                }
+                else
+                {
+                    go.GetComponent<AxesWidget>().enabled = true;
+                }
+
+                selectedTile.Tileset.GetRootTransform(out Vector3 t, out Quaternion r, out Vector3 s);
+                go.transform.localPosition = t;
+                go.transform.localRotation = r;
+                go.transform.localScale = s;
+
+                selectedAxesVisible = true;
+            }
+            else if (go != null)
+            {
+                go.GetComponent<AxesWidget>().enabled = false;
+            }
+        }
+        else
+        {
+            drawSelectedAxes = false;
+        }
+
+        builder.Append("\n");
+        if (rootAxesVisible || selectedAxesVisible)
+        {
+            builder.Append("showing " +
+                           (rootAxesVisible ? "root" : "") +
+                           (rootAxesVisible && selectedAxesVisible ? " and " : "") +
+                           (selectedAxesVisible ? "selected" : "") + " axes, ");
+        }
+
+        if (tileset != null || selectedTile != null)
+        {
+            builder.Append("press x to toggle axes");
+
+            if (Input.GetKeyDown(KeyCode.X))
+            {
+                if (!drawSelectedAxes && !drawRootAxes)
+                {
+                    if (selectedTile != null)
+                    {
+                        drawSelectedAxes = true;
+                    }
+                    else
+                    {
+                        drawRootAxes = true;
+                    }
+                }
+                else if (drawSelectedAxes && !drawRootAxes)
+                {
+                    drawSelectedAxes = false;
+                    drawRootAxes = true;
+                }
+                else if (!drawSelectedAxes && drawRootAxes && selectedTile != null)
+                {
+                    drawSelectedAxes = true;
+                    drawRootAxes = true;
+                }
+                else
+                {
+                    drawSelectedAxes = drawRootAxes = false;
+                }
+            }
+        }
+    }
+
+    private void UpdateTilesets()
+    {
         if (tileset is MultiTilesetBehaviour)
         {
             tilesets = ((MultiTilesetBehaviour)tileset).GetTilesets().ToList();
@@ -182,197 +359,176 @@ class DemoUX : MonoBehaviour
                 }
             }
         }
+    }
 
-        if (selectedTile != null)
+    private void UpdateSelectedTileset()
+    {
+        if (tileset != null)
         {
-            float bv = selectedTile.BoundingVolume.Volume();
-            float cbv = -1;
-            if (selectedTile.ContentBoundingVolume != null)
+            tileset.ClearForcedTiles();
+        }
+
+        if (selectedTile == null)
+        {
+            return;
+        }
+
+        float bv = selectedTile.BoundingVolume.Volume();
+        float cbv = -1;
+        if (selectedTile.ContentBoundingVolume != null)
+        {
+            cbv = selectedTile.ContentBoundingVolume.Volume();
+        }
+
+        builder.Append("\n");
+        
+        if (tilesets.Count > 0)
+        {
+            var sts = selectedTile.Tileset;
+            builder.Append("\nselected tileset " + sts.TilesetOptions.Name +
+                           " (" + tilesets.FindIndex(ts => ts == sts) + ")");
+        }
+        
+        builder.Append("\nselected tile " + selectedTile.Id + ", depth " + selectedTile.Depth);
+        builder.Append(", " + selectedTile.Children.Count + " children");
+        builder.Append(", geometric error " + selectedTile.GeometricError.ToString("F3"));
+        
+        builder.Append("\nbounds vol " + bv + ": " + selectedTile.BoundingVolume.SizeString());
+        if (cbv >= 0 && cbv != bv)
+        {
+            builder.Append(", content vol " + cbv);
+        }
+        
+        var tc = selectedTile.Content;
+        if (tc != null && selectedTile.ContentState == Unity3DTileContentState.READY)
+        {
+            builder.Append("\n" + FmtKMG(tc.FaceCount) + " tris, " + FmtKMG(tc.PixelCount) + " pixels, ");
+            builder.Append(tc.TextureCount + " textures, max " + tc.MaxTextureSize.x + "x" + tc.MaxTextureSize.y);
+        }
+        
+        selectedTile.Tileset.GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale,
+                                              convertToUnityFrame: false);
+        if (translation != Vector3.zero)
+        {
+            builder.Append("\ntileset translation " + translation.ToString("f3"));
+        }
+        if (rotation != Quaternion.identity)
+        {
+            builder.Append("\ntileset rotation " + rotation.ToString("f3"));
+        }
+        if (scale != Vector3.one)
+        {
+            builder.Append("\ntileset scale " + scale.ToString("f3"));
+        }
+
+        if (selectedTile.Parent != null)
+        {
+            builder.Append("\npress up/left/right");
+            if (selectedTile.Children.Count > 0)
             {
-                cbv = selectedTile.ContentBoundingVolume.Volume();
+                builder.Append("/down");
             }
-
-            builder.Append("\n");
-
-            if (tilesets.Count > 0)
+            builder.Append(" to select parent/sibling");
+            if (selectedTile.Children.Count > 0)
             {
-                var sts = selectedTile.Tileset;
-                builder.Append("\nselected tileset " + sts.TilesetOptions.Name + " (" + tilesets.FindIndex(ts => ts == sts) + ")");
+                builder.Append("/child");
             }
-
-            builder.Append("\nselected tile " + selectedTile.Id + ", depth " + selectedTile.Depth);
-            builder.Append(", " + selectedTile.Children.Count + " children");
-            builder.Append(", geometric error " + selectedTile.GeometricError.ToString("F3"));
-            
-            builder.Append("\nbounds vol " + bv + ": " + selectedTile.BoundingVolume.SizeString());
+        }
+        else if (selectedTile.Children.Count > 0)
+        {
+            builder.Append("\npress down to select child");
+        }
+        
+        if (selectedTile.Parent != null && Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            selectedStack.Push(selectedTile);
+            selectedTile = selectedTile.Parent;
+        }
+        
+        if (selectedTile.Children.Count > 0 && Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            selectedTile = selectedStack.Count > 0 ? selectedStack.Pop() : selectedTile.Children.First();
+        }
+        
+        int sibling = Input.GetKeyDown(KeyCode.LeftArrow) ? -1 : Input.GetKeyDown(KeyCode.RightArrow) ? 1 : 0;
+        if (selectedTile.Parent != null && sibling != 0)
+        {
+            var siblings = selectedTile.Parent.Children;
+            int idx = siblings.FindIndex(c => c == selectedTile) + sibling;
+            idx = idx < 0 ? siblings.Count - 1 : idx == siblings.Count ? 0 : idx;
+            if (siblings[idx] != selectedTile)
+            {
+                selectedStack.Clear();
+            }
+            selectedTile = siblings[idx];
+        }
+        
+        builder.Append("\npress b to toggle bounds");
+        
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            if (!drawSelectedBounds && !drawParentBounds)
+            {
+                drawSelectedBounds = true;
+            }
+            else if (drawSelectedBounds && !drawParentBounds)
+            {
+                drawParentBounds = true;
+            }
+            else
+            {
+                drawSelectedBounds = drawParentBounds = false;
+            }
+        }
+        
+        if (drawSelectedBounds)
+        {
+            selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTile.Tileset.Behaviour.transform);
             if (cbv >= 0 && cbv != bv)
             {
-                builder.Append(", content vol " + cbv);
+                selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTile.Tileset.Behaviour.transform);
             }
-            
-            var tc = selectedTile.Content;
-            if (tc != null && selectedTile.ContentState == Unity3DTileContentState.READY)
+        }
+        
+        if (drawParentBounds && selectedTile.Parent != null)
+        {
+            var parent = selectedTile.Parent;
+            float pbv = parent.BoundingVolume.Volume();
+            float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
+            parent.BoundingVolume.DebugDraw(Color.cyan, selectedTile.Tileset.Behaviour.transform);
+            if (pcbv >= 0 && pcbv != pbv)
             {
-                builder.Append("\n" + FmtKMG(tc.FaceCount) + " tris, " + FmtKMG(tc.PixelCount) + " pixels, ");
-                builder.Append(tc.TextureCount + " textures, max " + tc.MaxTextureSize.x + "x" + tc.MaxTextureSize.y);
+                parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
             }
-
-            if (selectedTile.Parent != null)
+        }
+        
+        if (tilesets != null && tilesets.Count > 0)
+        {
+            builder.Append("\npress i to hide tileset");
+            if (Input.GetKeyDown(KeyCode.I))
             {
-                builder.Append("\npress up/left/right");
-                if (selectedTile.Children.Count > 0)
-                {
-                    builder.Append("/down");
-                }
-                builder.Append(" to select parent/sibling");
-                if (selectedTile.Children.Count > 0)
-                {
-                    builder.Append("/child");
-                }
-            }
-            else if (selectedTile.Children.Count > 0)
-            {
-                builder.Append("\npress down to select child");
-            }
-
-            if (selectedTile.Parent != null && Input.GetKeyDown(KeyCode.UpArrow))
-            {
-                selectedStack.Push(selectedTile);
-                selectedTile = selectedTile.Parent;
-            }
-
-            if (selectedTile.Children.Count > 0 && Input.GetKeyDown(KeyCode.DownArrow))
-            {
-                selectedTile = selectedStack.Count > 0 ? selectedStack.Pop() : selectedTile.Children.First();
-            }
-
-            int sibling = Input.GetKeyDown(KeyCode.LeftArrow) ? -1 : Input.GetKeyDown(KeyCode.RightArrow) ? 1 : 0;
-            if (selectedTile.Parent != null && sibling != 0)
-            {
-                var siblings = selectedTile.Parent.Children;
-                int idx = siblings.FindIndex(c => c == selectedTile) + sibling;
-                idx = idx < 0 ? siblings.Count - 1 : idx == siblings.Count ? 0 : idx;
-                if (siblings[idx] != selectedTile)
-                {
-                    selectedStack.Clear();
-                }
-                selectedTile = siblings[idx];
-            }
-
-            builder.Append("\npress b to toggle bounds");
-
-            if (Input.GetKeyDown(KeyCode.B))
-            {
-                if (!drawSelectedBounds && !drawParentBounds)
-                {
-                    drawSelectedBounds = true;
-                }
-                else if (drawSelectedBounds && !drawParentBounds)
-                {
-                    drawParentBounds = true;
-                }
-                else
-                {
-                    drawSelectedBounds = drawParentBounds = false;
-                }
-            }
-
-            if (drawSelectedBounds)
-            {
-                selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTile.Tileset.Behaviour.transform);
-                if (cbv >= 0 && cbv != bv)
-                {
-                    selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTile.Tileset.Behaviour.transform);
-                }
-            }
-
-            if (drawParentBounds && selectedTile.Parent != null)
-            {
-                var parent = selectedTile.Parent;
-                float pbv = parent.BoundingVolume.Volume();
-                float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
-                parent.BoundingVolume.DebugDraw(Color.cyan, selectedTile.Tileset.Behaviour.transform);
-                if (pcbv >= 0 && pcbv != pbv)
-                {
-                    parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
-                }
-            }
-
-            if (tilesets != null && tilesets.Count > 0)
-            {
-                builder.Append("\npress i to hide tileset");
-                if (Input.GetKeyDown(KeyCode.I))
-                {
-                    selectedTile.Tileset.TilesetOptions.Show = false;
-                    showStack.Push(selectedTile.Tileset);
-                    selectedTile = null;
-                    selectedStack.Clear();
-                }
-            }
-
-            builder.Append("\npress esc to clear selection");
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
+                selectedTile.Tileset.TilesetOptions.Show = false;
+                showStack.Push(selectedTile.Tileset);
                 selectedTile = null;
                 selectedStack.Clear();
             }
         }
-
-        if (hud != null)
+        
+        builder.Append("\npress esc to clear selection");
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            hud.ExtraMessage = builder.ToString();
+            selectedTile = null;
+            selectedStack.Clear();
         }
 
-        //toggle hud
-        if (hud != null && Input.GetKeyDown(KeyCode.H))
+        if (selectedTile != null)
         {
-            hud.enabled = !hud.enabled;
+            selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
         }
-
-        if (Input.GetKeyDown(KeyCode.V))
-        {
-            ResetView();
-        }
-
-        if (Input.GetKeyDown(KeyCode.F))
-        {
-            FitView();
-        }
-
-        //toggle nav mode
-        if (mouseFly != null && mouseOrbit != null && Input.GetKeyDown(KeyCode.N))
-        {
-            mouseFly.enabled = !mouseFly.enabled;
-            mouseOrbit.enabled = !mouseOrbit.enabled;
-
-            if (mouseOrbit.enabled && resetOrbitPivotOnNavChange)
-            {
-                if (Physics.Raycast(Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2)),
-                                    out RaycastHit hit))
-                {
-                    mouseOrbit.pivot = hit.point;
-                }
-                else if (tileset && tileset.Ready())
-                {
-                    mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
-                } 
-            }
-        }
-
-        //set orbit nav pivot
-        if (activeNav != null && activeNav == mouseOrbit && Input.GetKeyDown(KeyCode.C))
-        {
-            if (pointerActive)
-            {
-                mouseOrbit.pivot = pointer.transform.position;
-            }
-            else if (tileset && tileset.Ready())
-            {
-                mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
-            } 
-        }
-
-        //handle mouse clicks
+    }
+    
+    private void UpdatePicking()
+    {
         if (enablePicking && hasFocus && !MouseNavBase.MouseOnUI())
         {
             if (Input.GetMouseButtonDown(0))
@@ -410,16 +566,6 @@ class DemoUX : MonoBehaviour
             pointer.transform.localScale = (1.0f / minScale) * Vector3.one *
                 Vector3.Distance(pointer.transform.position, cam.position) *
                 Mathf.Tan(pointerRadiusPixels * maxRadPerPixel);
-        }
-
-        //force rendering of selected tile
-        if (tileset != null)
-        {
-            tileset.ClearForcedTiles();
-        }
-        if (selectedTile != null)
-        {
-            selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
         }
     }
 
