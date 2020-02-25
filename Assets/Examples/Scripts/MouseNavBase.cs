@@ -29,8 +29,8 @@ public class MouseNavBase : MonoBehaviour
     public Modifier accelModifier = Modifier.Shift;
     public Modifier rollModifier = Modifier.Control;
 
-    public float rotSpeed = 2.0f, zoomSpeed = 8.0f, transSpeed = 1.0f;
-    public float accelFactor = 2.0f;
+    public float rotSpeed = 2.0f, zoomSpeed = 1.0f, transSpeed = 1.0f;
+    public float accelFactor = 5.0f;
 
     protected bool hasFocus = true;
     public void OnApplicationFocus(bool focusStatus)
@@ -40,6 +40,7 @@ public class MouseNavBase : MonoBehaviour
 
     protected Vector3 lastMouse;
     protected Vector4 mouseDiff; //x = pitch, y = yaw, z = zoom, w = roll
+    protected float accel = 1;
 
     public virtual void Start()
     {
@@ -65,7 +66,6 @@ public class MouseNavBase : MonoBehaviour
 
     public virtual void Update()
     {
-
         mouseDiff = Vector4.zero;
 
         for (int i = 0; i < mods.Length; i++)
@@ -130,9 +130,6 @@ public class MouseNavBase : MonoBehaviour
             mouseDiff.x = mouseDiff.y = 0;
         }
 
-        if (accelModifier != Modifier.None && mods[(int)accelModifier])
-        {
-            mouseDiff *= accelFactor;
-        }
+        accel = accelModifier != Modifier.None && mods[(int)accelModifier] ? accelFactor : 1;
     }
 }

@@ -616,6 +616,9 @@ MonoBehaviour:
   drawParentBounds: 0
   resetOrbitPivotOnNavChange: 1
   enablePicking: 1
+  drawSelectedAxes: 0
+  drawRootAxes: 0
+  relativeNavTransSpeed: 2000
 --- !u!114 &1485971530
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -638,7 +641,7 @@ MonoBehaviour:
   rotSpeed: 2
   zoomSpeed: 1
   transSpeed: 1
-  accelFactor: 2
+  accelFactor: 5
   pivot: {x: 0, y: 0, z: 0}
   minZoom: 0.5
 --- !u!114 &1485971531
@@ -663,7 +666,7 @@ MonoBehaviour:
   rotSpeed: 2
   zoomSpeed: 1
   transSpeed: 1
-  accelFactor: 2
+  accelFactor: 5
 --- !u!224 &1931381443 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3376399835161366642, guid: 5b36edd38769f254e8ee3f629b1741a6,

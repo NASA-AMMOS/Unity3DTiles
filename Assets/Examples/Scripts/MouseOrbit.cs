@@ -10,18 +10,23 @@ public class MouseOrbit : MouseNavBase {
 
         base.Update();
 
+        if (!hasFocus || MouseOnUI())
+        {
+            return;
+        }
+
         var cam = Camera.main.transform;
 
         cam.Translate(Vector3.ProjectOnPlane(pivot - cam.position, cam.forward), Space.World);
 
         if (mouseDiff.x != 0)
         {
-            cam.RotateAround(pivot, cam.up, rotSpeed * mouseDiff.x);
+            cam.RotateAround(pivot, cam.up, rotSpeed * accel * mouseDiff.x);
         }
 
         if (mouseDiff.y != 0)
         {
-            cam.RotateAround(pivot, -cam.right, rotSpeed * mouseDiff.y);
+            cam.RotateAround(pivot, -cam.right, rotSpeed * accel * mouseDiff.y);
         }
 
         if (mouseDiff.z != 0)
@@ -32,12 +37,12 @@ public class MouseOrbit : MouseNavBase {
             {
                 d = Mathf.Sign(d) * minZoom;
             }
-            cam.Translate(-cam.forward * d, Space.World);
+            cam.Translate(-cam.forward * d * accel, Space.World);
         }
 
         if (mouseDiff.w != 0)
         {
-            cam.RotateAround(pivot, cam.forward, rotSpeed * mouseDiff.w);
+            cam.RotateAround(pivot, cam.forward, rotSpeed * accel * mouseDiff.w);
         }
     }
 }

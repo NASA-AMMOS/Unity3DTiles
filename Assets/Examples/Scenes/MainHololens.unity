@@ -841,6 +841,9 @@ MonoBehaviour:
   drawParentBounds: 0
   resetOrbitPivotOnNavChange: 1
   enablePicking: 0
+  drawSelectedAxes: 0
+  drawRootAxes: 0
+  relativeNavTransSpeed: 2000
 --- !u!114 &2111641895
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -861,9 +864,9 @@ MonoBehaviour:
   accelModifier: 1
   rollModifier: 0
   rotSpeed: 2
-  zoomSpeed: 8
+  zoomSpeed: 1
   transSpeed: 1
-  accelFactor: 2
+  accelFactor: 5
   pivot: {x: 0, y: 0, z: 0}
   minZoom: 0.5
 --- !u!114 &2111641896
@@ -886,6 +889,6 @@ MonoBehaviour:
   accelModifier: 1
   rollModifier: 0
   rotSpeed: 2
-  zoomSpeed: 8
+  zoomSpeed: 1
   transSpeed: 1
-  accelFactor: 2
+  accelFactor: 5

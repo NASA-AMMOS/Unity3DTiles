@@ -26,6 +26,8 @@ class DemoUX : MonoBehaviour
 
     public bool drawSelectedAxes, drawRootAxes;
 
+    public float relativeNavTransSpeed = 2000;
+
     private List<Unity3DTileset> tilesets;
     private Unity3DTile selectedTile;
     private Stack<Unity3DTile> selectedStack = new Stack<Unity3DTile>();
@@ -139,6 +141,10 @@ class DemoUX : MonoBehaviour
             if (activeNav.rollModifier != MouseNavBase.Modifier.None)
             {
                 builder.Append(" (or " + activeNav.rollModifier + "-drag)");
+            }
+            if (activeNav.accelModifier != MouseNavBase.Modifier.None)
+            {
+                builder.Append("\npress " + activeNav.accelModifier + " to move faster");
             }
         }
 
@@ -578,9 +584,21 @@ class DemoUX : MonoBehaviour
             cam.eulerAngles = tileset.SceneOptions.DefaultCameraRotation;
             cam.localScale = Vector3.one;
 
-            if (mouseOrbit != null && tileset.Ready())
+            if (tileset.Ready())
             {
-                mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+                var bs = tileset.BoundingSphere();
+                if (mouseOrbit != null)
+                {
+                    mouseOrbit.pivot = tileset.transform.TransformPoint(bs.position);
+                    if (relativeNavTransSpeed > 0)
+                    {
+                        mouseOrbit.transSpeed = (bs.radius * 2.0f) / relativeNavTransSpeed;
+                    }
+                }
+                if (mouseFly != null && relativeNavTransSpeed > 0)
+                {
+                    mouseFly.transSpeed = (bs.radius * 2.0f) / relativeNavTransSpeed;
+                }
             }
         }
     }
