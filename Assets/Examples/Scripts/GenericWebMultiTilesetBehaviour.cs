@@ -73,8 +73,10 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
             {
                 Debug.LogError("Error downloading " + url + ": " + uwr.error);
             }
-
-            handler(uwr.downloadHandler.text);
+            else
+            {
+                handler(uwr.downloadHandler.text);
+            }
         }
     }
 
