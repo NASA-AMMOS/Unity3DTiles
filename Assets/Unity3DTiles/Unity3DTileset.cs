@@ -11,14 +11,16 @@
  * before exporting such information to foreign countries or providing 
  * access to foreign persons.
  */
+
+using System;
+using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using System.IO;
-using System;
-using RSG;
 using System.Text.RegularExpressions;
+using UnityEngine;
 using UnityEngine.Networking;
+using RSG;
+using UnityGLTF;
 using UnityGLTF.Loader;
 using UnityGLTF.Extensions;
 

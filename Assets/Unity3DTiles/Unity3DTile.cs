@@ -11,11 +11,14 @@
  * before exporting such information to foreign countries or providing 
  * access to foreign persons.
  */
-using RSG;
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using RSG;
+using UnityGLTF;
 
 namespace Unity3DTiles
 {
@@ -168,7 +171,7 @@ namespace Unity3DTiles
 
         public Unity3DTile(Unity3DTileset tileset, string basePath, Schema.Tile tile, Unity3DTile parent)
         {
-            this.hashCode = (int)Random.Range(0, int.MaxValue);
+            this.hashCode = (int)UnityEngine.Random.Range(0, int.MaxValue);
             this.Tileset = tileset;
             this.tile = tile;
             this.FrameState = new TileFrameState();
