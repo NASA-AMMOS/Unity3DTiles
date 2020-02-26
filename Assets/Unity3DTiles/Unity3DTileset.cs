@@ -119,7 +119,7 @@ namespace Unity3DTiles
 
             string url = UriHelper.ReplaceDataProtocol(tilesetOptions.Url);
 
-            if (Path.GetExtension(url) == ".json")
+            if (UriHelper.GetLastPathSegment(url).EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
                 this.basePath = UriHelper.GetBaseUri(url);
                 this.tilesetUrl = url;

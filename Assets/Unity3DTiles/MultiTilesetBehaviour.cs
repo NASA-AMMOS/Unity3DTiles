@@ -12,7 +12,6 @@
  * access to foreign persons.
  */
 
-using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,6 +21,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
+using Newtonsoft.Json;
+using UnityGLTF;
 using Unity3DTiles.SceneManifest;
 
 namespace Unity3DTiles
@@ -58,6 +59,8 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             numTilesetsWas = TilesetOptions.Count;
         }
 #endif
+
+        protected string baseUrl;
 
         private List<Unity3DTileset> tilesets = new List<Unity3DTileset>();
         private Dictionary<string, Unity3DTileset> nameToTileset = new Dictionary<string, Unity3DTileset>();
@@ -149,6 +152,7 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
                 Debug.LogWarning("Attempt to add tileset with null or empty name or url failed.");
                 return false;
             }
+            options.Url = MakeAbsoluteUrl(options.Url);
             if (nameToTileset.ContainsKey(options.Name))
             {
                 Debug.LogWarning(String.Format("Attempt to add tileset with duplicate name {0} failed.", options.Name));
@@ -228,6 +232,27 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
                 var rootTransform = scene.GetTransform(tileset.frame_id);
                 AddTileset(tileset.id, tileset.uri, rootTransform, tileset.show, tileset.options);
             }
+        }
+
+        protected string MakeAbsoluteUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+            url = UriHelper.ReplaceDataProtocol(url);
+            if (!string.IsNullOrEmpty(baseUrl))
+            {
+                if (!UriHelper.IsAbsolute(url))
+                {
+                    url = UriHelper.JoinUrls(baseUrl, url);
+                }
+                else
+                {
+                    url = UriHelper.JoinQuery(baseUrl, url);
+                }
+            }
+            return url;
         }
     }
 }

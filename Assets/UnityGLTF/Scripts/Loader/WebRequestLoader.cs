@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.IO;
-using GLTF;
-using UnityEngine;
-using System.Text.RegularExpressions;
 using System.Net;
+using System.Text.RegularExpressions;
+using UnityEngine;
 using UnityEngine.Networking;
+using GLTF;
 
 #if WINDOWS_UWP
 using System.Threading.Tasks;
@@ -30,11 +30,22 @@ namespace UnityGLTF.Loader
                 throw new Exception("Send must use either string or byte[] data type");
             }
 
-            string uri = rootUri.Replace("\\", "/").TrimEnd('/');
-            string path = httpRequestPath != null ? httpRequestPath.Replace("\\", "/").TrimStart('/') : null;
-            if (!string.IsNullOrEmpty(path))
+            string uri = null;
+            if (!string.IsNullOrEmpty(rootUri) && !string.IsNullOrEmpty(httpRequestPath))
             {
-                uri = uri + "/" + path;
+                uri = UriHelper.JoinUrls(rootUri, httpRequestPath);
+            }
+            else if (!string.IsNullOrEmpty(rootUri))
+            {
+                uri = rootUri;
+            }
+            else if (!string.IsNullOrEmpty(httpRequestPath))
+            {
+                uri = httpRequestPath;
+            }
+            else
+            {
+                throw new Exception("root URI and http request path both empty");
             }
 
             UnityWebRequest www = new UnityWebRequest(uri, "GET", new DownloadHandlerBuffer(), null);

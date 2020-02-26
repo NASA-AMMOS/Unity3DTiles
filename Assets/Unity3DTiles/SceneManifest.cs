@@ -98,27 +98,9 @@ namespace SceneManifest
             return JsonConvert.SerializeObject(this);
         }
 
-        public static Scene FromJson(string data, string baseUrl = null)
+        public static Scene FromJson(string data)
         {
-            var scene = JsonConvert.DeserializeObject<Scene>(data);
-            if (!string.IsNullOrEmpty(baseUrl))
-            {
-                foreach (var tileset in scene.tilesets)
-                {
-                    if (!tileset.uri.Contains("://"))
-                    {
-                        tileset.uri = UriHelper.JoinUrls(baseUrl, tileset.uri);
-                    }
-                }
-                foreach (var image in scene.images)
-                {
-                    if (!image.uri.Contains("://"))
-                    {
-                        image.uri = UriHelper.JoinUrls(baseUrl, image.uri);
-                    }
-                }
-            }
-            return scene;
+            return JsonConvert.DeserializeObject<Scene>(data);
         }
 
         private SceneFrame GetFrame(string frame_id)

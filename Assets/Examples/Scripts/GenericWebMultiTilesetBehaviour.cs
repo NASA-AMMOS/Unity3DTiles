@@ -15,12 +15,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Networking;
-using Unity3DTiles;
-using System.Runtime.InteropServices;
-using Unity3DTiles.SceneManifest;
 using Newtonsoft.Json;
+using UnityGLTF;
+using Unity3DTiles;
+using Unity3DTiles.SceneManifest;
 
 /* Extends MultiTilesetBehavior to optionally retrieve configuration from URL parameters in a WebGL build.
  *
@@ -37,6 +38,10 @@ using Newtonsoft.Json;
  * URL parameters.  Also, any tilesets pre-populated in the TilesetOptions list inspector will be loaded at start.
  *
  * URLs starting with "data://" will be loaded from the Unity StreamingAssets folder.
+ *
+ * When running in a web browser (not the Unity editor):
+ * 1) Relative URLs will be interpreted relative to the window location URL.
+ * 2) Any request params in the window location URL other than those above will be passed on to subsidiary fetches.
  */
 public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
 {
@@ -45,8 +50,14 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
 #if UNITY_WEBGL && !UNITY_EDITOR
     [DllImport("__Internal")]
     private static extern string getURLParameter(string name);
+    [DllImport("__Internal")]
+    private static extern string getWindowLocationURL();
 #else
     private static string getURLParameter(string name)
+    {
+        return null;
+    }
+    private static string getWindowLocationURL()
     {
         return null;
     }
@@ -59,8 +70,6 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
 
     private IEnumerator DownloadTextImpl(string url, Action<string> handler)
     {
-        url = UriHelper.ReplaceDataProtocol(url);
-        
         using (var uwr = UnityWebRequest.Get(url))
         {
 
@@ -71,7 +80,7 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
 #endif
             if (uwr.isNetworkError || uwr.isHttpError)
             {
-                Debug.LogError("Error downloading " + url + ": " + uwr.error);
+                Debug.LogError("error downloading " + url + ": " + uwr.error);
             }
             else
             {
@@ -84,7 +93,15 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
     {
         base._start();
 
-        string sceneOptionsUrl = getURLParameter("SceneOptions");
+        var fullURL = getWindowLocationURL();
+        if (!string.IsNullOrEmpty(fullURL))
+        {
+            Debug.Log("full URL: " + fullURL);
+            baseUrl = UriHelper.GetBaseUri(fullURL, excludeQueryParams:
+                                           new string[] { "SceneOptions", "Scene", "Tileset", "TilesetOptions" });
+        }
+
+        string sceneOptionsUrl = MakeAbsoluteUrl(getURLParameter("SceneOptions"));
         if (!string.IsNullOrEmpty(sceneOptionsUrl))
         {
             Debug.Log("overriding scene options from URL: " + sceneOptionsUrl);
@@ -94,34 +111,37 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
         Camera.main.transform.position = SceneOptions.DefaultCameraPosition;
         Camera.main.transform.eulerAngles = SceneOptions.DefaultCameraRotation;
 
-        string sceneManifestUrl = getURLParameter("Scene") ?? SceneUrl;
-        string singleTilesetUrl = getURLParameter("Tileset");
+        string sceneManifestUrl = MakeAbsoluteUrl(getURLParameter("Scene") ?? SceneUrl);
+        string singleTilesetUrlRaw = getURLParameter("Tileset");
+        string singleTilesetUrl = MakeAbsoluteUrl(singleTilesetUrlRaw);
         if (!string.IsNullOrEmpty(sceneManifestUrl))
         {
             Debug.Log("loading scene from URL: " + sceneManifestUrl);
-            string baseUrl = UriHelper.ReplaceDataProtocol(UriHelper.GetBaseUri(sceneManifestUrl));
-            DownloadText(sceneManifestUrl, json => AddScene(Scene.FromJson(json, baseUrl)));
+            DownloadText(sceneManifestUrl, json => {
+                    baseUrl = UriHelper.GetBaseUri(sceneManifestUrl);
+                    AddScene(Scene.FromJson(json));
+                });
         }
         else if (!string.IsNullOrEmpty(singleTilesetUrl))
         {
             Debug.Log("loading tileset from URL: " + singleTilesetUrl);
             Unity3DTilesetOptions opts = new Unity3DTilesetOptions();
-            string tilesetOptionsUrl = getURLParameter("TilesetOptions");
+            string tilesetOptionsUrl = MakeAbsoluteUrl(getURLParameter("TilesetOptions"));
             if (!string.IsNullOrEmpty(tilesetOptionsUrl))
             {
                 Debug.Log("overriding tileset options from URL: " + tilesetOptionsUrl);
                 DownloadText(tilesetOptionsUrl, json =>
                 {
                     JsonConvert.PopulateObject(json, opts);
-                    opts.Name = singleTilesetUrl;
-                    opts.Url = singleTilesetUrl;
+                    opts.Name = singleTilesetUrlRaw;
+                    opts.Url = singleTilesetUrlRaw;
                     AddTileset(opts);
                 });
             }
             else
             {
-                opts.Name = singleTilesetUrl;
-                opts.Url = singleTilesetUrl;
+                opts.Name = singleTilesetUrlRaw;
+                opts.Url = singleTilesetUrlRaw;
                 AddTileset(opts);
             }
         }
