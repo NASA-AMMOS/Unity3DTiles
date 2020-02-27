@@ -34,11 +34,6 @@ namespace Unity3DTiles
         [Tooltip("Whether tileset is initially visible.")]
         public bool Show = true;
 
-        public UnityEngine.Rendering.ShadowCastingMode ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-        public bool RecieveShadows = true;
-
-        public bool CreateColliders = true;
-
         [Tooltip("Controls the level of detail the tileset will be loaded to by specifying the allowed amount of on screen geometric error allowed in pixels")]
         public double MaximumScreenSpaceError = 16;
 
@@ -50,15 +45,16 @@ namespace Unity3DTiles
 
         [Header("Root Transform")]
 
-        [Tooltip("Tileset translation in tileset frame.")]
+        [Tooltip("Tileset translation in right-handed tileset coordinates.")]
         [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Translation = Vector3.zero;
 
-        [Tooltip("Tileset rotation in tileset frame.")]
+        [Tooltip("Tileset rotation in right-handed tileset coordinates.")] 
         [JsonConverter(typeof(QuaternionConverter))]
+        [EulerAngles]
         public Quaternion Rotation = Quaternion.identity;
 
-        [Tooltip("Tileset scale in tileset frame.")]
+        [Tooltip("Tileset scale in right-handed tileset coordinates.")]
         [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Scale = Vector3.one;
 
@@ -70,10 +66,15 @@ namespace Unity3DTiles
 
         public int GLTFMaximumLOD = 300;
 
+        [Tooltip("If set to null UnityGLTF will use the StandardShader for GLTF assets.  This can have dramatic performance impacts on HoloLens.  This allows a different shader to be used when instantiation GLTF assets.  Also see Unity3DTilesetStyle which provides a flexible way to change style properties such as shaders at runtime on a tile by tile basis.")]
         [JsonIgnore]
         public Shader GLTFShaderOverride;
+        
+        public UnityEngine.Rendering.ShadowCastingMode ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        public bool RecieveShadows = true;
 
-        [Header("Debug Settings")]
+        public bool CreateColliders = true;
+
         public bool DebugDrawBounds = false;
 
         [JsonIgnore]
@@ -100,18 +101,26 @@ namespace Unity3DTiles
         [Tooltip("Controls the maximum number of unused tiles that will be unloaded at a time when the cache is full.  This is specified as a ratio of the LRUMaxCacheSize. For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will unload 120 (0.2*600) tiles in a single frame.")]
         public float LRUMaxFrameUnloadRatio = 0.2f;
 
+        [Tooltip("Manages how many downloads can occurs simultaneously.  Larger results in faster load times but this should be tuned for the particular platform you are deploying to.")]
         public int MaxConcurrentRequests = 6;
 
+        [Tooltip("The set of cameras that should be used to determine which tiles to load.  Typically this will just be the main camera (and that is the default if not specified).  Adding more cameras will decrease performance.")]
         [JsonIgnore]
         public List<Camera> ClippingCameras = new List<Camera>();
 
+        [Tooltip("Overrides shader override of individual tilesets.")]
         [JsonIgnore]
         public Shader GLTFShaderOverride;
 
-        [Header("Camera Settings")]
+        [Header("Default Camera Pose")]
+
+        [Tooltip("Camera translation in right-handed tileset coordinates.")]
         [JsonConverter(typeof(Vector3Converter))]
-        public Vector3 DefaultCameraPosition = new Vector3(0, 0, -30);
-        [JsonConverter(typeof(Vector3Converter))]
-        public Vector3 DefaultCameraRotation = Vector3.zero;
+        public Vector3 DefaultCameraTranslation = new Vector3(0, 0, -30);
+
+        [Tooltip("Camera rotation in right-handed tileset coordinates.")]
+        [JsonConverter(typeof(QuaternionConverter))]
+        [EulerAngles]
+        public Quaternion DefaultCameraRotation = Quaternion.identity;
     }
 }

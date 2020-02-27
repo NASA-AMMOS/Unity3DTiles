@@ -569,8 +569,8 @@ MonoBehaviour:
     ClippingCameras: []
     GLTFShaderOverride: {fileID: 4800000, guid: 9836e4430eb58204086d7d1440e16a4f,
       type: 3}
-    DefaultCameraPosition: {x: 0, y: 0, z: -30}
-    DefaultCameraRotation: {x: 0, y: 0, z: 0}
+    DefaultCameraTranslation: {x: 0, y: 0, z: -30}
+    DefaultCameraRotation: {x: 0, y: 0, z: 0, w: 1}
   Stats:
     FrustumSetCount: 0
     UsedSetCount: 0

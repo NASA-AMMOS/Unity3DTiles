@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using Unity3DTiles;
+using UnityGLTF.Extensions;
 
 class DemoUX : MonoBehaviour
 {
@@ -579,9 +580,12 @@ class DemoUX : MonoBehaviour
     {
         if (tileset != null)
         {
+            var so = tileset.SceneOptions;
+            var c2t = Matrix4x4.TRS(so.DefaultCameraTranslation, so.DefaultCameraRotation, Vector3.one);
+            var c2w = c2t.UnityMatrix4x4ConvertFromGLTF() * tileset.transform.localToWorldMatrix;
             var cam = Camera.main.transform;
-            cam.position = tileset.SceneOptions.DefaultCameraPosition;
-            cam.eulerAngles = tileset.SceneOptions.DefaultCameraRotation;
+            cam.position = new Vector3(c2w.m03, c2w.m13, c2w.m23);
+            cam.rotation = c2w.rotation;
             cam.localScale = Vector3.one;
 
             if (tileset.Ready())

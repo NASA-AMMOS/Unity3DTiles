@@ -586,8 +586,8 @@ MonoBehaviour:
     MaxConcurrentRequests: 6
     ClippingCameras: []
     GLTFShaderOverride: {fileID: 0}
-    DefaultCameraPosition: {x: -160, y: 32, z: 100}
-    DefaultCameraRotation: {x: 0, y: -100, z: 0}
+    DefaultCameraTranslation: {x: 160, y: 32, z: 100}
+    DefaultCameraRotation: {x: 0, y: 0.76604444, z: 0, w: 0.64278764}
   Stats:
     FrustumSetCount: 0
     UsedSetCount: 0
@@ -613,33 +613,19 @@ MonoBehaviour:
     Name: 
     Url: data://SampleTileset/tileset.json
     Show: 1
-    ShadowCastingMode: 0
-    RecieveShadows: 0
-    CreateColliders: 1
     MaximumScreenSpaceError: 2
     SkipScreenSpaceErrorMultiplier: 120
     LoadSiblings: 1
-    Transform:
-      e00: 1
-      e01: 0
-      e02: 0
-      e03: 0
-      e10: 0
-      e11: 1
-      e12: 0
-      e13: 0
-      e20: 0
-      e21: 0
-      e22: 1
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
+    Translation: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0, w: 1}
+    Scale: {x: 1, y: 1, z: 1}
     MaxDepth: 0
     GLTFMultithreadedLoad: 1
     GLTFMaximumLOD: 300
     GLTFShaderOverride: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
+    ShadowCastingMode: 0
+    RecieveShadows: 0
+    CreateColliders: 1
     DebugDrawBounds: 0
 --- !u!114 &1485971529
 MonoBehaviour:

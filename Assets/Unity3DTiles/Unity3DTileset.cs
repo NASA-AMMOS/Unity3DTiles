@@ -26,7 +26,6 @@ using UnityGLTF.Extensions;
 
 namespace Unity3DTiles
 {
-
     /// <summary>
     /// A 3D Tiles tileset used for streaming large 3D datasets
     /// See https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Scene/Cesium3DTileset.js
