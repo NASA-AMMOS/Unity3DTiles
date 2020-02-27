@@ -91,7 +91,7 @@ namespace Unity3DTiles
     {
         //Options shared between tilesets in a scene
 
-        [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrese load time but may increase frame lurches when loading tiles.")]
+        [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrease load time but may increase frame lurches when loading tiles.")]
         public int MaximumTilesToProcessPerFrame = 1;
 
         [Tooltip("Sets the target maximum number of tiles that can be loaded into memory at any given time.  Beyond this limit, unused tiles will be unloaded as new requests are made.")]
