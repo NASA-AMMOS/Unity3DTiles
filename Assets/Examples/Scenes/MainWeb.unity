@@ -560,7 +560,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1485971526}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 227.6, y: -6, z: -71}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -586,8 +586,8 @@ MonoBehaviour:
     MaxConcurrentRequests: 6
     ClippingCameras: []
     GLTFShaderOverride: {fileID: 0}
-    DefaultCameraPosition: {x: 0, y: 0, z: -30}
-    DefaultCameraRotation: {x: 0, y: 0, z: 0}
+    DefaultCameraPosition: {x: -160, y: 32, z: 100}
+    DefaultCameraRotation: {x: 0, y: -100, z: 0}
   Stats:
     FrustumSetCount: 0
     UsedSetCount: 0
