@@ -51,7 +51,9 @@ namespace Unity3DTiles
 
         [Tooltip("Tileset rotation in right-handed tileset coordinates.")] 
         [JsonConverter(typeof(QuaternionConverter))]
+#if UNITY_EDITOR
         [EulerAngles]
+#endif
         public Quaternion Rotation = Quaternion.identity;
 
         [Tooltip("Tileset scale in right-handed tileset coordinates.")]
@@ -120,7 +122,9 @@ namespace Unity3DTiles
 
         [Tooltip("Camera rotation in right-handed tileset coordinates.")]
         [JsonConverter(typeof(QuaternionConverter))]
+#if UNITY_EDITOR
         [EulerAngles]
+#endif
         public Quaternion DefaultCameraRotation = Quaternion.identity;
     }
 }

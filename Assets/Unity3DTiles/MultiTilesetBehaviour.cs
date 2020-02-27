@@ -88,6 +88,10 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
                 t.Update();
             }
             startIndex++;
+            if (startIndex >= tilesets.Count)
+            {
+                startIndex = 0;
+            }
         }
 
         protected override void UpdateStats()

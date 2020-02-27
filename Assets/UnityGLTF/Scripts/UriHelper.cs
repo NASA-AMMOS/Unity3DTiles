@@ -171,7 +171,13 @@ namespace UnityGLTF
             string dataProtocol = "data://";
             if (url.StartsWith(dataProtocol, StringComparison.OrdinalIgnoreCase))
             {
-                url = "file://" + Application.streamingAssetsPath + "/" + url.Substring(dataProtocol.Length);
+                url = Application.streamingAssetsPath + "/" + url.Substring(dataProtocol.Length);
+#if UNITY_EDITOR
+                if (!IsAbsolute(url))
+                {
+                    url = "file://" + url;
+                }
+#endif
             }
             return url;
         }
