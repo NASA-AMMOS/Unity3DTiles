@@ -4,5 +4,5 @@ The [UnityGLTF](https://github.com/KhronosGroup/UnityGLTF) package is used for l
 
 Please note that UnityGLTF may be significantly out of date at times and should be periodically updated.  We attempt to push any important changes/bug fixes back to the project in the hope that some day it can easily be incorporated out of the box.
 
-
+We have added `UnityGLTF.UriHelper` to facilitate operations on URIs including forwarding extra query parameters.
 

@@ -26,7 +26,7 @@ Please note that since initial development completed, the 3d-tiles specification
 - [ ] viewerRequestVolume
 - [x] Geometric Error - possible minor bugs in calculation
 - [x] Tile.Content
-- [ ] Transforms - Basic support but does not handle parent/child transforms or runtime changes
+- [ ] Transforms - Basic support but does not handle runtime changes
 - [ ] Add Refinement
 - [x] Replace Refinement
 - [x] Frustum culling
@@ -68,10 +68,10 @@ Scene options:
 * LRU Cache Max Size - Sets the target maximum number of tiles that can be loaded into memory at any given time.  Beyond this limit, unused tiles will be unloaded as new requests are made.
 * LRU Max Frame Unload Ratio - Controls the number of tiles that will be unloaded per frame when the cache becomes too full.  Setting too high can cause choppy performance.  Setting too low will slow the loading of new tiles as they will wait for old tiles to be unloaded.
 *  Max Concurrent Requests - Manages how many downloads can occurs simultaneously.  Larger results in faster load times but this should be tuned for the particular platform you are deploying to.
-* Clipping cameras - the set of cameras that should be used to determine which tiles to load.  Typically this will just be the main camera.  Adding more cameras will decrease performance.
+* Clipping cameras - the set of cameras that should be used to determine which tiles to load.  Typically this will just be the main camera (and that is the default if not specified).  Adding more cameras will decrease performance.
 * GLTF Shader Override - Overrides shader override of individual tilesets.
-* DefaultCameraPosition - Default camera position for scene.
-* DefaultCameraRotation - Default camera Euler angles for scene.
+* DefaultCameraTranslation - Default camera position in right-handed tileset coordinates.
+* DefaultCameraRotation - Default camera rotation quaternion in right-handed tileset coordinates.
 
 Tileset options:
 
@@ -81,13 +81,14 @@ Tileset options:
 * Maximum Screen Space Error - Controls how much detail is rendered.  Lower SSE results in more detail
 * Skip Screen Space Error Multiplier - Used to avoid loading high level (low resolution) tiles.  Increasing this results in more high level tiles being skipped when loading
 * Load siblings - If a tile is in view and needs to be rendered, also load its siblings even if they are not visible.  Especially useful when using colliders so that raycasts outside the users field of view can succeed.  Increases load time and number of tiles that need to be stored in memory.
+* Translation - Tileset translation in right-handed tileset coordinates.
+* Rotation - Tileset rotation quaterion in right-handed tileset coordinates.
+* Scale - Tileset scale in right-handed tileset coordinates.
 * Max Depth - can be used to limit how far down the tree tiles are rendered.  Most useful for debugging.
-* GLTF loader settings
-  * GLTF Multithreaded Load - can increase performance but can also crash on some platforms that don't support multiple threads
-  * GLTF maximum LOD - typically default is fine unless the tiles themselves specify LOD information
-  * GLTF Shader Override - If set to null UnityGLTF will use the `StandardShader` for GLTF assets.  This can have dramatic performance impacts on HoloLens.  This allows a different shader to be used when instantiation  GLTF assets.  Also see `Unity3DTilesetStyle` which provides a flexible way to change style properties such as shaders at runtime on a tile by tile basis.
-* Debug Settings
-  * Debug Draw Bounds - Draw tile bounds.  Very slow
+* GLTF Multithreaded Load - can increase performance but can also crash on some platforms that don't support multiple threads
+* GLTF maximum LOD - typically default is fine unless the tiles themselves specify LOD information
+* GLTF Shader Override - If set to null UnityGLTF will use the `StandardShader` for GLTF assets.  This can have dramatic performance impacts on HoloLens.  This allows a different shader to be used when instantiation  GLTF assets.  Also see `Unity3DTilesetStyle` which provides a flexible way to change style properties such as shaders at runtime on a tile by tile basis.
+* Debug Draw Bounds - Draw tile bounds.  Very slow
 
 ### The Generic Web Scene
 
@@ -110,11 +111,25 @@ The generic web build recognizes the following URL parameters:
 * Tileset - URL to single tileset to load.
 * TilesetOptions - URL to JSON overriding any subset of single tileset Unity3DTilesetOptions.
 
-Tileset and TilesetOptions are ignored if Scene is specified.
+Tileset is ignored if Scene is specified.
+
+When combined with Scene, TilesetOptions overrides per-tileset options in the scene manifest, if any.
 
 When running in the Unity editor use the SceneOptions and SceneUrl inspectors instead of the SceneOptions and Scene
 URL parameters.  Also, any tilesets pre-populated in the TilesetOptions list inspector will be loaded at start.
 
 URLs starting with "data://" will be loaded from the Unity StreamingAssets folder.
 
-Example: `http://uri.to/generic/web/deployment/index.html?Tileset=http%3A%2F%2Furi.to%2Ftileset.json&TilesetOptions=http%3A%2F%2Furi.to%2Foptions.json&MaxConcurrentRequests=100`
+When running in a web browser (not the Unity editor):
+* Relative URLs will be interpreted relative to the window location URL.
+* Any request params in the window location URL other than those above will be passed on to subsidiary fetches.
+
+Examples:
+
+`http://uri.to/generic/web/deployment/index.html?Tileset=data://SampleTileset/tileset.json`
+
+`http://uri.to/generic/web/deployment/index.html?Tileset=http://uri.to/tileset.json&TilesetOptions=http://uri.to/tileset_options.json&SceneOptions=http://uri.to/scene_options.json&ExtraParam1=foo&ExtraParam2=bar`
+
+`http://uri.to/generic/web/deployment/index.html?Tileset=../tileset/tileset.json&TilesetOptions=../tileset/options.json&SceneOptions=../scene_options.json`
+
+`http://uri.to/generic/web/deployment/index.html?Scene=../scene.json&TilesetOptions=../tileset_options.json&SceneOptions=../scene_options.json`
