@@ -6,7 +6,7 @@
 
 dir=Unity3DTilesWeb 
 if [ ! -d $dir ]; then
-    echo "first build GenericWeb WebGL scene, see README.md#building"
+    echo "first build GenericWeb WebGL scene, see README.md#building-the-generic-web-scene"
     exit 1
 fi
 
