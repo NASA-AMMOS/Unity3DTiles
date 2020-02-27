@@ -91,7 +91,7 @@ namespace Unity3DTiles
         public void GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale,
                                      bool convertToUnityFrame = true)
         {
-            var m = TilesetOptions.Transform;
+            var m = Matrix4x4.TRS(TilesetOptions.Translation, TilesetOptions.Rotation, TilesetOptions.Scale);
             if (convertToUnityFrame)
             {
                 m = m.UnityMatrix4x4ConvertFromGLTF();
@@ -101,9 +101,9 @@ namespace Unity3DTiles
             scale = m.lossyScale;
         }
 
-        public Matrix4x4 GetRootTransform()
+        public Matrix4x4 GetRootTransform(bool convertToUnityFrame = true)
         {
-            GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale);
+            GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale, convertToUnityFrame);
             return Matrix4x4.TRS(translation, rotation, scale);
         }
 

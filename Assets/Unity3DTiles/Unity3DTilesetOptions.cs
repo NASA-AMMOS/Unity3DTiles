@@ -48,8 +48,19 @@ namespace Unity3DTiles
         [Tooltip("If a tile is in view and needs to be rendered, also load its siblings even if they are not visible.  Especially useful when using colliders so that raycasts outside the users field of view can succeed.  Increases load time and number of tiles that need to be stored in memory.")]
         public bool LoadSiblings = true;
 
-        [JsonConverter(typeof(Matrix4x4Converter))]
-        public Matrix4x4 Transform = Matrix4x4.identity;
+        [Header("Root Transform")]
+
+        [Tooltip("Tileset translation in tileset frame.")]
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 Translation = Vector3.zero;
+
+        [Tooltip("Tileset rotation in tileset frame.")]
+        [JsonConverter(typeof(QuaternionConverter))]
+        public Quaternion Rotation = Quaternion.identity;
+
+        [Tooltip("Tileset scale in tileset frame.")]
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 Scale = Vector3.one;
 
         [Tooltip("Max child depth that we should render. If this is zero, disregard")]
         public int MaxDepth = 0;

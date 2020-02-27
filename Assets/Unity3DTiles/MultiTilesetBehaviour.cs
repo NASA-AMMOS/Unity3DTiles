@@ -136,7 +136,9 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             options = options ?? new Unity3DTilesetOptions();
             options.Name = name;
             options.Url = url;
-            options.Transform = rootTransform;
+            options.Translation = new Vector3(rootTransform.m03, rootTransform.m13, rootTransform.m23);
+            options.Rotation = rootTransform.rotation;
+            options.Scale = rootTransform.lossyScale;
             options.Show = show;
             return AddTileset(options);
         }
