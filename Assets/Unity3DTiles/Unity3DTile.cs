@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using RSG;
-using UnityGLTF;
 
 namespace Unity3DTiles
 {
@@ -84,7 +83,7 @@ namespace Unity3DTiles
         {
             get
             {
-                string ext = Path.GetExtension(UriHelper.RemoveQuery(this.ContentUrl)).ToLower();
+                string ext = Path.GetExtension(UrlUtils.RemoveQuery(this.ContentUrl)).ToLower();
                 if(ext.Equals(".b3dm"))
                 {
                     return Unity3DTileContentType.B3DM;
@@ -229,7 +228,7 @@ namespace Unity3DTiles
             else
             {
                 ContentState = Unity3DTileContentState.UNLOADED;
-                this.ContentUrl = UriHelper.JoinUrls(basePath, tile.Content.GetUri());
+                this.ContentUrl = UrlUtils.JoinUrls(basePath, tile.Content.GetUri());
             }
 
             this.HasRenderableContent = false;
@@ -322,7 +321,7 @@ namespace Unity3DTiles
                     else if (ContentType == Unity3DTileContentType.PNTS)
                     {
                         PNTSComponent pntsCo = go.AddComponent<PNTSComponent>();
-                        pntsCo.Url = UriHelper.RemoveQuery(this.ContentUrl);
+                        pntsCo.Url = UrlUtils.RemoveQuery(this.ContentUrl);
                         pntsCo.ShaderOverride = Shader.Find("Point Cloud/Point");
                         pntsCo.DownloadOnStart = false;
                         this.Tileset.Behaviour.StartCoroutine(pntsCo.Download(finished));

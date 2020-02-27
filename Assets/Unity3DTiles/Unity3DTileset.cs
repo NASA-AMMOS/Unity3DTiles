@@ -20,7 +20,6 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Networking;
 using RSG;
-using UnityGLTF;
 using UnityGLTF.Loader;
 using UnityGLTF.Extensions;
 
@@ -116,17 +115,17 @@ namespace Unity3DTiles
             this.Traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
             this.DeepestDepth = 0;
 
-            string url = UriHelper.ReplaceDataProtocol(tilesetOptions.Url);
+            string url = UrlUtils.ReplaceDataProtocol(tilesetOptions.Url);
 
-            if (UriHelper.GetLastPathSegment(url).EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            if (UrlUtils.GetLastPathSegment(url).EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
-                this.basePath = UriHelper.GetBaseUri(url);
+                this.basePath = UrlUtils.GetBaseUri(url);
                 this.tilesetUrl = url;
             }
             else
             {
                 this.basePath = url;
-                this.tilesetUrl = UriHelper.JoinUrls(url, "tileset.json");
+                this.tilesetUrl = UrlUtils.JoinUrls(url, "tileset.json");
             }
 
             LoadTilesetJson(this.tilesetUrl).Then(json =>
@@ -190,12 +189,12 @@ namespace Unity3DTiles
                 }
                 string versionQuery = "v=" + version;
                 
-                this.basePath = UriHelper.SetQuery(this.basePath, versionQuery);
-                tilesetUrl = UriHelper.SetQuery(tilesetUrl, versionQuery);
+                this.basePath = UrlUtils.SetQuery(this.basePath, versionQuery);
+                tilesetUrl = UrlUtils.SetQuery(tilesetUrl, versionQuery);
             }
             // A tileset.json referenced from a tile may exist in a different directory than the root tileset.
             // Get the basePath relative to the external tileset.
-            string basePath = UriHelper.GetBaseUri(tilesetUrl);
+            string basePath = UrlUtils.GetBaseUri(tilesetUrl);
             Unity3DTile rootTile = new Unity3DTile(this, basePath, tileset.Root, parentTile);
             Statistics.NumberOfTilesTotal++;
 

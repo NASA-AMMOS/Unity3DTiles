@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Networking;
 using Newtonsoft.Json;
-using UnityGLTF;
+using UnityGLTF.Loader;
 using Unity3DTiles;
 using Unity3DTiles.SceneManifest;
 
@@ -92,14 +92,16 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
 
     protected override void _start()
     {
+        AbstractWebRequestLoader.LoaderPrototype = new Unity3DTilesWebRequestLoader("");
+
         base._start();
 
         var fullURL = getWindowLocationURL();
         if (!string.IsNullOrEmpty(fullURL))
         {
             Debug.Log("full URL: " + fullURL);
-            baseUrl = UriHelper.GetBaseUri(fullURL, excludeQueryParams:
-                                           new string[] { "SceneOptions", "Scene", "Tileset", "TilesetOptions" });
+            baseUrl = UrlUtils.GetBaseUri(fullURL, excludeQueryParams:
+                                          new string[] { "SceneOptions", "Scene", "Tileset", "TilesetOptions" });
         }
 
         string sceneOptionsUrl = MakeAbsoluteUrl(getURLParameter("SceneOptions"));
@@ -123,13 +125,13 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
                     Debug.Log("setting default tileset options from URL: " + tilesetOptionsUrl);
                     DownloadText(tilesetOptionsUrl, optionsJson =>
                     {
-                        baseUrl = UriHelper.GetBaseUri(sceneManifestUrl);
+                        baseUrl = UrlUtils.GetBaseUri(sceneManifestUrl);
                         AddScene(Scene.FromJson(sceneJson), optionsJson);
                     });
                 }
                 else
                 {
-                    baseUrl = UriHelper.GetBaseUri(sceneManifestUrl);
+                    baseUrl = UrlUtils.GetBaseUri(sceneManifestUrl);
                     AddScene(Scene.FromJson(sceneJson));
                 }
             });

@@ -43,9 +43,9 @@ namespace Unity3DTiles
 
         public IEnumerator Download(Promise<bool> loadComplete)
         {
-            string url = UriHelper.ReplaceDataProtocol(Url);
-            string dir = UriHelper.GetBaseUri(url);
-            string file = UriHelper.GetLastPathSegment(url);
+            string url = UrlUtils.ReplaceDataProtocol(Url);
+            string dir = UrlUtils.GetBaseUri(url);
+            string file = UrlUtils.GetLastPathSegment(url);
 
             ILoader loader = AbstractWebRequestLoader.CreateDefaultRequestLoader(dir); //.glb, .gltf
             if (file.EndsWith(".b3dm", StringComparison.OrdinalIgnoreCase))

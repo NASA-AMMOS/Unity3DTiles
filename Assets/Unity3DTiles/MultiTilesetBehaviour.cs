@@ -22,7 +22,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 using Newtonsoft.Json;
-using UnityGLTF;
 using Unity3DTiles.SceneManifest;
 
 namespace Unity3DTiles
@@ -257,16 +256,16 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             {
                 return url;
             }
-            url = UriHelper.ReplaceDataProtocol(url);
+            url = UrlUtils.ReplaceDataProtocol(url);
             if (!string.IsNullOrEmpty(baseUrl))
             {
-                if (!UriHelper.IsAbsolute(url))
+                if (!UrlUtils.IsAbsolute(url))
                 {
-                    url = UriHelper.JoinUrls(baseUrl, url);
+                    url = UrlUtils.JoinUrls(baseUrl, url);
                 }
                 else
                 {
-                    url = UriHelper.JoinQuery(baseUrl, url);
+                    url = UrlUtils.JoinQuery(baseUrl, url);
                 }
             }
             return url;
