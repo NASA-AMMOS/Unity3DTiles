@@ -12,44 +12,16 @@
  * access to foreign persons.
  */
 
-using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Newtonsoft.Json;
 
 namespace Unity3DTiles
 {
 namespace SceneManifest
 {
-    //Serializers taken from https://forum.unity.com/threads/vector3-not-serializable.7766/
-    [Serializable]
-    public struct Vector3Serializer
-    {
-        public float x;
-        public float y;
-        public float z;
-
-        public static implicit operator Vector3(Vector3Serializer v3s)
-        {
-            return new Vector3(v3s.x, v3s.y, v3s.z);
-        }
-    }
-
-    [Serializable]
-    public struct QuaternionSerializer
-    {
-        public float x;
-        public float y;
-        public float z;
-        public float w;
-
-        public static implicit operator Quaternion(QuaternionSerializer qs)
-        {
-            return new Quaternion(qs.x, qs.y, qs.z, qs.w);
-        }
-    }
-
     public class SceneTileset
     {
         public string id;
@@ -72,9 +44,16 @@ namespace SceneManifest
     public class SceneFrame
     {
         public string id;
-        public Vector3Serializer translation;
-        public QuaternionSerializer rotation = new QuaternionSerializer { x = 0, y = 0, z = 0, w = 1 };
-        public Vector3Serializer scale = new Vector3Serializer { x = 1, y = 1, z = 1 };
+
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 translation;
+
+        [JsonConverter(typeof(QuaternionConverter))]
+        public Quaternion rotation = Quaternion.identity;
+
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 scale = Vector3.one;
+
         public string parent_id;
     }
 

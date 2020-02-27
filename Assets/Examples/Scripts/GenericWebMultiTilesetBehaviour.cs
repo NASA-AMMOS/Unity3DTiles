@@ -30,9 +30,10 @@ using Unity3DTiles.SceneManifest;
  * SceneOptions - URL to JSON file overriding any subset of Unity3DTilesetSceneOptions.
  * Scene - URL to JSON file containing scene to load (see SceneManifest.cs).
  * Tileset - URL to single tileset to load.
- * TilesetOptions - URL to JSON overriding any subset of single tileset Unity3DTilesetOptions.
+ * TilesetOptions - URL to JSON overriding any subset of Unity3DTilesetOptions.
  *
- * Tileset and TilesetOptions are ignored if Scene is specified.
+ * Tileset is ignored if Scene is specified.
+ * When combined with Scene, TilesetOptions overrides per-tileset options in the scene manifest, if any.
  *
  * When running in the Unity editor use the SceneOptions and SceneUrl inspectors instead of the SceneOptions and Scene
  * URL parameters.  Also, any tilesets pre-populated in the TilesetOptions list inspector will be loaded at start.
@@ -117,10 +118,24 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
         if (!string.IsNullOrEmpty(sceneManifestUrl))
         {
             Debug.Log("loading scene from URL: " + sceneManifestUrl);
-            DownloadText(sceneManifestUrl, json => {
+            DownloadText(sceneManifestUrl, sceneJson =>
+            {
+                string tilesetOptionsUrl = MakeAbsoluteUrl(getURLParameter("TilesetOptions"));
+                if (!string.IsNullOrEmpty(tilesetOptionsUrl))
+                {
+                    Debug.Log("setting default tileset options from URL: " + tilesetOptionsUrl);
+                    DownloadText(tilesetOptionsUrl, optionsJson =>
+                    {
+                        baseUrl = UriHelper.GetBaseUri(sceneManifestUrl);
+                        AddScene(Scene.FromJson(sceneJson), optionsJson);
+                    });
+                }
+                else
+                {
                     baseUrl = UriHelper.GetBaseUri(sceneManifestUrl);
-                    AddScene(Scene.FromJson(json));
-                });
+                    AddScene(Scene.FromJson(sceneJson));
+                }
+            });
         }
         else if (!string.IsNullOrEmpty(singleTilesetUrl))
         {

@@ -225,12 +225,23 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             }
         }
 
-        public void AddScene(Scene scene)
+        /// <summary>
+        /// Add all tilesets in a scene.
+        /// If tilesetOptionsJson is given then it can (partially or fully) override the individual tileset options
+        /// in the scene.
+        /// </summary>
+        public void AddScene(Scene scene, string tilesetOptionsJson = null)
         {
             foreach (var tileset in scene.tilesets)
             {
                 var rootTransform = scene.GetTransform(tileset.frame_id);
-                AddTileset(tileset.id, tileset.uri, rootTransform, tileset.show, tileset.options);
+                var opts = tileset.options;
+                if (tilesetOptionsJson != null)
+                {
+                    opts = opts ?? new Unity3DTilesetOptions();
+                    JsonConvert.PopulateObject(tilesetOptionsJson, opts);
+                }
+                AddTileset(tileset.id, tileset.uri, rootTransform, tileset.show, opts);
             }
         }
 

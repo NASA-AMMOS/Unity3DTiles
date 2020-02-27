@@ -11,13 +11,16 @@
  * before exporting such information to foreign countries or providing 
  * access to foreign persons.
  */
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Newtonsoft.Json;
 
 namespace Unity3DTiles
 {
-    [System.Serializable]
+    [Serializable] //Serializable so it will show up in Unity editor inspector
     public class Unity3DTilesetOptions
     {
         //Options unique to a single tileset 
@@ -45,6 +48,7 @@ namespace Unity3DTiles
         [Tooltip("If a tile is in view and needs to be rendered, also load its siblings even if they are not visible.  Especially useful when using colliders so that raycasts outside the users field of view can succeed.  Increases load time and number of tiles that need to be stored in memory.")]
         public bool LoadSiblings = true;
 
+        [JsonConverter(typeof(Matrix4x4Converter))]
         public Matrix4x4 Transform = Matrix4x4.identity;
 
         [Tooltip("Max child depth that we should render. If this is zero, disregard")]
@@ -52,21 +56,23 @@ namespace Unity3DTiles
 
         [Header("GLTF Loader Settings")]
         public bool GLTFMultithreadedLoad = true;
+
         public int GLTFMaximumLOD = 300;
+
+        [JsonIgnore]
         public Shader GLTFShaderOverride;
 
         [Header("Debug Settings")]
         public bool DebugDrawBounds = false;
 
+        [JsonIgnore]
         public System.Func<Unity3DTile, float> TilePriority = new System.Func<Unity3DTile, float>(tile =>
         {
             return (float)(tile.Depth - 1.0 / tile.FrameState.DistanceToCamera);
         });
-
-        public Unity3DTilesetOptions() { Show = true; }
     }
 
-    [System.Serializable]
+    [Serializable] //Serializable so it will show up in Unity editor inspector
     public class Unity3DTilesetSceneOptions
     {
         //Options shared between tilesets in a scene
@@ -85,12 +91,16 @@ namespace Unity3DTiles
 
         public int MaxConcurrentRequests = 6;
 
-        public List<Camera> ClippingCameras;
+        [JsonIgnore]
+        public List<Camera> ClippingCameras = new List<Camera>();
 
+        [JsonIgnore]
         public Shader GLTFShaderOverride;
 
         [Header("Camera Settings")]
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 DefaultCameraPosition = new Vector3(0, 0, -30);
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 DefaultCameraRotation = Vector3.zero;
     }
 }
