@@ -14,6 +14,7 @@ mkdir tmp
 cd tmp
 mkdir $dir
 cp -r ../$dir/Build $dir
+cp -r ../Assets/Examples/Options/*.json $dir
 cp ../$dir/index.html $dir
 zip -rp $dir.zip $dir
 mv $dir.zip ..
