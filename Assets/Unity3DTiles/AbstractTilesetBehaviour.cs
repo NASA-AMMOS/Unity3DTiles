@@ -19,38 +19,76 @@ using UnityEngine;
 
 namespace Unity3DTiles
 {
-    public class AbstractTilesetBehaviour : MonoBehaviour
+    public abstract class AbstractTilesetBehaviour : MonoBehaviour
     {
         public Unity3DTilesetSceneOptions SceneOptions = new Unity3DTilesetSceneOptions();
-        public Unity3DTilesetStatistics Stats;
-        public LRUCache<Unity3DTile> LRUCache = new LRUCache<Unity3DTile>();
-        protected Queue<Unity3DTile> postDownloadQueue = new Queue<Unity3DTile>();
-        protected RequestManager requestManager;
 
-        public int MaxConcurrentRequests = 6;
+        public Unity3DTilesetStatistics Stats;
+
+        public LRUCache<Unity3DTile> LRUCache = new LRUCache<Unity3DTile>();
+        public Queue<Unity3DTile> ProcessingQueue = new Queue<Unity3DTile>();
+
+        private RequestManager _requestManager;
+        public RequestManager RequestManager
+        {
+            get
+            {
+                if (_requestManager == null)
+                {
+                    _requestManager = new RequestManager(MaxConcurrentRequests);
+                }
+                return _requestManager;
+            }
+        }
+
+        public int MaxConcurrentRequests //for legacy api
+        {
+            get { return SceneOptions.MaxConcurrentRequests; } 
+            set { SceneOptions.MaxConcurrentRequests = value; } 
+        }
+
+        public abstract bool Ready();
+
+        public abstract BoundingSphere BoundingSphere();
+
+        public abstract int DeepestDepth();
+
+        public abstract void ClearForcedTiles();
+
+        public void Update()
+        {
+            this._update();
+        }
 
         public void LateUpdate()
         {
             LRUCache.MaxSize = SceneOptions.LRUCacheMaxSize;
             LRUCache.MarkAllUnused();
             this._lateUpdate();
-            this.requestManager?.Process();
+            this._requestManager?.Process();
             // Move any tiles with downloaded content to the ready state
             int processed = 0;
-            while (processed < this.SceneOptions.MaximumTilesToProcessPerFrame && this.postDownloadQueue.Count != 0)
+            while (processed < this.SceneOptions.MaximumTilesToProcessPerFrame && this.ProcessingQueue.Count != 0)
             {
-                var tile = this.postDownloadQueue.Dequeue();
+                var tile = this.ProcessingQueue.Dequeue();
                 // We allow requests to terminate early if the (would be) tile goes out of view, so check if a tile is actually processed
                 if (tile.Process())
                 {
                     processed++;
                 }
             }
+
             LRUCache.UnloadUnusedContent(SceneOptions.LRUCacheTargetSize, SceneOptions.LRUMaxFrameUnloadRatio, n => -n.Depth, t => t.UnloadContent());
-            this.updateStats();
+
+            this.UpdateStats();
         }
 
-        protected virtual void updateStats()
+        protected virtual void UpdateStats()
+        {
+            //override in subclass
+        }
+
+        protected virtual void _update()
         {
             //override in subclass
         }
@@ -62,6 +100,11 @@ namespace Unity3DTiles
 
         public void Start()
         {
+            if (SceneOptions.ClippingCameras.Count == 0)
+            {
+                SceneOptions.ClippingCameras.Add(Camera.main);
+            }
+
             _start();
         }
 

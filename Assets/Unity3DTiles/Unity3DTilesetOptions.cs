@@ -11,24 +11,28 @@
  * before exporting such information to foreign countries or providing 
  * access to foreign persons.
  */
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Newtonsoft.Json;
 
 namespace Unity3DTiles
 {
-    [System.Serializable]
+    [Serializable] //Serializable so it will show up in Unity editor inspector
     public class Unity3DTilesetOptions
     {
         //Options unique to a single tileset 
 
-        [Tooltip("Full path URL to the tileset. Can be a local file or url as long as it is a full path")]
+        [Tooltip("Unique name of tileset. Defaults to Url if null or empty.")]
         public string Name = null;
+
+        [Tooltip("Full path URL to the tileset. Can be a local file or url as long as it is a full path, or can start with StreamingAssets.")]
         public string Url = null;
+
+        [Tooltip("Whether tileset is initially visible.")]
         public bool Show = true;
-        public UnityEngine.Rendering.ShadowCastingMode ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-        public bool RecieveShadows = true;
-        public bool CreateColliders = true;
 
         [Tooltip("Controls the level of detail the tileset will be loaded to by specifying the allowed amount of on screen geometric error allowed in pixels")]
         public double MaximumScreenSpaceError = 16;
@@ -36,141 +40,91 @@ namespace Unity3DTiles
         [Tooltip("Controls what parent tiles will be skipped when loading a tileset.  This number will be multipled by MaximumScreenSpaceError and any tile with an on screen error larger than this will be skipped by the loading and rendering algorithm")]
         public double SkipScreenSpaceErrorMultiplier = 16;
 
+        [Tooltip("If a tile is in view and needs to be rendered, also load its siblings even if they are not visible.  Especially useful when using colliders so that raycasts outside the users field of view can succeed.  Increases load time and number of tiles that need to be stored in memory.")]
         public bool LoadSiblings = true;
 
-        public Matrix4x4 Transform = Matrix4x4.identity;
+        [Header("Root Transform")]
+
+        [Tooltip("Tileset translation in right-handed tileset coordinates.")]
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 Translation = Vector3.zero;
+
+        [Tooltip("Tileset rotation in right-handed tileset coordinates.")] 
+        [JsonConverter(typeof(QuaternionConverter))]
+#if UNITY_EDITOR
+        [EulerAngles]
+#endif
+        public Quaternion Rotation = Quaternion.identity;
+
+        [Tooltip("Tileset scale in right-handed tileset coordinates.")]
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 Scale = Vector3.one;
 
         [Tooltip("Max child depth that we should render. If this is zero, disregard")]
-        /// <summary>
-        /// "Max child depth that we should render. If this is zero, disregard"
-        /// </summary>
         public int MaxDepth = 0;
 
         [Header("GLTF Loader Settings")]
-        // Options for B3DM files
         public bool GLTFMultithreadedLoad = true;
-        public int GLTFMaximumLOD = 300;
-        public Shader GLTFShaderOverride;
 
-        [Header("Debug Settings")]
+        public int GLTFMaximumLOD = 300;
+
+        [Tooltip("If set to null UnityGLTF will use the StandardShader for GLTF assets.  This can have dramatic performance impacts on HoloLens.  This allows a different shader to be used when instantiation GLTF assets.  Also see Unity3DTilesetStyle which provides a flexible way to change style properties such as shaders at runtime on a tile by tile basis.")]
+        [JsonIgnore]
+        public Shader GLTFShaderOverride;
+        
+        public UnityEngine.Rendering.ShadowCastingMode ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        public bool RecieveShadows = true;
+
+        public bool CreateColliders = true;
+
         public bool DebugDrawBounds = false;
 
+        [JsonIgnore]
         public System.Func<Unity3DTile, float> TilePriority = new System.Func<Unity3DTile, float>(tile =>
         {
             return (float)(tile.Depth - 1.0 / tile.FrameState.DistanceToCamera);
         });
     }
 
-    [System.Serializable]
+    [Serializable] //Serializable so it will show up in Unity editor inspector
     public class Unity3DTilesetSceneOptions
     {
-        //Options shared between tilesets in a scene, extended below
+        //Options shared between tilesets in a scene
 
-        public List<Camera> ClippingCameras;
-
-        [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrese load time but may increase frame lurches when loading tiles.")]
+        [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrease load time but may increase frame lurches when loading tiles.")]
         public int MaximumTilesToProcessPerFrame = 1;
 
         [Tooltip("Sets the target maximum number of tiles that can be loaded into memory at any given time.  Beyond this limit, unused tiles will be unloaded as new requests are made.")]
-        /// <summary>
-        /// Target max number of items in LRU cache
-        /// </summary>
         public int LRUCacheTargetSize = 600;
 
         [Tooltip("Sets the maximum number of tiles (hard limit) that can be loaded into memory at any given time. Requests that would exceed this limit fail.")]
         public int LRUCacheMaxSize = 700;
 
-        /// <summary>
-        /// Controls the maximum number of unused tiles that will be unloaded at a time
-        /// When the cache is full.  This is specified as a ratio of the LRUMaxCacheSize.
-        /// For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will
-        /// unload 120 (0.2*600) tiles in a single frame.
-        /// </summary>
-        public float LRUMaxFrameUnloadRatio = 0.2f;
-    }
-
-    public class LegacyTilesetOptions 
-    {
-        //includes both tileset and scene options
-
-        [Tooltip("Full path URL to the tileset. Can be a local file or url as long as it is a full path")]
-        public string Url = null;
-        public bool Show = true;
-        public UnityEngine.Rendering.ShadowCastingMode ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-        public bool RecieveShadows = true;
-        public bool CreateColliders = true;
-
-        [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrese load time but may increase frame lurches when loading tiles.")]
-        public int MaximumTilesToProcessPerFrame = 1;
-
-        [Tooltip("Controls the level of detail the tileset will be loaded to by specifying the allowed amount of on screen geometric error allowed in pixels")]
-        public double MaximumScreenSpaceError = 16;
-
-        [Tooltip("Controls what parent tiles will be skipped when loading a tileset.  This number will be multipled by MaximumScreenSpaceError and any tile with an on screen error larger than this will be skipped by the loading and rendering algorithm")]
-        public double SkipScreenSpaceErrorMultiplier = 16;
-
-        public bool LoadSiblings = true;
-
-        public List<Camera> ClippingCameras;
-
-        [Tooltip("Max child depth that we should render. If this is zero, disregard")]
-        /// <summary>
-        /// "Max child depth that we should render. If this is zero, disregard"
-        /// </summary>
-        public int MaxDepth = 0;
-
-        [Tooltip("Sets the maximum number of tiles (hard limit) that can be loaded into memory at any given time. Requests that would exceed this limit fail.")]
-        public int LRUCacheMaxSize = 600;
-
-        /// <summary>
-        /// Controls the maximum number of unused tiles that will be unloaded at a time
-        /// When the cache is full.  This is specified as a ratio of the LRUMaxCacheSize.
-        /// For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will
-        /// unload 120 (0.2*600) tiles in a single frame.
-        /// </summary>
+        [Tooltip("Controls the maximum number of unused tiles that will be unloaded at a time when the cache is full.  This is specified as a ratio of the LRUMaxCacheSize. For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will unload 120 (0.2*600) tiles in a single frame.")]
         public float LRUMaxFrameUnloadRatio = 0.2f;
 
-        //Options unique to a single tileset 
+        [Tooltip("Manages how many downloads can occurs simultaneously.  Larger results in faster load times but this should be tuned for the particular platform you are deploying to.")]
+        public int MaxConcurrentRequests = 6;
 
-        [Header("GLTF Loader Settings")]
-        // Options for B3DM files
-        public bool GLTFMultithreadedLoad = true;
-        public int GLTFMaximumLOD = 300;
+        [Tooltip("The set of cameras that should be used to determine which tiles to load.  Typically this will just be the main camera (and that is the default if not specified).  Adding more cameras will decrease performance.")]
+        [JsonIgnore]
+        public List<Camera> ClippingCameras = new List<Camera>();
+
+        [Tooltip("Overrides shader override of individual tilesets.")]
+        [JsonIgnore]
         public Shader GLTFShaderOverride;
 
-        [Header("Debug Settings")]
-        public bool DebugDrawBounds = false;
+        [Header("Default Camera Pose")]
 
-        public Unity3DTilesetSceneOptions GetSceneOptions()
-        {
-            Unity3DTilesetSceneOptions opts = new Unity3DTilesetSceneOptions();
-            opts.ClippingCameras = this.ClippingCameras;
-            opts.LRUCacheMaxSize = this.LRUCacheMaxSize;
-            opts.MaximumTilesToProcessPerFrame = this.MaximumTilesToProcessPerFrame;
-            opts.LRUCacheTargetSize = (int)(0.9 * this.LRUCacheMaxSize);
-            opts.LRUMaxFrameUnloadRatio = this.LRUMaxFrameUnloadRatio;
-            return opts;
-        }
+        [Tooltip("Camera translation in right-handed tileset coordinates.")]
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 DefaultCameraTranslation = new Vector3(0, 0, -30);
 
-        public Unity3DTilesetOptions GetTilesetOptions()
-        {
-            Unity3DTilesetOptions opts = new Unity3DTilesetOptions();     
-            opts.Name = this.Url;
-            opts.Url = this.Url;
-            opts.Show = this.Show;
-            opts.ShadowCastingMode = this.ShadowCastingMode;
-            opts.RecieveShadows = this.RecieveShadows;
-            opts.CreateColliders = this.CreateColliders;          
-            opts.MaximumScreenSpaceError = this.MaximumScreenSpaceError;
-            opts.SkipScreenSpaceErrorMultiplier = this.SkipScreenSpaceErrorMultiplier;
-            opts.LoadSiblings = this.LoadSiblings;
-            opts.MaxDepth = 0;
-            opts.GLTFMultithreadedLoad = this.GLTFMultithreadedLoad;
-            opts.GLTFMaximumLOD = this.GLTFMaximumLOD;
-            opts.GLTFShaderOverride = this.GLTFShaderOverride;
-            opts.DebugDrawBounds = false;
-            return opts;
-        }
+        [Tooltip("Camera rotation in right-handed tileset coordinates.")]
+        [JsonConverter(typeof(QuaternionConverter))]
+#if UNITY_EDITOR
+        [EulerAngles]
+#endif
+        public Quaternion DefaultCameraRotation = Quaternion.identity;
     }
-
 }

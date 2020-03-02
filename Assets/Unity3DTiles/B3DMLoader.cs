@@ -33,7 +33,9 @@ public class B3DMLoader : ILoader
 
     struct FeatureTable
     {
+#pragma warning disable 0649
         public int BATCH_LENGTH;
+#pragma warning restore 0649
     }
 
     public IEnumerator LoadStream(string relativeFilePath)

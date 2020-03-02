@@ -11,19 +11,20 @@
  * before exporting such information to foreign countries or providing 
  * access to foreign persons.
  */
+
+using System;
+using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using System.IO;
-using System;
-using RSG;
 using System.Text.RegularExpressions;
+using UnityEngine;
 using UnityEngine.Networking;
+using RSG;
 using UnityGLTF.Loader;
+using UnityGLTF.Extensions;
 
 namespace Unity3DTiles
 {
-
     /// <summary>
     /// A 3D Tiles tileset used for streaming large 3D datasets
     /// See https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Scene/Cesium3DTileset.js
@@ -41,11 +42,9 @@ namespace Unity3DTiles
         public Queue<Unity3DTile> ProcessingQueue;           // Tiles whose content is being loaded/processed
 
         public MonoBehaviour Behaviour { get; private set; }
-        //public Transform TilesetTransform;
 
         /// <summary>
         /// Maintians a least recently used list of tiles that have content
-        /// A tile is 
         /// </summary>
         public LRUCache<Unity3DTile> LRUContent { get; private set; }
 
@@ -57,8 +56,7 @@ namespace Unity3DTiles
 
         public Unity3DTilesetStatistics Statistics = new Unity3DTilesetStatistics();
 
-
-        private Unity3DTilesetTraversal traversal;
+        public Unity3DTilesetTraversal Traversal;
         private Promise<Unity3DTileset> readyPromise = new Promise<Unity3DTileset>();
 
         public delegate void LoadProgressDelegate(int tilesRemaining);
@@ -88,28 +86,48 @@ namespace Unity3DTiles
             }
         }
 
-        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour, 
-            RequestManager requestManager, Queue<Unity3DTile> processingQueue, LRUCache<Unity3DTile> cache = null)
+        public void GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale,
+                                     bool convertToUnityFrame = true)
+        {
+            var m = Matrix4x4.TRS(TilesetOptions.Translation, TilesetOptions.Rotation, TilesetOptions.Scale);
+            if (convertToUnityFrame)
+            {
+                m = m.UnityMatrix4x4ConvertFromGLTF();
+            }
+            translation = new Vector3(m.m03, m.m13, m.m23);
+            rotation = m.rotation;
+            scale = m.lossyScale;
+        }
+
+        public Matrix4x4 GetRootTransform(bool convertToUnityFrame = true)
+        {
+            GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale, convertToUnityFrame);
+            return Matrix4x4.TRS(translation, rotation, scale);
+        }
+
+        public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour)
         {
             this.TilesetOptions = tilesetOptions;
             this.Behaviour = behaviour;
-            this.RequestManager = requestManager;
-            this.ProcessingQueue = processingQueue;
-            this.traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
-            this.LRUContent = cache ?? new LRUCache<Unity3DTile>();
+            this.RequestManager = behaviour.RequestManager;
+            this.ProcessingQueue = behaviour.ProcessingQueue;
+            this.LRUContent = behaviour.LRUCache;
+            this.Traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
             this.DeepestDepth = 0;
 
-            // TODO: Detect data Uri?
-            if (Path.GetExtension(tilesetOptions.Url) == ".json")
+            string url = UrlUtils.ReplaceDataProtocol(tilesetOptions.Url);
+
+            if (UrlUtils.GetLastPathSegment(url).EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
-                this.tilesetUrl = this.TilesetOptions.Url;
-                this.basePath = UriHelper.GetBaseUri(this.TilesetOptions.Url, true);
+                this.basePath = UrlUtils.GetBaseUri(url);
+                this.tilesetUrl = url;
             }
             else
             {
-                this.basePath = this.TilesetOptions.Url;
-                this.tilesetUrl = UriHelper.JoinUrls(this.TilesetOptions.Url, "tileset.json", true);
+                this.basePath = url;
+                this.tilesetUrl = UrlUtils.JoinUrls(url, "tileset.json");
             }
+
             LoadTilesetJson(this.tilesetUrl).Then(json =>
             {
                 // Load Tileset (main tileset or a reference tileset)
@@ -171,12 +189,12 @@ namespace Unity3DTiles
                 }
                 string versionQuery = "v=" + version;
                 
-                this.basePath = UriHelper.SetQuery(this.basePath, versionQuery);
-                tilesetUrl = UriHelper.SetQuery(tilesetUrl, versionQuery);
+                this.basePath = UrlUtils.SetQuery(this.basePath, versionQuery);
+                tilesetUrl = UrlUtils.SetQuery(tilesetUrl, versionQuery);
             }
             // A tileset.json referenced from a tile may exist in a different directory than the root tileset.
             // Get the basePath relative to the external tileset.
-            string basePath = UriHelper.GetBaseUri(tilesetUrl, true);
+            string basePath = UrlUtils.GetBaseUri(tilesetUrl);
             Unity3DTile rootTile = new Unity3DTile(this, basePath, tileset.Root, parentTile);
             Statistics.NumberOfTilesTotal++;
 
@@ -206,7 +224,7 @@ namespace Unity3DTiles
                 return;
             }            
             Statistics.Clear();
-            traversal.Run();
+            Traversal.Run();
             Statistics.RequestQueueLength = this.RequestManager.QueueSize();
             Statistics.ConcurrentRequests = this.RequestManager.RequestsInProgress();
             Statistics.ProcessingTiles = this.ProcessingQueue.Count;
@@ -230,7 +248,7 @@ namespace Unity3DTiles
             previousTilesRemaining = remaining;
             if (this.TilesetOptions.DebugDrawBounds)
             {
-                traversal.DrawDebug();
+                Traversal.DrawDebug();
             }
         }
     }

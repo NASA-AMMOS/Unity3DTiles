@@ -13,7 +13,7 @@ OcclusionCullingSettings:
 --- !u!104 &2
 RenderSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 8
+  serializedVersion: 9
   m_Fog: 0
   m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   m_FogMode: 3
@@ -39,6 +39,7 @@ RenderSettings:
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
   m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
   m_ObjectHideFlags: 0
@@ -49,16 +50,14 @@ LightmapSettings:
     m_BounceScale: 1
     m_IndirectOutputScale: 1
     m_AlbedoBoost: 1
-    m_TemporalCoherenceThreshold: 1
     m_EnvironmentLightingMode: 0
     m_EnableBakedLightmaps: 1
     m_EnableRealtimeLightmaps: 1
   m_LightmapEditorSettings:
-    serializedVersion: 9
+    serializedVersion: 10
     m_Resolution: 2
     m_BakeResolution: 40
-    m_TextureWidth: 1024
-    m_TextureHeight: 1024
+    m_AtlasSize: 1024
     m_AO: 0
     m_AOMaxDistance: 1
     m_CompAOExponent: 1
@@ -116,10 +115,11 @@ NavMeshSettings:
 --- !u!1 &5610082
 GameObject:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 862531838}
-  serializedVersion: 5
+  m_PrefabInstance: {fileID: 862531838}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
   m_Component:
   - component: {fileID: 5610083}
   - component: {fileID: 5610084}
@@ -129,13 +129,14 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &5610083
 Transform:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 862531838}
+  m_PrefabInstance: {fileID: 862531838}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5610082}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 1, y: 0, z: 0}
@@ -147,27 +148,29 @@ Transform:
 --- !u!114 &5610084
 MonoBehaviour:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5610082}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f9852014fbf75fa4ab282b6e21bb3db3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Url: SampleModels/AvocadoDDS.b3dm
+  Url: data://SampleModels/AvocadoDDS.b3dm
   Multithreaded: 0
   MaximumLod: 300
   ShaderOverride: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
-  addColliders: 0
+  AddColliders: 0
   DownloadOnStart: 1
 --- !u!1 &167651825
 GameObject:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 665221311}
-  serializedVersion: 5
+  m_PrefabInstance: {fileID: 665221311}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
   m_Component:
   - component: {fileID: 1239851728}
   - component: {fileID: 167651826}
@@ -177,34 +180,34 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &167651826
 MonoBehaviour:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
-    type: 2}
-  m_PrefabInternal: {fileID: 665221311}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 167651825}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f9852014fbf75fa4ab282b6e21bb3db3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Url: SampleModels/AvocadoDDS.glb
-  Multithreaded: 0
+  Url: data://SampleModels/Avocado.gltf
+  Multithreaded: 1
   MaximumLod: 300
-  ShaderOverride: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
-  addColliders: 0
+  ShaderOverride: {fileID: 0}
+  AddColliders: 0
   DownloadOnStart: 1
 --- !u!1 &342997479
 GameObject:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 5
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
   m_Component:
   - component: {fileID: 342997480}
-  - component: {fileID: 342997481}
   m_Layer: 0
   m_Name: SampleModels
   m_TagString: Untagged
@@ -215,8 +218,9 @@ GameObject:
 --- !u!4 &342997480
 Transform:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 342997479}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -230,30 +234,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &342997481
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 342997479}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4abd62132affcc74db797d1b9aeb4def, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  GameObjects:
-  - {fileID: 167651825}
-  - {fileID: 1841629904}
-  - {fileID: 957158290}
-  - {fileID: 5610082}
-  - {fileID: 953947029}
 --- !u!1001 &665221311
-Prefab:
+PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     m_TransformParent: {fileID: 342997480}
     m_Modifications:
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_Name
+      value: GLTF
+      objectReference: {fileID: 0}
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
       propertyPath: m_LocalPosition.x
       value: -2
@@ -286,18 +281,10 @@ Prefab:
       propertyPath: m_RootOrder
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_Name
-      value: GLTF
-      objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
       propertyPath: Url
-      value: SampleModels/AvocadoDDS.glb
-      objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_IsActive
-      value: 0
+      value: data://SampleModels/Avocado.gtf
       objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
@@ -309,16 +296,24 @@ Prefab:
       propertyPath: Multithreaded
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
-  m_ParentPrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-  m_IsPrefabParent: 0
+    m_RemovedComponents:
+    - {fileID: 0}
+  m_SourcePrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
 --- !u!1001 &770033510
-Prefab:
+PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     m_TransformParent: {fileID: 342997480}
     m_Modifications:
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_Name
+      value: GLB_DDS
+      objectReference: {fileID: 0}
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
       propertyPath: m_LocalPosition.x
       value: -1
@@ -351,18 +346,10 @@ Prefab:
       propertyPath: m_RootOrder
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_Name
-      value: GLB_DDS
-      objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
       propertyPath: Url
       value: http://landlords-nonprod.s3.amazonaws.com/menzies/glTF-samples/terrain_dds.b3dm
-      objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
@@ -376,15 +363,22 @@ Prefab:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-  m_ParentPrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-  m_IsPrefabParent: 0
+  m_SourcePrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
 --- !u!1001 &862531838
-Prefab:
+PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     m_TransformParent: {fileID: 342997480}
     m_Modifications:
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_Name
+      value: B3DM_DDS
+      objectReference: {fileID: 0}
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
       propertyPath: m_LocalPosition.x
       value: 1
@@ -417,18 +411,10 @@ Prefab:
       propertyPath: m_RootOrder
       value: 3
       objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_Name
-      value: B3DM_DDS
-      objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
       propertyPath: Url
       value: http://landlords-nonprod.s3.amazonaws.com/menzies/glTF-samples/terrain_dds.b3dm
-      objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
@@ -442,15 +428,15 @@ Prefab:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-  m_ParentPrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-  m_IsPrefabParent: 0
+  m_SourcePrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
 --- !u!1 &953947029
 GameObject:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 1091516355}
-  serializedVersion: 5
+  m_PrefabInstance: {fileID: 1091516355}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
   m_Component:
   - component: {fileID: 953947030}
   - component: {fileID: 953947031}
@@ -460,13 +446,14 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &953947030
 Transform:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 1091516355}
+  m_PrefabInstance: {fileID: 1091516355}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 953947029}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 2, y: 0, z: 0}
@@ -478,27 +465,36 @@ Transform:
 --- !u!114 &953947031
 MonoBehaviour:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 953947029}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f9852014fbf75fa4ab282b6e21bb3db3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Url: SampleModels/AvocadoCRN.b3dm
+  Url: data://SampleModels/AvocadoCRN.b3dm
   Multithreaded: 0
   MaximumLod: 300
   ShaderOverride: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
-  addColliders: 0
+  AddColliders: 0
   DownloadOnStart: 1
 --- !u!1001 &957158289
-Prefab:
+PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     m_TransformParent: {fileID: 342997480}
     m_Modifications:
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_Name
+      value: GLB_CRN
+      objectReference: {fileID: 0}
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -531,18 +527,10 @@ Prefab:
       propertyPath: m_RootOrder
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_Name
-      value: GLB_CRN
-      objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
       propertyPath: Url
       value: http://landlords-nonprod.s3.amazonaws.com/menzies/glTF-samples/terrain_dds.b3dm
-      objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
@@ -556,49 +544,50 @@ Prefab:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-  m_ParentPrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-  m_IsPrefabParent: 0
+  m_SourcePrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
 --- !u!1 &957158290
 GameObject:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 957158289}
-  serializedVersion: 5
+  m_PrefabInstance: {fileID: 957158289}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
   m_Component:
   - component: {fileID: 957158293}
-  - component: {fileID: 957158292}
+  - component: {fileID: 957158291}
   m_Layer: 0
   m_Name: GLB_CRN
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &957158292
+  m_IsActive: 1
+--- !u!114 &957158291
 MonoBehaviour:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 957158290}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9087a95f22bcee64ebc45f6deec08714, type: 3}
+  m_Script: {fileID: 11500000, guid: f9852014fbf75fa4ab282b6e21bb3db3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GLTFUri: SampleModels/AvocadoCRN.glb
-  Multithreaded: 0
-  UseStream: 0
-  loadOnStart: 1
+  Url: data://SampleModels/AvocadoCRN.glb
+  Multithreaded: 1
   MaximumLod: 300
-  Collider: 0
-  shaderOverride: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
+  ShaderOverride: {fileID: 0}
+  AddColliders: 0
+  DownloadOnStart: 1
 --- !u!4 &957158293
 Transform:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 957158289}
+  m_PrefabInstance: {fileID: 957158289}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 957158290}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -610,9 +599,10 @@ Transform:
 --- !u!1 &993157203
 GameObject:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 5
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
   m_Component:
   - component: {fileID: 993157205}
   - component: {fileID: 993157204}
@@ -626,8 +616,9 @@ GameObject:
 --- !u!108 &993157204
 Light:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 993157203}
   m_Enabled: 1
   serializedVersion: 8
@@ -653,6 +644,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
@@ -662,8 +654,9 @@ Light:
 --- !u!4 &993157205
 Transform:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 993157203}
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
   m_LocalPosition: {x: 0, y: 3, z: 0}
@@ -673,12 +666,20 @@ Transform:
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
 --- !u!1001 &1091516355
-Prefab:
+PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     m_TransformParent: {fileID: 342997480}
     m_Modifications:
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_Name
+      value: B3DM_CRN
+      objectReference: {fileID: 0}
+    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
       propertyPath: m_LocalPosition.x
       value: 2
@@ -711,18 +712,10 @@ Prefab:
       propertyPath: m_RootOrder
       value: 4
       objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_Name
-      value: B3DM_CRN
-      objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
       propertyPath: Url
       value: http://landlords-nonprod.s3.amazonaws.com/menzies/glTF-samples/terrain_dds.b3dm
-      objectReference: {fileID: 0}
-    - target: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
         type: 2}
@@ -736,14 +729,14 @@ Prefab:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 114975771124063176, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-  m_ParentPrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
-  m_IsPrefabParent: 0
+  m_SourcePrefab: {fileID: 100100000, guid: 28bf8d744a1dcf84aa7ca2de388c44ff, type: 2}
 --- !u!4 &1239851728
 Transform:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 665221311}
+  m_PrefabInstance: {fileID: 665221311}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 167651825}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -2, y: 0, z: 0}
@@ -755,16 +748,15 @@ Transform:
 --- !u!1 &1438352743
 GameObject:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 5
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
   m_Component:
   - component: {fileID: 1438352747}
   - component: {fileID: 1438352746}
   - component: {fileID: 1438352745}
   - component: {fileID: 1438352744}
-  - component: {fileID: 1438352748}
-  - component: {fileID: 1438352749}
   m_Layer: 0
   m_Name: Camera
   m_TagString: MainCamera
@@ -775,27 +767,35 @@ GameObject:
 --- !u!81 &1438352744
 AudioListener:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1438352743}
   m_Enabled: 1
 --- !u!124 &1438352745
 Behaviour:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1438352743}
   m_Enabled: 1
 --- !u!20 &1438352746
 Camera:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1438352743}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
   m_BackGroundColor: {r: 0.19117647, g: 0.19117647, b: 0.19117647, a: 0}
+  m_projectionMatrixMode: 1
+  m_SensorSize: {x: 36, y: 24}
+  m_LensShift: {x: 0, y: 0}
+  m_GateFitMode: 2
+  m_FocalLength: 50
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
@@ -825,46 +825,25 @@ Camera:
 --- !u!4 &1438352747
 Transform:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1438352743}
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 0, y: 0.02, z: 2.951}
+  m_LocalPosition: {x: 0, y: 0, z: 3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
---- !u!114 &1438352748
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1438352743}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c14b2ce73ca4724a8d880d6e087e590, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1438352749
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1438352743}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56ea5f6b4405f3b43a040f407ffa1b58, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  pointer: {fileID: 0}
 --- !u!1 &1841629904
 GameObject:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 1347276002398044, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 770033510}
-  serializedVersion: 5
+  m_PrefabInstance: {fileID: 770033510}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
   m_Component:
   - component: {fileID: 1841629906}
   - component: {fileID: 1841629905}
@@ -874,31 +853,32 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1841629905
 MonoBehaviour:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1841629904}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9087a95f22bcee64ebc45f6deec08714, type: 3}
+  m_Script: {fileID: 11500000, guid: f9852014fbf75fa4ab282b6e21bb3db3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GLTFUri: SampleModels/
-  Multithreaded: 0
-  UseStream: 0
-  loadOnStart: 1
+  Url: data://SampleModels/AvocadoDDS.glb
+  Multithreaded: 1
   MaximumLod: 300
-  Collider: 0
-  shaderOverride: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
+  ShaderOverride: {fileID: 0}
+  AddColliders: 0
+  DownloadOnStart: 1
 --- !u!4 &1841629906
 Transform:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
+  m_CorrespondingSourceObject: {fileID: 4604431543430966, guid: 28bf8d744a1dcf84aa7ca2de388c44ff,
     type: 2}
-  m_PrefabInternal: {fileID: 770033510}
+  m_PrefabInstance: {fileID: 770033510}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1841629904}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -1, y: 0, z: 0}

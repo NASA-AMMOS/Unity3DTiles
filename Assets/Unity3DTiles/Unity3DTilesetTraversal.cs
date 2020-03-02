@@ -22,6 +22,8 @@ namespace Unity3DTiles
 
     public class Unity3DTilesetTraversal
     {
+        public HashSet<Unity3DTile> ForceTiles = new HashSet<Unity3DTile>();
+
         private int frameCount = 0;
         private Unity3DTileset tileset;
         private Unity3DTilesetSceneOptions sceneOptions;
@@ -35,11 +37,24 @@ namespace Unity3DTiles
         public void Run()
         {
             frameCount++;
-            if(!tileset.TilesetOptions.Show)
+
+            if (!tileset.TilesetOptions.Show)
             {
                 ToggleTiles(tileset.Root);
                 return;
             }
+
+            foreach (var ft in ForceTiles)
+            {
+                for (var tile = ft; tile != null; tile = tile.Parent)
+                {
+                    tile.FrameState.Reset(frameCount);
+                    tile.MarkUsed();
+                    tile.FrameState.InFrustumSet = true;
+                    tileset.Statistics.FrustumSetCount += 1;
+                }
+            }
+            
             SSECalculator sse = new SSECalculator(this.tileset);
             foreach (Camera cam in sceneOptions.ClippingCameras)
             {
@@ -207,7 +222,7 @@ namespace Unity3DTiles
         void MarkUsedSetLeaves(Unity3DTile tile)
         {
             // A used leaf is a node that is used but has no children in the used set
-            if(!tile.FrameState.IsUsedThisFrame(this.frameCount))
+            if (!tile.FrameState.IsUsedThisFrame(this.frameCount))
             {
                 // Not used this frame, can't be a used leaf and neither can anything beneath us
                 return;
@@ -215,14 +230,14 @@ namespace Unity3DTiles
             this.tileset.Statistics.UsedSetCount += 1;
             // If any child is used, then we are not a leaf
             bool anyChildrenUsed = false;
-            for(int i = 0; i < tile.Children.Count; i++)
+            for (int i = 0; i < tile.Children.Count; i++)
             {
                 anyChildrenUsed = anyChildrenUsed || tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount);
             }
-            if(!anyChildrenUsed)
+            if (!anyChildrenUsed || ForceTiles.Contains(tile))
             {
                 tile.FrameState.IsUsedSetLeaf = true;
-                if(!tile.HasEmptyContent)
+                if (!tile.HasEmptyContent)
                 {
                     this.tileset.Statistics.LeafContentRequired++;
                     if(tile.ContentState == Unity3DTileContentState.READY)
@@ -267,7 +282,7 @@ namespace Unity3DTiles
                     if (tile.FrameState.InFrustumSet)
                     {
                         tile.FrameState.InRenderSet = true;
-                        UpdateVisibleStatstics(tile);
+                        tileset.Statistics.TallyVisibleTile(tile);
                     }
                     tile.FrameState.InColliderSet = true;
                     this.tileset.Statistics.ColliderTileCount += 1;
@@ -303,7 +318,7 @@ namespace Unity3DTiles
                 if (tile.FrameState.InFrustumSet)
                 {
                     tile.FrameState.InRenderSet = true;
-                    UpdateVisibleStatstics(tile);
+                    tileset.Statistics.TallyVisibleTile(tile);
                 }
                 tile.FrameState.InColliderSet = true;
                 this.tileset.Statistics.ColliderTileCount += 1;
@@ -371,17 +386,6 @@ namespace Unity3DTiles
                 {
                     ToggleTiles(tile.Children[i]);
                 }
-            }
-        }
-
-        void UpdateVisibleStatstics(Unity3DTile tile)
-        {
-            tileset.Statistics.VisibleTileCount += 1;
-            if(tile.Content != null)
-            {
-                tileset.Statistics.VisibleFaces += tile.Content.FaceCount;
-                tileset.Statistics.VisibleTextures += tile.Content.TextureCount;
-                tileset.Statistics.VisiblePixels += tile.Content.PixelCount;
             }
         }
 

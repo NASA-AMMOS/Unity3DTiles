@@ -24,10 +24,32 @@ namespace Unity3DTiles
         public Unity3DTilesetOptions TilesetOptions = new Unity3DTilesetOptions();
         public Unity3DTileset Tileset;
 
+        public override bool Ready()
+        {
+            return Tileset != null && Tileset.Ready;
+        }
+
+        public override BoundingSphere BoundingSphere()
+        {
+            return Tileset != null ? Tileset.Root.BoundingVolume.BoundingSphere() : new BoundingSphere(Vector3.zero, 0);
+        }
+
+        public override int DeepestDepth()
+        {
+            return Tileset != null ? Tileset.DeepestDepth : 0;
+        }
+
+        public override void ClearForcedTiles()
+        {
+            if (Tileset != null)
+            {
+                Tileset.Traversal.ForceTiles.Clear();
+            }
+        }
+
         public virtual void MakeTileset()
         {
-            this.requestManager = new RequestManager(MaxConcurrentRequests);
-            Tileset = new Unity3DTileset(TilesetOptions, this, this.requestManager, this.postDownloadQueue, this.LRUCache);
+            Tileset = new Unity3DTileset(TilesetOptions, this);
             Stats = Tileset.Statistics;
         }
 
