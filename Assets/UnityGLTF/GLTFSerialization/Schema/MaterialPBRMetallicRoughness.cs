@@ -27,6 +27,8 @@ namespace GLTF.Schema
 		/// </summary>
 		public TextureInfo BaseColorTexture;
 
+        public TextureInfo IndexTexture;
+
 		/// <summary>
 		/// The metalness of the material.
 		/// A value of 1.0 means the material is a metal.
@@ -73,6 +75,14 @@ namespace GLTF.Schema
 				BaseColorTexture = new TextureInfo(pbrMetallicRoughness.BaseColorTexture, gltfRoot);
 			}
 
+            if (pbrMetallicRoughness.IndexTexture != null)
+            {
+                IndexTexture = new TextureInfo(pbrMetallicRoughness.IndexTexture, gltfRoot);
+            } else if (pbrMetallicRoughness.BaseColorTexture != null)
+            {
+                throw new Exception("IndexTexture null");
+            }
+
 			MetallicFactor = pbrMetallicRoughness.MetallicFactor;
 			RoughnessFactor = pbrMetallicRoughness.RoughnessFactor;
 
@@ -103,6 +113,9 @@ namespace GLTF.Schema
 					case "baseColorTexture":
 						metallicRoughness.BaseColorTexture = TextureInfo.Deserialize(root, reader);
 						break;
+                    case "indexTexture":
+                        metallicRoughness.IndexTexture = TextureInfo.Deserialize(root, reader);
+                        break;
 					case "metallicFactor":
 						metallicRoughness.MetallicFactor = reader.ReadAsDouble().Value;
 						break;
@@ -141,6 +154,16 @@ namespace GLTF.Schema
 				writer.WritePropertyName("baseColorTexture");
 				BaseColorTexture.Serialize(writer);
 			}
+
+            if (IndexTexture != null)
+            {
+                writer.WritePropertyName("indexTexture");
+                IndexTexture.Serialize(writer);
+            }
+            else if (BaseColorTexture != null)
+            {
+                throw new Exception("IndexTexture null");
+            }
 
 			if (MetallicFactor != 1.0f)
 			{

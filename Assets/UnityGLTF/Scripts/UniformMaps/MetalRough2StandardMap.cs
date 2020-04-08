@@ -14,12 +14,24 @@ namespace UnityGLTF
 			set { _material.SetTexture("_MainTex", value); }
 		}
 
+        public virtual Texture IndexTexture
+        {
+            get { return _material.GetTexture("_IndexTex"); }
+            set { _material.SetTexture("_IndexTex", value); }
+        }
+
 		// not implemented by the Standard shader
 		public virtual int BaseColorTexCoord
 		{
 			get { return 0; }
 			set { return; }
 		}
+
+        public virtual int IndexTexCoord
+        {
+            get { return 0; }
+            set { return; }
+        }
 
 		public virtual Color BaseColorFactor
 		{

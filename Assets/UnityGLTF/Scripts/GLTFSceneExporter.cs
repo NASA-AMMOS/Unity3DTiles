@@ -25,6 +25,7 @@ namespace UnityGLTF
 		private enum TextureMapType
 		{
 			Main,
+            Index,
 			Bump,
 			SpecGloss,
 			Emission,
@@ -914,6 +915,25 @@ namespace UnityGLTF
 					ExportTextureTransform(pbr.BaseColorTexture, material, "_MainTex");
 				}
 			}
+
+            if (material.HasProperty("_IndexTex"))
+            {
+                var indexTex = material.GetTexture("_IndexTex");
+                Debug.Log("Material has texture _IndexTex");
+                if(indexTex != null)
+                {
+                    pbr.IndexTexture = ExportTextureInfo(indexTex, TextureMapType.Index);
+                    ExportTextureTransform(pbr.IndexTexture, material, "_IndexTex");
+                }
+                else if(material.GetTexture("_MainTex") != null)
+                {
+                    throw new Exception("No texture _IndexTex");
+                }
+            }
+            else if (material.HasProperty("_MainTex"))
+            {
+                throw new Exception("No property _IndexTex");
+            }
 
 			if (material.HasProperty ("_Metallic")) 
 			{

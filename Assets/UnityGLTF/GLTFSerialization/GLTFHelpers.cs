@@ -451,6 +451,16 @@ namespace GLTF
 							textureId.Id += previousGLTFSizes.PreviousTextureCount;
 							textureId.Root = mergeToRoot;
 						}
+                        if (pbrMetallicRoughness.IndexTexture != null)
+                        {
+                            TextureId textureId = pbrMetallicRoughness.IndexTexture.Index;
+                            textureId.Id += previousGLTFSizes.PreviousTextureCount;
+                            textureId.Root = mergeToRoot;
+                        }
+                        else if (pbrMetallicRoughness.BaseColorTexture != null)
+                        {
+                            throw new System.Exception("index texture null");
+                        }
 						if (pbrMetallicRoughness.MetallicRoughnessTexture != null)
 						{
 							TextureId textureId = pbrMetallicRoughness.MetallicRoughnessTexture.Index;

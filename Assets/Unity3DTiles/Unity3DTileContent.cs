@@ -103,6 +103,18 @@ namespace Unity3DTiles
                             this.TextureCount += 1;
                         }
                     }
+                    if (r.materials[j].HasProperty("_IndexTex"))
+                    {
+                        var indexTex = r.materials[j].GetTexture("_IndexTex"); //This line throws
+                        if (indexTex != null)
+                        {
+                            Debug.Log("FOUND INDEX");
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log("DID NOT FIND INDEX");
+                    }
                 }
             }
             this.colliders = this.Go.GetComponentsInChildren<Collider>();

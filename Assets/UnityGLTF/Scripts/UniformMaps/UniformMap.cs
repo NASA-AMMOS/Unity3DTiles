@@ -33,7 +33,9 @@ namespace UnityGLTF
 	interface IMetalRoughUniformMap : IUniformMap
 	{
 		Texture BaseColorTexture { get; set; }
+        Texture IndexTexture { get; set; }
 		int BaseColorTexCoord { get; set; }
+        int IndexTexCoord { get; set; }
 		Color BaseColorFactor { get; set; }
 		Texture MetallicRoughnessTexture { get; set; }
 		int MetallicRoughnessTexCoord { get; set; }
