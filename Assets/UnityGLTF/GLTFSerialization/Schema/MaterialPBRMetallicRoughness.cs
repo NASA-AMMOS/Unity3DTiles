@@ -78,9 +78,6 @@ namespace GLTF.Schema
             if (pbrMetallicRoughness.IndexTexture != null)
             {
                 IndexTexture = new TextureInfo(pbrMetallicRoughness.IndexTexture, gltfRoot);
-            } else if (pbrMetallicRoughness.BaseColorTexture != null)
-            {
-                throw new Exception("IndexTexture null");
             }
 
 			MetallicFactor = pbrMetallicRoughness.MetallicFactor;
@@ -159,10 +156,6 @@ namespace GLTF.Schema
             {
                 writer.WritePropertyName("indexTexture");
                 IndexTexture.Serialize(writer);
-            }
-            else if (BaseColorTexture != null)
-            {
-                throw new Exception("IndexTexture null");
             }
 
 			if (MetallicFactor != 1.0f)

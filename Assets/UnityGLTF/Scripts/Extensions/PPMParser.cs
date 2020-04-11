@@ -22,15 +22,10 @@ namespace GLTF
 
         private static bool ReadHeader(byte[] data, ref PPMHeaderStruct header)
         {
-            Debug.Log("Data size = " + data.Count());
-            Debug.Log(data[0] + " " + data[1] + " " + data[2] + " " + data[3] + " " + data[4]);
-            //Debug.Log("Entering read header");
             using (Stream s = new GZipStream(new MemoryStream(data), CompressionMode.Decompress))
             {
-                //Debug.Log("Created stream");
                 using (StreamReader sr = new StreamReader(s))
                 {
-                    //Debug.Log("Processing");
                     int processedHeaderLines = 0;
                     int expectedHeaderLines = 3;
                     header.size = 0;
@@ -38,7 +33,6 @@ namespace GLTF
 
                     while (processedHeaderLines < expectedHeaderLines)
                     {
-                        //Debug.Log("About to read");
                         string line;
                         try
                         {
@@ -48,8 +42,7 @@ namespace GLTF
                         {
                             return false; //Gzip failed
                         }
-                        //Debug.Log("Read complete");
-                        header.size += line.Length + 1; //2 byte new line
+                        header.size += line.Length + 1; //1 byte new line
                         if (line.Length == 0 || line[0] == '#') //skip empty lines/comments
                         {
                             continue;
@@ -73,9 +66,6 @@ namespace GLTF
                     {
                         return false;
                     }
-
-                    //Debug.Log("header.width = " + header.width);
-                    //Debug.Log("header.height = " + header.height);
 
                     if (!Int32.TryParse(headerLines[2].Replace(" ", ""), out int maxVal))
                     {
@@ -112,21 +102,29 @@ namespace GLTF
                         info.Width = header.width;
                         info.Height = header.height;
                         info.HasMips = false;
-                        info.Format = TextureFormat.RGB565;
+                        info.Format = TextureFormat.RGBAHalf;
                         br.ReadBytes(header.size);
-                        int dataSize = header.width * header.height * header.bytesPerVal * header.bands;
+                        int rgbaBands = 4;
+                        int dataSize = header.width * header.height * header.bytesPerVal * rgbaBands;
+                        Debug.Log(dataSize);
                         info.RawData = new byte[dataSize];
-                        br.Read(info.RawData, 0, dataSize);
-                        //for (int r = 0; r < header.height; r++)
-                        //{
-                        //    for (int c = 0; c < header.width; c++)
-                        //    {
-                        //        for (int b = 0; b < header.bands; b++)
-                        //        {
-                        //            img[b, r, c] = BitConverter.ToUInt16(br.ReadBytes(bytesPerVal), 0);
-                        //        }
-                        //    }
-                        //}
+                        int index;
+                        for (int r = 0; r < header.height; r++)
+                        {
+                            for (int c = 0; c < header.width; c++)
+                            {
+                                index = (r * header.width + c) * header.bytesPerVal * rgbaBands;
+                                br.Read(info.RawData, index, header.bytesPerVal * header.bands);
+                                //Pad remaining channels with 0 bytes for RGBA
+                                for (int b = header.bands; b < rgbaBands; ++b)
+                                {
+                                    for (int i = 0; i < header.bytesPerVal; ++i)
+                                    {
+                                        info.RawData[index + b * header.bytesPerVal + i] = 0;
+                                    }
+                                }
+                            }
+                        }
                         return info;
                     }
                 }

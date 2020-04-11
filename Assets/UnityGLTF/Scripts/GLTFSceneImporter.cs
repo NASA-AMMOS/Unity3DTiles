@@ -410,12 +410,9 @@ namespace UnityGLTF
             if (image.BufferView != null)
             {
                 // Read from GLB
-                //Debug.Log("Returning buffer view");
                 var bufferView = image.BufferView.Value;
                 var data = new byte[bufferView.ByteLength];
                 var bufferContents = _assetCache.BufferCache[bufferView.Buffer.Id];
-                //Debug.Log("chunk offset: " + bufferContents.ChunkOffset);
-                Debug.Log("byte offset: " + bufferView.ByteOffset);
                 bufferContents.Stream.Position = bufferView.ByteOffset + bufferContents.ChunkOffset;
                 bufferContents.Stream.Read(data, 0, data.Length);
                 return data;
@@ -427,12 +424,10 @@ namespace UnityGLTF
                 URIHelper.TryParseBase64(uri, out bufferData);
                 if (bufferData != null)
                 {
-                    Debug.Log("Parsed base 64");
                     return bufferData;
                 }
                 else
                 {
-                    Debug.Log("Failed to parse base 64");
                     Stream stream = _assetCache.ImageStreamCache[imageCacheIndex];
                     if (stream is MemoryStream)
                     {
@@ -468,25 +463,13 @@ namespace UnityGLTF
 
                 Texture2D texture;
                 var info = DDSHeader.Read(data);
-                if (info != null)
-                {
-                    Debug.Log("DDS");
-                }
                 if (info == null)
                 {
                     info = CRNHeader.Read(data);
-                    if (info != null)
-                    {
-                        Debug.Log("CRN");
-                    }
                 }
                 if (info == null)
                 {
                     info = PPMHeader.Read(data);
-                    if(info != null)
-                    {
-                        Debug.Log("PPM");
-                    }
                 }
                 if(info != null)
                 {
@@ -495,7 +478,6 @@ namespace UnityGLTF
                 } 
                 else
                 {
-                    Debug.Log("None");
                     texture = new Texture2D(0, 0);
                     //	NOTE: the second parameter of LoadImage() marks non-readable, but we can't mark it until after we call Apply()
                     texture.LoadImage(data, false);
@@ -1088,10 +1070,6 @@ namespace UnityGLTF
                     var textureId = pbr.IndexTexture.Index;
                     yield return ConstructImageBuffer(textureId.Value, textureId.Id);
                 }
-                else if (pbr.BaseColorTexture != null)
-                {
-                    throw new Exception("IndexTexture null");
-                }
                 if (pbr.MetallicRoughnessTexture != null)
                 {
                     var textureId = pbr.MetallicRoughnessTexture.Index;
@@ -1139,7 +1117,6 @@ namespace UnityGLTF
         {
             for (int i = 0; i < _assetCache.TextureCache.Length; ++i)
             {
-                Debug.Log("Textures: " + _assetCache.TextureCache.Length);
                 TextureCacheData textureCacheData = _assetCache.TextureCache[i];
                 if (textureCacheData != null && textureCacheData.Texture == null)
                 {
@@ -1246,7 +1223,6 @@ namespace UnityGLTF
 
                 if (pbr.BaseColorTexture != null)
                 {
-                    Debug.Log("Setting base texture");
                     int textureId = pbr.BaseColorTexture.Index.Id;
                     mrMapper.BaseColorTexture = _assetCache.TextureCache[textureId].Texture;
                     mrMapper.BaseColorTexCoord = pbr.BaseColorTexture.TexCoord;
@@ -1256,16 +1232,9 @@ namespace UnityGLTF
 
                 if (pbr.IndexTexture != null)
                 {
-                    Debug.Log("Setting index texture");
                     int textureId = pbr.IndexTexture.Index.Id;
-                    Debug.Log("Texture id = " + pbr.IndexTexture.Index.Id);
-                    UnityEngine.Texture t = _assetCache.TextureCache[textureId].Texture;
-                    Debug.Log("index texture name = " + t.name);
                     mrMapper.IndexTexture = _assetCache.TextureCache[textureId].Texture;
                     mrMapper.IndexTexCoord = pbr.IndexTexture.TexCoord;
-                } else
-                {
-                    Debug.Log("Index texture NULL");
                 }
 
                 mrMapper.MetallicFactor = pbr.MetallicFactor;

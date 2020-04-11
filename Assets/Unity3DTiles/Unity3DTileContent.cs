@@ -105,15 +105,9 @@ namespace Unity3DTiles
                     }
                     if (r.materials[j].HasProperty("_IndexTex"))
                     {
-                        var indexTex = r.materials[j].GetTexture("_IndexTex"); //This line throws
-                        if (indexTex != null)
-                        {
-                            Debug.Log("FOUND INDEX");
-                        }
-                    }
-                    else
-                    {
-                        Debug.Log("DID NOT FIND INDEX");
+                        Texture2D indexTex = (Texture2D)r.materials[j].GetTexture("_IndexTex");
+                        var data = indexTex.GetRawTextureData();
+                        //Debug.Log(indexTex.GetPixel(0, 0).ToString());
                     }
                 }
             }

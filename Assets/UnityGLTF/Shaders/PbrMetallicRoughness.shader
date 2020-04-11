@@ -6,7 +6,8 @@ Shader "GLTF/PbrMetallicRoughness"
 	{
 		_Color("Base Color Factor", Color) = (1,1,1,1)
 		_MainTex("Base Color Texture", 2D) = "white" {}
-		
+		_IndexTex("Index Texture", 2D) = "black" {}
+
 		_Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
 
 		_Glossiness("Roughness Factor", Range(0.0, 1.0)) = 1.0
