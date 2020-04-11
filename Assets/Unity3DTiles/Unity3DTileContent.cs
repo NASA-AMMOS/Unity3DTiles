@@ -103,12 +103,12 @@ namespace Unity3DTiles
                             this.TextureCount += 1;
                         }
                     }
-                    if (r.materials[j].HasProperty("_IndexTex"))
+                    //TODO: Bake alternate textures here?
+                    /*if (r.materials[j].HasProperty("_IndexTex"))
                     {
                         Texture2D indexTex = (Texture2D)r.materials[j].GetTexture("_IndexTex");
                         var data = indexTex.GetRawTextureData();
-                        //Debug.Log(indexTex.GetPixel(0, 0).ToString());
-                    }
+                    }*/
                 }
             }
             this.colliders = this.Go.GetComponentsInChildren<Collider>();
