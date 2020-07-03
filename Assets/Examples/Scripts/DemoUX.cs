@@ -425,11 +425,28 @@ class DemoUX : MonoBehaviour
             builder.Append("\nselected tileset " + sts.TilesetOptions.Name +
                            " (" + tilesets.FindIndex(ts => ts == sts) + ")");
         }
-        
+
+        var opts = selectedTile.Tileset.TilesetOptions;
+        double maxSSE = opts.MaximumScreenSpaceError;
+        builder.Append("\nmax SSE " + opts.MaximumScreenSpaceError.ToString("F3") + " (hit PageUp/Down to adjust)");
+        if (Input.GetKeyDown(KeyCode.PageDown))
+        {
+            opts.MaximumScreenSpaceError = Math.Max(0, opts.MaximumScreenSpaceError - 1);
+        }
+
+        if (Input.GetKeyDown(KeyCode.PageUp))
+        {
+            opts.MaximumScreenSpaceError = opts.MaximumScreenSpaceError + 1;
+        }
+
+        double dist = selectedTile.FrameState.DistanceToCamera;
+
         builder.Append("\nselected tile " + selectedTile.Id + ", depth " + selectedTile.Depth);
         builder.Append(", " + selectedTile.Children.Count + " children");
-        builder.Append(", geometric error " + selectedTile.GeometricError.ToString("F3"));
-        
+        builder.Append("\ngeometric error " + selectedTile.GeometricError.ToString("F3"));
+        builder.Append(", distance " + (dist < float.MaxValue ? dist : -1).ToString("F3"));
+        builder.Append(", SSE " + selectedTile.FrameState.ScreenSpaceError.ToString("F3"));
+
         builder.Append("\nbounds vol " + bv + ": " + selectedTile.BoundingVolume.SizeString());
         if (cbv >= 0 && cbv != bv)
         {
@@ -484,7 +501,10 @@ class DemoUX : MonoBehaviour
         
         if (selectedTile.Children.Count > 0 && Input.GetKeyDown(KeyCode.DownArrow))
         {
-            selectedTile = selectedStack.Count > 0 ? selectedStack.Pop() : selectedTile.Children.First();
+            var child = selectedTile.Children
+                .Where(c => c.BoundingVolume.Contains(pointer.transform.position))
+                .FirstOrDefault();
+            selectedTile = selectedStack.Count > 0 ? selectedStack.Pop() : (child ?? selectedTile.Children.First());
         }
         
         int sibling = Input.GetKeyDown(KeyCode.LeftArrow) ? -1 : Input.GetKeyDown(KeyCode.RightArrow) ? 1 : 0;
