@@ -849,7 +849,7 @@ MonoBehaviour:
   scaleModifier: 2
   accelModifier: 1
   rollModifier: 0
-  rotSpeed: 2
+  rotSpeed: 0.1
   zoomSpeed: 1
   transSpeed: 1
   accelFactor: 5
@@ -874,7 +874,7 @@ MonoBehaviour:
   scaleModifier: 2
   accelModifier: 1
   rollModifier: 0
-  rotSpeed: 2
+  rotSpeed: 0.1
   zoomSpeed: 1
   transSpeed: 1
   accelFactor: 5
