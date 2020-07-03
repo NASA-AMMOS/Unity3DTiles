@@ -65,12 +65,12 @@ public class MouseFly : MouseNavBase {
 
         if (Input.GetKey(KeyCode.D))
         {
-            t = cam.right * transSpeed * accel;
+            t += cam.right * transSpeed * accel;
         }
 
         if (Input.GetKey(KeyCode.Q))
         {
-            t = cam.up * transSpeed * accel;
+            t += cam.up * transSpeed * accel;
         }
 
         if (Input.GetKey(KeyCode.E))
