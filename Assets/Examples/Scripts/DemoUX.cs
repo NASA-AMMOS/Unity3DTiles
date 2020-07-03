@@ -88,6 +88,7 @@ class DemoUX : MonoBehaviour
         builder.Clear();
 
         builder.Append("\npress h to toggle HUD, v for default view, f to fit");
+        builder.Append("\npicking " + (enablePicking ? "enabled" : "disabled") + ",  press p to toggle");
 
         bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 
@@ -565,6 +566,11 @@ class DemoUX : MonoBehaviour
     
     private void UpdatePicking()
     {
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            enablePicking = !enablePicking;
+        }
+
         if (enablePicking && hasFocus && !MouseNavBase.MouseOnUI())
         {
             if (Input.GetMouseButtonDown(0))
