@@ -313,7 +313,10 @@ namespace Unity3DTiles
                         b3dmCo.Url = this.ContentUrl;
                         b3dmCo.Multithreaded = this.Tileset.TilesetOptions.GLTFMultithreadedLoad;
                         b3dmCo.MaximumLod = this.Tileset.TilesetOptions.GLTFMaximumLOD;
-                        b3dmCo.ShaderOverride = this.Tileset.TilesetOptions.GLTFShaderOverride;
+                        if (!string.IsNullOrEmpty(this.Tileset.TilesetOptions.ShaderOverride))
+                        {
+                            b3dmCo.ShaderOverride = Shader.Find(this.Tileset.TilesetOptions.ShaderOverride);
+                        }
                         b3dmCo.AddColliders = false;
                         b3dmCo.DownloadOnStart = false;
                         this.Tileset.Behaviour.StartCoroutine(b3dmCo.Download(finished));
