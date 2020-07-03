@@ -35,7 +35,7 @@ namespace Unity3DTiles
         public bool Show = true;
 
         [Tooltip("Controls the level of detail the tileset will be loaded to by specifying the allowed amount of on screen geometric error allowed in pixels")]
-        public double MaximumScreenSpaceError = 16;
+        public double MaximumScreenSpaceError = 4;
 
         [Tooltip("Controls what parent tiles will be skipped when loading a tileset.  This number will be multipled by MaximumScreenSpaceError and any tile with an on screen error larger than this will be skipped by the loading and rendering algorithm")]
         public double SkipScreenSpaceErrorMultiplier = 16;
