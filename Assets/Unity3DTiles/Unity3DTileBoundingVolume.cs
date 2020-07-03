@@ -128,6 +128,8 @@ namespace Unity3DTiles
 
         public abstract IntersectionType IntersectPlane(Plane plane);
 
+        public abstract bool Contains(Vector3 point);
+
         public abstract float DistanceTo(Vector3 point);
 
         public abstract void DebugDraw(Color c, Transform t);
@@ -223,6 +225,11 @@ namespace Unity3DTiles
             Unity3DTilesDebug.DrawLine(b, f, col);
             Unity3DTilesDebug.DrawLine(c, g, col);
             Unity3DTilesDebug.DrawLine(d, h, col);
+        }
+
+        public override bool Contains(Vector3 point)
+        {
+            return DistanceTo(point) == 0;
         }
 
         public override float DistanceTo(Vector3 point)
@@ -396,6 +403,11 @@ namespace Unity3DTiles
             return IntersectionType.INSIDE;
         }
 
+        public override bool Contains(Vector3 point)
+        {
+            return Vector3.Distance(this.Center, point) <= this.Radius;
+        }
+
         public override float DistanceTo(Vector3 point)
         {
             return Mathf.Max(0.0f, Vector3.Distance(this.Center, point) - this.Radius);
@@ -442,6 +454,11 @@ namespace Unity3DTiles
         }
 
         public override void DebugDraw(Color c, Transform t)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool Contains(Vector3 point)
         {
             throw new NotImplementedException();
         }

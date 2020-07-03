@@ -12,6 +12,7 @@
  * access to foreign persons.
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -29,9 +30,13 @@ namespace Unity3DTiles
             return Tileset != null && Tileset.Ready;
         }
 
-        public override BoundingSphere BoundingSphere()
+        public override BoundingSphere BoundingSphere(Func<Unity3DTileset, bool> filter = null)
         {
-            return Tileset != null ? Tileset.Root.BoundingVolume.BoundingSphere() : new BoundingSphere(Vector3.zero, 0);
+            if (Tileset == null || (filter != null && !filter(Tileset)))
+            {
+                return new BoundingSphere(Vector3.zero, 0);
+            }
+            return Tileset.Root.BoundingVolume.BoundingSphere();
         }
 
         public override int DeepestDepth()

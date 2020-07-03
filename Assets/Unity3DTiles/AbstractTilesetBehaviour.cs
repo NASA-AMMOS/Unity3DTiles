@@ -12,6 +12,7 @@
  * access to foreign persons.
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -49,7 +50,7 @@ namespace Unity3DTiles
 
         public abstract bool Ready();
 
-        public abstract BoundingSphere BoundingSphere();
+        public abstract BoundingSphere BoundingSphere(Func<Unity3DTileset, bool> filter = null);
 
         public abstract int DeepestDepth();
 

@@ -103,13 +103,16 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             return tilesets.Count > 0 && tilesets.All(ts => ts.Ready);
         }
 
-        public override BoundingSphere BoundingSphere()
+        public override BoundingSphere BoundingSphere(Func<Unity3DTileset, bool> filter = null)
         {
-            if (tilesets.Count == 0)
+            var spheres = tilesets
+                .Where(ts => filter == null || filter(ts))
+                .Select(ts => ts.Root.BoundingVolume.BoundingSphere())
+                .ToList();
+            if (spheres.Count == 0)
             {
                 return new BoundingSphere(Vector3.zero, 0.0f);
             }
-            var spheres = tilesets.Select(ts => ts.Root.BoundingVolume.BoundingSphere()).ToList();
             var ctr = spheres.Aggregate(Vector3.zero, (sum, sph) => sum += sph.position);
             ctr *= 1.0f / spheres.Count;
             var radius = spheres.Max(sph => Vector3.Distance(ctr, sph.position) + sph.radius);

@@ -54,6 +54,7 @@ class DemoUX : MonoBehaviour
     private bool pointerActive;
     private bool hasFocus = true;
     private bool didReset;
+    private bool setFarClip;
 
     private StringBuilder builder = new StringBuilder();
 
@@ -88,6 +89,8 @@ class DemoUX : MonoBehaviour
 
         builder.Append("\npress h to toggle HUD, v for default view, f to fit");
 
+        bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
         if (hud != null && Input.GetKeyDown(KeyCode.H))
         {
             hud.enabled = !hud.enabled;
@@ -95,13 +98,15 @@ class DemoUX : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.V))
         {
-            ResetView();
+            ResetView(unlimited: shift);
         }
 
         if (Input.GetKeyDown(KeyCode.F))
         {
-            FitView();
+            FitView(unlimited: shift);
         }
+
+        UpdateFarClip();
 
         UpdateNav();
 
@@ -116,6 +121,16 @@ class DemoUX : MonoBehaviour
         if (hud != null)
         {
             hud.ExtraMessage = builder.ToString();
+        }
+    }
+
+    private void UpdateFarClip(bool force = false)
+    {
+        if ((force || !setFarClip) && tileset != null && tileset.Ready())
+        {
+            var bounds = tileset.BoundingSphere();
+            Camera.main.farClipPlane = Math.Max(Camera.main.farClipPlane, 1.1f * bounds.radius);
+            setFarClip = true;
         }
     }
 
@@ -178,7 +193,7 @@ class DemoUX : MonoBehaviour
                 }
                 else if (tileset && tileset.Ready())
                 {
-                    mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+                    mouseOrbit.pivot = tileset.transform.TransformPoint(NonSkyBounds().position);
                 } 
             }
         }
@@ -192,7 +207,7 @@ class DemoUX : MonoBehaviour
             }
             else if (tileset && tileset.Ready())
             {
-                mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+                mouseOrbit.pivot = tileset.transform.TransformPoint(NonSkyBounds().position);
             } 
         }
     }
@@ -590,7 +605,18 @@ class DemoUX : MonoBehaviour
         }
     }
 
-    public void ResetView()
+    private bool IsSky(Unity3DTileset ts)
+    {
+        return ts != null && ts.TilesetOptions != null && ts.TilesetOptions.Name != null &&
+            ts.TilesetOptions.Name.EndsWith("sky", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private BoundingSphere NonSkyBounds()
+    {
+        return tileset.BoundingSphere(ts => !IsSky(ts));
+    }
+
+    public void ResetView(bool unlimited = false)
     {
         if (tileset != null)
         {
@@ -604,37 +630,40 @@ class DemoUX : MonoBehaviour
 
             if (tileset.Ready())
             {
-                var bs = tileset.BoundingSphere();
+                UpdateFarClip(force: true);
+
+                var nsb = unlimited ? tileset.BoundingSphere() : NonSkyBounds();
+                var diam = nsb.radius * 2;
                 if (mouseOrbit != null)
                 {
-                    mouseOrbit.pivot = tileset.transform.TransformPoint(bs.position);
-                    if (relativeNavTransSpeed > 0)
+                    mouseOrbit.pivot = tileset.transform.TransformPoint(nsb.position);
+                    if (diam > 0 && relativeNavTransSpeed > 0)
                     {
-                        mouseOrbit.transSpeed = (bs.radius * 2.0f) / relativeNavTransSpeed;
+                        mouseOrbit.transSpeed = diam / relativeNavTransSpeed;
                     }
                 }
-                if (mouseFly != null && relativeNavTransSpeed > 0)
+                if (mouseFly != null && diam > 0 && relativeNavTransSpeed > 0)
                 {
-                    mouseFly.transSpeed = (bs.radius * 2.0f) / relativeNavTransSpeed;
+                    mouseFly.transSpeed = diam / relativeNavTransSpeed;
                 }
             }
         }
     }
 
-    public void FitView()
+    public void FitView(bool unlimited = false)
     {
         if (tileset != null && tileset.Ready())
         {
             var cam = Camera.main.transform;
-            var sph = tileset.BoundingSphere();
+            var nsb = unlimited ? tileset.BoundingSphere() : NonSkyBounds();
 
-            var ctrInWorld = tileset.transform.TransformPoint(sph.position);
+            var ctrInWorld = tileset.transform.TransformPoint(nsb.position);
             cam.Translate(Vector3.ProjectOnPlane(ctrInWorld - cam.position, cam.forward), Space.World);
 
             var tilesetToCam = tileset.transform.localToWorldMatrix * cam.worldToLocalMatrix; //row major compose l->r
             var t2cScale = tilesetToCam.lossyScale;
             var maxScale = Mathf.Max(t2cScale.x, t2cScale.y, t2cScale.z);
-            var radiusInCam = sph.radius * maxScale;
+            var radiusInCam = (nsb.radius > 0 ? nsb.radius : 10) * maxScale;
 
             var vfov = Camera.main.fieldOfView * Mathf.Deg2Rad;
             var hfov = vfov * Camera.main.aspect;
