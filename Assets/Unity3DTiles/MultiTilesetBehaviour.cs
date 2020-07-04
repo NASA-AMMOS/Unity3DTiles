@@ -170,6 +170,14 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             {
                 options.ShaderOverride = SceneOptions.ShaderOverride;
             }
+            if (options.Style == null)
+            {
+                options.Style = SceneOptions.Style;
+            }
+            if (options.LoadIndices == IndexMode.Default)
+            {
+                options.LoadIndices = SceneOptions.LoadIndices;
+            }
             var tileset = new Unity3DTileset(options, this);
             tilesets.Add(tileset);
             nameToTileset[options.Name] = tileset;

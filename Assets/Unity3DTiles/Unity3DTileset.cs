@@ -71,8 +71,6 @@ namespace Unity3DTiles
 
         public RequestManager RequestManager { get; private set;}
 
-        public Unity3DTilesetStyle Style;
-                        
         private DateTime loadTimestamp;
 
         /// <summary>

@@ -59,7 +59,7 @@ namespace Unity3DTiles
         public string Id { get; private set; }
         public Schema.Tile tile;
 
-        public Unity3DTilesetStyle Style { get; set; }
+        public Unity3DTilesetStyle Style;
 
         public double GeometricError
         {
@@ -241,6 +241,22 @@ namespace Unity3DTiles
             {
                 this.ContentState = Unity3DTileContentState.READY;
                 this.Content.Initialize(this.Tileset.TilesetOptions.CreateColliders);
+
+                var indexMode = this.Tileset.TilesetOptions.LoadIndices;
+                if (indexMode != IndexMode.Default && indexMode != IndexMode.None)
+                {
+                    Action<IndexMode, string, string> fail = (mode, url, msg) =>
+                    {
+                        //we could log a warning here, but if indices are expected but not available
+                        //that might not actually be a true error condition
+                        //and this would spam the log
+                        //Debug.LogWarning("failed to load " + mode + " index for " + this.ContentUrl + ": " + msg);
+                    };
+                    Action<Unity3DTileIndex> success = index => { this.Content.Index = index; };
+                    this.Tileset.Behaviour
+                        .StartCoroutine(Unity3DTileIndex.Load(indexMode, this.ContentUrl, success, fail));
+                }
+
                 return true;
             }
             return false;

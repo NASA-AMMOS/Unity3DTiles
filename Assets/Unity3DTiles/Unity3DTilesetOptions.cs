@@ -68,9 +68,15 @@ namespace Unity3DTiles
 
         public int GLTFMaximumLOD = 300;
 
-        [Tooltip("Overrides shader override of individual tilesets (e.g. \"Unlit/Texture\").  If set to null UnityGLTF will use the StandardShader for GLTF assets.  This can have dramatic performance impacts on HoloLens.  This allows a different shader to be used when instantiation GLTF assets.  Also see Unity3DTilesetStyle which provides a flexible way to change style properties such as shaders at runtime on a tile by tile basis.")]
+        [Tooltip("Overrides shader override of individual tilesets (e.g. \"Unlit/Texture\").  If set to null UnityGLTF will use the StandardShader for GLTF assets.  This can have dramatic performance impacts on resource constrained devices.  This allows a different shader to be used when instantiating GLTF assets.  Also see Style.")]
         public string ShaderOverride = null;
+
+        [Tooltip("A flexible way to change style properties such as shaders at runtime on a tile by tile basis.")]
+        [JsonIgnore]
+        public Unity3DTilesetStyle Style = null;
         
+        public IndexMode LoadIndices = IndexMode.Default;
+
         public UnityEngine.Rendering.ShadowCastingMode ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         public bool RecieveShadows = true;
 
@@ -107,6 +113,12 @@ namespace Unity3DTiles
 
         [Tooltip("Overrides shader override of individual tilesets (e.g. \"Unlit/Texture\").")]
         public string ShaderOverride = null;
+
+        [Tooltip("Optional style, if set it is used as the default style for tilesets that don't have their own.")]
+        [JsonIgnore]
+        public Unity3DTilesetStyle Style = null;
+
+        public IndexMode LoadIndices = IndexMode.Default;
 
         [Tooltip("The set of cameras that should be used to determine which tiles to load.  Typically this will just be the main camera (and that is the default if not specified).  Adding more cameras will decrease performance.")]
         [JsonIgnore]

@@ -10,14 +10,16 @@ namespace Unity3DTiles
     [System.Serializable]
     public class SimpleShaderTilesetStyle : Unity3DTilesetStyle
     {
-        public Shader Shader;
+        private Shader Shader;
 
-        public SimpleShaderTilesetStyle() { }
-
+        public SimpleShaderTilesetStyle(string shader) : this(Shader.Find(shader)) { }
+            
         public SimpleShaderTilesetStyle(Shader s)
         {
             this.Shader = s;
         }
+
+        private SimpleShaderTilesetStyle() { }
 
         protected override object CreateDefault()
         {

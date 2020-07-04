@@ -369,9 +369,9 @@ namespace Unity3DTiles
                             {
                                 tile.Content.EnableRenderers(true);
                                 tile.Content.SetShadowMode(this.tileset.TilesetOptions.ShadowCastingMode, this.tileset.TilesetOptions.RecieveShadows);
-                                if (this.tileset.Style != null)
+                                if (this.tileset.TilesetOptions.Style != null)
                                 {
-                                    tileset.Style.ApplyStyle(tile);
+                                    tileset.TilesetOptions.Style.ApplyStyle(tile);
                                 }
                             }
                             else if (tile.FrameState.InColliderSet && this.tileset.TilesetOptions.ShadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off)
