@@ -440,19 +440,9 @@ class DemoUX : MonoBehaviour
         }
 
         double dist = selectedTile.FrameState.DistanceToCamera;
-        int numTris = selectedTile.Content.FaceCount;
-        string polycount = numTris < 1000 ? numTris.ToString() : ((0.001 * numTris).ToString("f3") + "k");
-        var texSize = selectedTile.Content.MaxTextureSize;
 
         builder.Append("\nselected tile " + selectedTile.Id + ", depth " + selectedTile.Depth);
         builder.Append(", " + selectedTile.Children.Count + " children");
-        builder.Append("\n" + polycount + " triangles");
-        builder.Append(", " + texSize.x + "x" + texSize.y + " texture");
-        if (selectedTile.Content.Index != null)
-        {
-            var idx = selectedTile.Content.Index;
-            builder.Append("\n " + idx.Width + "x" + idx.Height + " index");
-        }
         builder.Append("\ngeometric error " + selectedTile.GeometricError.ToString("F3"));
         builder.Append(", distance " + (dist < float.MaxValue ? dist : -1).ToString("F3"));
         builder.Append(", SSE " + selectedTile.FrameState.ScreenSpaceError.ToString("F3"));
@@ -468,6 +458,10 @@ class DemoUX : MonoBehaviour
         {
             builder.Append("\n" + FmtKMG(tc.FaceCount) + " tris, " + FmtKMG(tc.PixelCount) + " pixels, ");
             builder.Append(tc.TextureCount + " textures, max " + tc.MaxTextureSize.x + "x" + tc.MaxTextureSize.y);
+            if (tc.Index != null)
+            {
+                builder.Append("\n " + tc.Index.Width + "x" + tc.Index.Height + " index");
+            }
         }
         
         selectedTile.Tileset.GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale,
