@@ -166,7 +166,10 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
                 Debug.LogWarning(String.Format("Attempt to add tileset with duplicate name {0} failed.", options.Name));
                 return false;
             }
-            options.ShaderOverride = SceneOptions.ShaderOverride;
+            if (string.IsNullOrEmpty(options.ShaderOverride))
+            {
+                options.ShaderOverride = SceneOptions.ShaderOverride;
+            }
             var tileset = new Unity3DTileset(options, this);
             tilesets.Add(tileset);
             nameToTileset[options.Name] = tileset;
