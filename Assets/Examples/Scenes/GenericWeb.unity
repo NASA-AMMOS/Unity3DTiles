@@ -567,7 +567,7 @@ MonoBehaviour:
     LRUCacheMaxSize: 800
     LRUMaxFrameUnloadRatio: 0.2
     MaxConcurrentRequests: 6
-    ShaderOverride: Unlit/Texture
+    ShaderOverride: 
     LoadIndices: 0
     ClippingCameras: []
     DefaultCameraTranslation: {x: 0, y: 0, z: -10}

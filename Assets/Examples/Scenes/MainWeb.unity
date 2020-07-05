@@ -585,8 +585,9 @@ MonoBehaviour:
     LRUCacheMaxSize: 700
     LRUMaxFrameUnloadRatio: 0.2
     MaxConcurrentRequests: 6
+    ShaderOverride: 
+    LoadIndices: 0
     ClippingCameras: []
-    ShaderOverride: Unlit/Texture
     DefaultCameraTranslation: {x: 160, y: 32, z: 100}
     DefaultCameraRotation: {x: 0, y: 0.76604444, z: 0, w: 0.64278764}
   Stats:
@@ -624,6 +625,7 @@ MonoBehaviour:
     GLTFMultithreadedLoad: 1
     GLTFMaximumLOD: 300
     ShaderOverride: 
+    LoadIndices: 0
     ShadowCastingMode: 0
     RecieveShadows: 0
     CreateColliders: 1
@@ -646,13 +648,13 @@ MonoBehaviour:
   mouseOrbit: {fileID: 1485971531}
   pointer: {fileID: 983294637}
   pointerRadiusPixels: 10
-  drawSelectedBounds: 0
-  drawParentBounds: 0
+  boundsMode: 0
   resetOrbitPivotOnNavChange: 1
   enablePicking: 1
   drawSelectedAxes: 0
   drawRootAxes: 0
   relativeNavTransSpeed: 2000
+  forceSelectedTile: 0
 --- !u!114 &1485971530
 MonoBehaviour:
   m_ObjectHideFlags: 0
