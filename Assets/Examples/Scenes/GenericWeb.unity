@@ -568,6 +568,7 @@ MonoBehaviour:
     LRUMaxFrameUnloadRatio: 0.2
     MaxConcurrentRequests: 6
     ShaderOverride: Unlit/Texture
+    LoadIndices: 0
     ClippingCameras: []
     DefaultCameraTranslation: {x: 0, y: 0, z: -10}
     DefaultCameraRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -612,13 +613,13 @@ MonoBehaviour:
   mouseOrbit: {fileID: 1485971530}
   pointer: {fileID: 983294637}
   pointerRadiusPixels: 10
-  drawSelectedBounds: 0
-  drawParentBounds: 0
+  boundsMode: 0
   resetOrbitPivotOnNavChange: 1
   enablePicking: 1
   drawSelectedAxes: 0
   drawRootAxes: 0
   relativeNavTransSpeed: 2000
+  forceSelectedTile: 0
 --- !u!114 &1485971530
 MonoBehaviour:
   m_ObjectHideFlags: 0

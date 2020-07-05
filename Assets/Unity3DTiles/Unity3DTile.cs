@@ -104,6 +104,8 @@ namespace Unity3DTiles
 
         public Unity3DTileContentState ContentState { get; private set; }
 
+        public bool ContentActive { get { return Content != null && Content.IsActive; } }
+
         public string ContentUrl { get; private set; }
 
         public Promise ContentReadyToProcessPromise { get; private set; }

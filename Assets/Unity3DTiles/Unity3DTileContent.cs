@@ -29,6 +29,8 @@ namespace Unity3DTiles
 
         public Unity3DTileIndex Index;
 
+        public bool IsActive { get { return Go != null && Go.activeSelf; } }
+
         private bool collidersEnabled;
         private bool renderersEnabled;
         private ShadowCastingMode? shadowMode;

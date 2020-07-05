@@ -33,7 +33,8 @@ class DemoUX : MonoBehaviour
 
     public float pointerRadiusPixels = 10;
 
-    public bool drawSelectedBounds, drawParentBounds;
+    public enum DrawBoundsMode { No, Selected, Parent, Ancestor, All, Leaf, Active };
+    public DrawBoundsMode boundsMode;
 
     public bool resetOrbitPivotOnNavChange = true;
 
@@ -47,6 +48,7 @@ class DemoUX : MonoBehaviour
     private Unity3DTile selectedTile;
     private Stack<Unity3DTile> selectedStack = new Stack<Unity3DTile>();
     private Stack<Unity3DTileset> showStack = new Stack<Unity3DTileset>();
+    public bool forceSelectedTile;
     
     private Vector3? lastMouse;
     private Vector2 mouseIntegral;
@@ -524,45 +526,98 @@ class DemoUX : MonoBehaviour
             selectedTile = siblings[idx];
         }
         
-        builder.Append("\npress b to toggle bounds");
-        
         if (Input.GetKeyDown(KeyCode.B))
         {
-            if (!drawSelectedBounds && !drawParentBounds)
-            {
-                drawSelectedBounds = true;
-            }
-            else if (drawSelectedBounds && !drawParentBounds)
-            {
-                drawParentBounds = true;
-            }
-            else
-            {
-                drawSelectedBounds = drawParentBounds = false;
-            }
+            var modes = (DrawBoundsMode[])Enum.GetValues(typeof(DrawBoundsMode));
+            int curMode = Math.Max(Array.IndexOf(modes, boundsMode), 0);
+            boundsMode = modes[(curMode + 1) % modes.Length];
         }
-        
-        if (drawSelectedBounds)
+
+        builder.Append("\ndrawing " + boundsMode + " bounds, press b to toggle");
+
+        switch (boundsMode)
         {
-            selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTile.Tileset.Behaviour.transform);
-            if (cbv >= 0 && cbv != bv)
+            case DrawBoundsMode.No: break;
+            case DrawBoundsMode.Selected:
             {
-                selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTile.Tileset.Behaviour.transform);
+                selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTile.Tileset.Behaviour.transform);
+                if (cbv >= 0 && cbv != bv)
+                {
+                    selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTile.Tileset.Behaviour.transform);
+                }
+                break;
             }
-        }
-        
-        if (drawParentBounds && selectedTile.Parent != null)
-        {
-            var parent = selectedTile.Parent;
-            float pbv = parent.BoundingVolume.Volume();
-            float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
-            parent.BoundingVolume.DebugDraw(Color.cyan, selectedTile.Tileset.Behaviour.transform);
-            if (pcbv >= 0 && pcbv != pbv)
+            case DrawBoundsMode.Parent:
             {
-                parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
+                var parent = selectedTile.Parent;
+                if (parent != null)
+                {
+                    float pbv = parent.BoundingVolume.Volume();
+                    float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
+                    parent.BoundingVolume.DebugDraw(Color.cyan, selectedTile.Tileset.Behaviour.transform);
+                    if (pcbv >= 0 && pcbv != pbv)
+                    {
+                        parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
+                    }
+                }
+                break;
             }
+            case DrawBoundsMode.Ancestor:
+            {
+                for (var ancestor = selectedTile; ancestor != null; ancestor = ancestor.Parent)
+                {
+                    ancestor.BoundingVolume.DebugDraw(Color.magenta, ancestor.Tileset.Behaviour.transform);
+                }
+                break;
+            }
+            case DrawBoundsMode.All:
+            {
+                void drawBounds(Unity3DTile tile)
+                {
+                    tile.BoundingVolume.DebugDraw(Color.magenta, tile.Tileset.Behaviour.transform);
+                    foreach (var child in tile.Children)
+                    {
+                        drawBounds(child);
+                    }
+                }
+                drawBounds(selectedTile.Tileset.Root);
+                break;
+            }
+            case DrawBoundsMode.Leaf:
+            {
+                void drawBounds(Unity3DTile tile)
+                {
+                    if (tile.Children.Count == 0)
+                    {
+                        tile.BoundingVolume.DebugDraw(Color.magenta, tile.Tileset.Behaviour.transform);
+                    }
+                    foreach (var child in tile.Children)
+                    {
+                        drawBounds(child);
+                    }
+                }
+                drawBounds(selectedTile.Tileset.Root);
+                break;
+            }
+            case DrawBoundsMode.Active:
+            {
+                void drawBounds(Unity3DTile tile)
+                {
+                    if (tile.ContentActive)
+                    {
+                        tile.BoundingVolume.DebugDraw(Color.magenta, tile.Tileset.Behaviour.transform);
+                    }
+                    foreach (var child in tile.Children)
+                    {
+                        drawBounds(child);
+                    }
+                }
+                drawBounds(selectedTile.Tileset.Root);
+                break;
+            }
+            default: Debug.LogWarning("unknown bounds mode: " + boundsMode); break;
         }
-        
+
         if (tilesets != null && tilesets.Count > 0)
         {
             builder.Append("\npress i to hide tileset");
@@ -584,7 +639,19 @@ class DemoUX : MonoBehaviour
 
         if (selectedTile != null)
         {
-            selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
+            if (forceSelectedTile)
+            {
+                builder.Append("\nforcing selected tile to render, hit r to toggle");
+                selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
+            }
+            else
+            {
+                builder.Append("\nnot forcing selected tile to render, hit r to toggle");
+            }
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                forceSelectedTile = !forceSelectedTile;
+            }
         }
     }
     
