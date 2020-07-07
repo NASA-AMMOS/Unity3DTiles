@@ -213,6 +213,36 @@ class DemoUX : MonoBehaviour
                 mouseOrbit.pivot = tileset.transform.TransformPoint(NonSkyBounds().position);
             } 
         }
+
+        //tweak trans speed
+        float ts = mouseFly != null ? mouseFly.transSpeed : mouseOrbit != null ? mouseOrbit.transSpeed : -1;
+        if (ts >= 0)
+        {
+            builder.Append($"\ntrans speed {ts:f5} press [ slower, ] faster");
+            float transAdj = 0.005f;
+            if (Input.GetKey(KeyCode.LeftBracket))
+            {
+                if (mouseOrbit != null)
+                {
+                    mouseOrbit.transSpeed = (float)Math.Max(0.001, mouseOrbit.transSpeed - transAdj);
+                }
+                if (mouseFly != null)
+                {
+                    mouseFly.transSpeed = (float)Math.Max(0.001, mouseFly.transSpeed - transAdj);
+                }
+            }
+            if (Input.GetKey(KeyCode.RightBracket))
+            {
+                if (mouseOrbit != null)
+                {
+                    mouseOrbit.transSpeed = mouseOrbit.transSpeed + transAdj; 
+                }
+                if (mouseFly != null)
+                {
+                    mouseFly.transSpeed = mouseFly.transSpeed + transAdj;
+                }
+            }
+        }
     }
 
     private void UpdateAxes()
