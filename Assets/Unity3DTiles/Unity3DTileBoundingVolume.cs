@@ -130,7 +130,9 @@ namespace Unity3DTiles
 
         public abstract bool Contains(Vector3 point);
 
-        public abstract float DistanceTo(Vector3 point);
+        public abstract float MinDistanceTo(Vector3 point);
+
+        public abstract float CenterDistanceTo(Ray ray);
 
         public abstract void DebugDraw(Color c, Transform t);
 
@@ -229,10 +231,10 @@ namespace Unity3DTiles
 
         public override bool Contains(Vector3 point)
         {
-            return DistanceTo(point) == 0;
+            return MinDistanceTo(point) == 0;
         }
 
-        public override float DistanceTo(Vector3 point)
+        public override float MinDistanceTo(Vector3 point)
         {
             var offset = point - this.Center;
 
@@ -291,6 +293,11 @@ namespace Unity3DTiles
             return Mathf.Sqrt(distanceSquared);
         }
         
+        public override float CenterDistanceTo(Ray ray)
+        {
+            return Vector3.Distance(this.Center, ray.origin + Vector3.Project(this.Center - ray.origin, ray.direction));
+        }
+
         public override IntersectionType IntersectPlane(Plane plane)
         {
             Vector3 normal = plane.normal;
@@ -408,9 +415,14 @@ namespace Unity3DTiles
             return Vector3.Distance(this.Center, point) <= this.Radius;
         }
 
-        public override float DistanceTo(Vector3 point)
+        public override float MinDistanceTo(Vector3 point)
         {
             return Mathf.Max(0.0f, Vector3.Distance(this.Center, point) - this.Radius);
+        }
+
+        public override float CenterDistanceTo(Ray ray)
+        {
+            return Vector3.Distance(this.Center, ray.origin + Vector3.Project(this.Center - ray.origin, ray.direction));
         }
 
         public override float MaximumHeight()
@@ -463,7 +475,12 @@ namespace Unity3DTiles
             throw new NotImplementedException();
         }
 
-        public override float DistanceTo(Vector3 point)
+        public override float MinDistanceTo(Vector3 point)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override float CenterDistanceTo(Ray ray)
         {
             throw new NotImplementedException();
         }

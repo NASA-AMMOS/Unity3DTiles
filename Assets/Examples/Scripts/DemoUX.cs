@@ -472,12 +472,14 @@ class DemoUX : MonoBehaviour
         }
 
         double dist = selectedTile.FrameState.DistanceToCamera;
+        double ctrDist = selectedTile.FrameState.PixelsToCameraCenter;
 
         builder.Append("\nselected tile " + selectedTile.Id + ", depth " + selectedTile.Depth);
         builder.Append(", " + selectedTile.Children.Count + " children");
         builder.Append("\ngeometric error " + selectedTile.GeometricError.ToString("F3"));
         builder.Append(", distance " + (dist < float.MaxValue ? dist : -1).ToString("F3"));
         builder.Append(", SSE " + selectedTile.FrameState.ScreenSpaceError.ToString("F3"));
+        builder.Append("\n" + ((int)ctrDist) + " pixels to view center");
 
         builder.Append("\nbounds vol " + bv + ": " + selectedTile.BoundingVolume.SizeString());
         if (cbv >= 0 && cbv != bv)

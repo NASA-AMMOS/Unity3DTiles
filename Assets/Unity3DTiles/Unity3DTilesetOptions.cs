@@ -35,10 +35,10 @@ namespace Unity3DTiles
         public bool Show = true;
 
         [Tooltip("Controls the level of detail the tileset will be loaded to by specifying the allowed amount of on screen geometric error allowed in pixels")]
-        public double MaximumScreenSpaceError = 4;
+        public double MaximumScreenSpaceError = 8;
 
         [Tooltip("Controls what parent tiles will be skipped when loading a tileset.  This number will be multipled by MaximumScreenSpaceError and any tile with an on screen error larger than this will be skipped by the loading and rendering algorithm")]
-        public double SkipScreenSpaceErrorMultiplier = 16;
+        public double SkipScreenSpaceErrorMultiplier = 64;
 
         [Tooltip("If a tile is in view and needs to be rendered, also load its siblings even if they are not visible.  Especially useful when using colliders so that raycasts outside the users field of view can succeed.  Increases load time and number of tiles that need to be stored in memory.")]
         public bool LoadSiblings = true;
@@ -84,11 +84,10 @@ namespace Unity3DTiles
 
         public bool DebugDrawBounds = false;
 
+        //tiles are loaded in order or priority, so *lower* priority values load before higher
+        //if null a default prioritization is used, see Unity3DTilesetTraversal.TilePriority()
         [JsonIgnore]
-        public System.Func<Unity3DTile, float> TilePriority = new System.Func<Unity3DTile, float>(tile =>
-        {
-            return (float)(tile.Depth - 1.0 / tile.FrameState.DistanceToCamera);
-        });
+        public Func<Unity3DTile, float> TilePriority = null;
     }
 
     [Serializable] //Serializable so it will show up in Unity editor inspector

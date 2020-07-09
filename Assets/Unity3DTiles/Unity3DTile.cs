@@ -61,9 +61,9 @@ namespace Unity3DTiles
 
         public Unity3DTilesetStyle Style;
 
-        public double GeometricError
+        public float GeometricError
         {
-            get { return tile.GeometricError; }
+            get { return (float)tile.GeometricError; }
         }
 
         public Schema.TileRefine Refine
@@ -133,6 +133,7 @@ namespace Unity3DTiles
             public bool InColliderSet = false;      // This tile should have its collider enabled this frame
             public bool UsedLastFrame = false;      // This tile was in the used set last frame and may need to be deactivated next frame
             public float DistanceToCamera = float.MaxValue;
+            public float PixelsToCameraCenter = float.MaxValue;
             public float ScreenSpaceError = 0;
 
             public void MarkUsed()
@@ -158,6 +159,7 @@ namespace Unity3DTiles
                 InRenderSet = false;
                 InColliderSet = false;
                 DistanceToCamera = float.MaxValue;
+                PixelsToCameraCenter = float.MaxValue;
             }
         }
 

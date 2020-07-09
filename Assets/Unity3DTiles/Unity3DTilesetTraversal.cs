@@ -68,8 +68,10 @@ namespace Unity3DTiles
                 Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cameraMatrix);
 
                 sse.Configure(cam);
-                Vector3 cameraPositionInTilesetFrame = tileset.Behaviour.transform.InverseTransformPoint(cam.transform.position);
-                DetermineFrustumSet(tileset.Root, planes, sse, cameraPositionInTilesetFrame, PlaneClipMask.GetDefaultMask());
+                Vector3 cameraPositionInTileset = tileset.Behaviour.transform.InverseTransformPoint(cam.transform.position);
+                Vector3 cameraForwardInTileset = tileset.Behaviour.transform.InverseTransformDirection(cam.transform.forward);
+                DetermineFrustumSet(tileset.Root, planes, sse, cameraPositionInTileset, cameraForwardInTileset,
+                                    PlaneClipMask.GetDefaultMask());
             }
             MarkUsedSetLeaves(tileset.Root);
             SkipTraversal(tileset.Root);      
@@ -109,15 +111,19 @@ namespace Unity3DTiles
                 {
                     return 0; // Leaf tiles have no screenspace error
                 }
+                return ProjectDistanceOnTileToScreen(tileError, distFromCamera);
+            }
+
+            public float ProjectDistanceOnTileToScreen(float distOnTile, float distFromCamera)
+            {
                 if (this.cam.orthographic)
                 {
-                    return tileError / pixelSize;
+                    return distOnTile / pixelSize;
                 }
                 else
                 {
                     distFromCamera = Mathf.Max(distFromCamera, 0.00001f);
-                    float error =  (tileError * cam.pixelHeight) / (distFromCamera * sseDenominator);
-                    return error;
+                    return (distOnTile * cam.pixelHeight) / (distFromCamera * sseDenominator);
                 }
             }
 
@@ -143,7 +149,8 @@ namespace Unity3DTiles
         /// <param name="tile"></param>
         /// <param name="planes"></param>
         /// <returns></returns>
-        bool DetermineFrustumSet(Unity3DTile tile, Plane[] planes, SSECalculator sse, Vector3 cameraPosInTilesetFrame, PlaneClipMask mask)
+        bool DetermineFrustumSet(Unity3DTile tile, Plane[] planes, SSECalculator sse, Vector3 cameraPosInTilesetFrame,
+                                 Vector3 cameraFwdInTilesetFrame, PlaneClipMask mask)
         {
             // Reset frame state if needed
             tile.FrameState.Reset(this.frameCount);
@@ -162,9 +169,17 @@ namespace Unity3DTiles
             if (!tile.HasEmptyContent)
             {
                 // Check to see if this tile meets the on screen error level of detail requirement
-                float distance = tile.BoundingVolume.DistanceTo(cameraPosInTilesetFrame);
-                tile.FrameState.DistanceToCamera = Mathf.Min(distance, tile.FrameState.DistanceToCamera); // We take the min in case multiple cameras, reset dist to max float on frame reset
-                tile.FrameState.ScreenSpaceError = sse.PixelError((float)tile.GeometricError, distance);
+                float distance = tile.BoundingVolume.MinDistanceTo(cameraPosInTilesetFrame);
+                // We take the min in case multiple cameras, reset dist to max float on frame reset
+                tile.FrameState.DistanceToCamera = Mathf.Min(distance, tile.FrameState.DistanceToCamera);
+                tile.FrameState.ScreenSpaceError = sse.PixelError(tile.GeometricError, distance);
+
+                Ray cameraRay = new Ray(cameraPosInTilesetFrame, cameraFwdInTilesetFrame);
+                float distToAxis = tile.BoundingVolume.CenterDistanceTo(cameraRay);
+                float pixelsToCamCtr = sse.ProjectDistanceOnTileToScreen(distToAxis, distance);
+                tile.FrameState.PixelsToCameraCenter = Mathf.Min(pixelsToCamCtr, tile.FrameState.PixelsToCameraCenter);
+
+                //prune traversal when we hit a tile that meets SSE
                 if (tile.FrameState.ScreenSpaceError <= tileset.TilesetOptions.MaximumScreenSpaceError)
                 {
                     return true;
@@ -178,7 +193,8 @@ namespace Unity3DTiles
             bool anyChildUsed = false;
             for (int i = 0; i < tile.Children.Count; i++)
             {
-                bool r = DetermineFrustumSet(tile.Children[i], planes, sse, cameraPosInTilesetFrame, mask);
+                bool r = DetermineFrustumSet(tile.Children[i], planes, sse, cameraPosInTilesetFrame,
+                                             cameraFwdInTilesetFrame, mask);
                 anyChildUsed = anyChildUsed || r;
             }
             // If any children are in the workingset, mark all of them as being used (siblings/atomic split criteria).  
@@ -389,6 +405,62 @@ namespace Unity3DTiles
             }
         }
 
+        int DepthFromFirstUsedAncestor(Unity3DTile tile)
+        {
+            if (!tile.FrameState.IsUsedThisFrame(this.frameCount) ||
+                tile.Parent == null || !tile.Parent.FrameState.IsUsedThisFrame(this.frameCount))
+            {
+                return 0;
+            }
+
+            return 1 + DepthFromFirstUsedAncestor(tile.Parent);
+        }
+
+        float MinUsedAncestorPixelsToCameraCenter(Unity3DTile tile, float pixels = float.MaxValue)
+        {
+            if (!tile.FrameState.IsUsedThisFrame(this.frameCount) ||
+                tile.Parent == null || !tile.Parent.FrameState.IsUsedThisFrame(this.frameCount))
+            {
+                return pixels;
+            }
+            pixels = Mathf.Min(pixels, tile.FrameState.PixelsToCameraCenter);
+            return MinUsedAncestorPixelsToCameraCenter(tile.Parent, pixels);
+        }
+
+        float TilePriority(Unity3DTile tile)
+        {
+            if (this.tileset.TilesetOptions.TilePriority != null)
+            {
+                return this.tileset.TilesetOptions.TilePriority(tile);
+            }
+
+            //prioritize by distance from camera
+            //return tile.FrameState.DistanceToCamera;
+
+            //prioritize coarse to fine
+            //return tile.Depth;
+            //return DepthFromFirstUsedAncestor(tile);
+
+            //prioritize first coarse to fine, then by distance
+            ////int depth = tileDepth;
+            //int depth = DepthFromFirstUsedAncestor(tile); //integer part
+            //float distLimit = 1000;
+            //float dist = Mathf.Min(tile.FrameState.DistanceToCamera, distLimit);
+            //float relDist = dist / distLimit; //fractional part
+            //return depth + relDist;
+
+            //prioritize first by distance, then coarse to fine
+            //float quantizedDist = (int)(tile.FrameState.DistanceToCamera * 100); //integer part
+            //float quantizedDist = (int)(tile.FrameState.DistanceToCameraAxis * 100); //integer part
+            //float quantizedDist = (int)(tile.FrameState.PixelsToCameraCenter / 100);
+            float quantizedDist = (int)(MinUsedAncestorPixelsToCameraCenter(tile) / 100);
+            float depthLimit = 100;
+            //float depth = Math.Min(tile.Depth, depthLimit);
+            float depth = Math.Min(DepthFromFirstUsedAncestor(tile), depthLimit);
+            float relDepth = depth / depthLimit; //fractional part
+            return quantizedDist + relDepth;
+        }
+
         /// <summary>
         /// Request a tile
         /// If the tile has siblings in the used set, request them at the same time since we will need all of them to split the parent tile
@@ -400,7 +472,7 @@ namespace Unity3DTiles
         {
             if (tile.Parent == null)
             {
-                tile.RequestContent(this.tileset.TilesetOptions.TilePriority(tile)); // was -tile.FrameState.DistanceToCamera, bug?
+                tile.RequestContent(TilePriority(tile));
             }
             else
             {
@@ -409,7 +481,7 @@ namespace Unity3DTiles
                 {
                     if (tile.Parent.Children[i].FrameState.IsUsedThisFrame(this.frameCount))
                     {
-                        priority = Mathf.Min(this.tileset.TilesetOptions.TilePriority(tile.Parent.Children[i]), priority);
+                        priority = Mathf.Min(TilePriority(tile.Parent.Children[i]), priority);
                     }
                 }
                 for (int i = 0; i < tile.Parent.Children.Count; i++)
