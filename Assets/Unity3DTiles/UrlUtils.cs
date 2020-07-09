@@ -187,5 +187,48 @@ namespace Unity3DTiles
         {
             return !string.IsNullOrEmpty(uri) && uri.Contains("://");
         }
+
+        public static string GetUrlExtension(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+            //be robust to the case that URL is actually a windows path, but without allocating
+            int lastSlash = Math.Max(url.LastIndexOf('/'), url.LastIndexOf('\\'));
+            int lastDot = url.LastIndexOf('.');
+            if (lastDot >= 0 && lastDot > lastSlash) //ok: lastSlash < 0
+            {
+                return url.Substring(lastDot);
+            }
+            else
+            {
+                return "";
+            }
+        }
+
+        public static string StripUrlExtension(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+            //be robust to the case that URL is actually a windows path, but without allocating
+            int lastSlash = Math.Max(url.LastIndexOf('/'), url.LastIndexOf('\\'));
+            int lastDot = url.LastIndexOf('.');
+            if (lastDot >= 0 && lastDot > lastSlash) //ok: lastSlash < 0
+            {
+                return url.Substring(0, lastDot);
+            }
+            else
+            {
+                return url;
+            }
+        }
+
+        public static string ChangeUrlExtension(string url, string ext)
+        {
+            return StripUrlExtension(url) + "." + ext.TrimStart('.');
+        }
     }
 }

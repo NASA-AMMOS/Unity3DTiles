@@ -33,7 +33,8 @@ class DemoUX : MonoBehaviour
 
     public float pointerRadiusPixels = 10;
 
-    public bool drawSelectedBounds, drawParentBounds;
+    public enum DrawBoundsMode { No, Selected, Parent, Ancestor, All, Leaf, Active };
+    public DrawBoundsMode boundsMode;
 
     public bool resetOrbitPivotOnNavChange = true;
 
@@ -47,6 +48,7 @@ class DemoUX : MonoBehaviour
     private Unity3DTile selectedTile;
     private Stack<Unity3DTile> selectedStack = new Stack<Unity3DTile>();
     private Stack<Unity3DTileset> showStack = new Stack<Unity3DTileset>();
+    public bool forceSelectedTile;
     
     private Vector3? lastMouse;
     private Vector2 mouseIntegral;
@@ -54,6 +56,7 @@ class DemoUX : MonoBehaviour
     private bool pointerActive;
     private bool hasFocus = true;
     private bool didReset;
+    private bool setFarClip;
 
     private StringBuilder builder = new StringBuilder();
 
@@ -87,6 +90,9 @@ class DemoUX : MonoBehaviour
         builder.Clear();
 
         builder.Append("\npress h to toggle HUD, v for default view, f to fit");
+        builder.Append("\npicking " + (enablePicking ? "enabled" : "disabled") + ",  press p to toggle");
+
+        bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 
         if (hud != null && Input.GetKeyDown(KeyCode.H))
         {
@@ -95,13 +101,15 @@ class DemoUX : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.V))
         {
-            ResetView();
+            ResetView(unlimited: shift);
         }
 
         if (Input.GetKeyDown(KeyCode.F))
         {
-            FitView();
+            FitView(unlimited: shift);
         }
+
+        UpdateFarClip();
 
         UpdateNav();
 
@@ -116,6 +124,16 @@ class DemoUX : MonoBehaviour
         if (hud != null)
         {
             hud.ExtraMessage = builder.ToString();
+        }
+    }
+
+    private void UpdateFarClip(bool force = false)
+    {
+        if ((force || !setFarClip) && tileset != null && tileset.Ready())
+        {
+            var bounds = tileset.BoundingSphere();
+            Camera.main.farClipPlane = Math.Max(Camera.main.farClipPlane, 1.1f * bounds.radius);
+            setFarClip = true;
         }
     }
 
@@ -178,7 +196,7 @@ class DemoUX : MonoBehaviour
                 }
                 else if (tileset && tileset.Ready())
                 {
-                    mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+                    mouseOrbit.pivot = tileset.transform.TransformPoint(NonSkyBounds().position);
                 } 
             }
         }
@@ -192,8 +210,38 @@ class DemoUX : MonoBehaviour
             }
             else if (tileset && tileset.Ready())
             {
-                mouseOrbit.pivot = tileset.transform.TransformPoint(tileset.BoundingSphere().position);
+                mouseOrbit.pivot = tileset.transform.TransformPoint(NonSkyBounds().position);
             } 
+        }
+
+        //tweak trans speed
+        float ts = mouseFly != null ? mouseFly.transSpeed : mouseOrbit != null ? mouseOrbit.transSpeed : -1;
+        if (ts >= 0)
+        {
+            builder.Append($"\ntrans speed {ts:f5} press [ slower, ] faster");
+            float transAdj = 0.005f;
+            if (Input.GetKey(KeyCode.LeftBracket))
+            {
+                if (mouseOrbit != null)
+                {
+                    mouseOrbit.transSpeed = (float)Math.Max(0.001, mouseOrbit.transSpeed - transAdj);
+                }
+                if (mouseFly != null)
+                {
+                    mouseFly.transSpeed = (float)Math.Max(0.001, mouseFly.transSpeed - transAdj);
+                }
+            }
+            if (Input.GetKey(KeyCode.RightBracket))
+            {
+                if (mouseOrbit != null)
+                {
+                    mouseOrbit.transSpeed = mouseOrbit.transSpeed + transAdj; 
+                }
+                if (mouseFly != null)
+                {
+                    mouseFly.transSpeed = mouseFly.transSpeed + transAdj;
+                }
+            }
         }
     }
 
@@ -409,11 +457,30 @@ class DemoUX : MonoBehaviour
             builder.Append("\nselected tileset " + sts.TilesetOptions.Name +
                            " (" + tilesets.FindIndex(ts => ts == sts) + ")");
         }
-        
+
+        var opts = selectedTile.Tileset.TilesetOptions;
+        double maxSSE = opts.MaximumScreenSpaceError;
+        builder.Append("\nmax SSE " + opts.MaximumScreenSpaceError.ToString("F3") + " (hit PageUp/Down to adjust)");
+        if (Input.GetKeyDown(KeyCode.PageDown))
+        {
+            opts.MaximumScreenSpaceError = Math.Max(0, opts.MaximumScreenSpaceError - 1);
+        }
+
+        if (Input.GetKeyDown(KeyCode.PageUp))
+        {
+            opts.MaximumScreenSpaceError = opts.MaximumScreenSpaceError + 1;
+        }
+
+        double dist = selectedTile.FrameState.DistanceToCamera;
+        double ctrDist = selectedTile.FrameState.PixelsToCameraCenter;
+
         builder.Append("\nselected tile " + selectedTile.Id + ", depth " + selectedTile.Depth);
         builder.Append(", " + selectedTile.Children.Count + " children");
-        builder.Append(", geometric error " + selectedTile.GeometricError.ToString("F3"));
-        
+        builder.Append("\ngeometric error " + selectedTile.GeometricError.ToString("F3"));
+        builder.Append(", distance " + (dist < float.MaxValue ? dist : -1).ToString("F3"));
+        builder.Append(", SSE " + selectedTile.FrameState.ScreenSpaceError.ToString("F3"));
+        builder.Append("\n" + ((int)ctrDist) + " pixels to view center");
+
         builder.Append("\nbounds vol " + bv + ": " + selectedTile.BoundingVolume.SizeString());
         if (cbv >= 0 && cbv != bv)
         {
@@ -425,6 +492,11 @@ class DemoUX : MonoBehaviour
         {
             builder.Append("\n" + FmtKMG(tc.FaceCount) + " tris, " + FmtKMG(tc.PixelCount) + " pixels, ");
             builder.Append(tc.TextureCount + " textures, max " + tc.MaxTextureSize.x + "x" + tc.MaxTextureSize.y);
+            if (tc.Index != null)
+            {
+                builder.Append("\n" + tc.Index.Width + "x" + tc.Index.Height + " index, " +
+                               tc.Index.NumNonzero + " nonzero");
+            }
         }
         
         selectedTile.Tileset.GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale,
@@ -468,7 +540,10 @@ class DemoUX : MonoBehaviour
         
         if (selectedTile.Children.Count > 0 && Input.GetKeyDown(KeyCode.DownArrow))
         {
-            selectedTile = selectedStack.Count > 0 ? selectedStack.Pop() : selectedTile.Children.First();
+            var child = selectedTile.Children
+                .Where(c => c.BoundingVolume.Contains(pointer.transform.position))
+                .FirstOrDefault();
+            selectedTile = selectedStack.Count > 0 ? selectedStack.Pop() : (child ?? selectedTile.Children.First());
         }
         
         int sibling = Input.GetKeyDown(KeyCode.LeftArrow) ? -1 : Input.GetKeyDown(KeyCode.RightArrow) ? 1 : 0;
@@ -484,45 +559,98 @@ class DemoUX : MonoBehaviour
             selectedTile = siblings[idx];
         }
         
-        builder.Append("\npress b to toggle bounds");
-        
         if (Input.GetKeyDown(KeyCode.B))
         {
-            if (!drawSelectedBounds && !drawParentBounds)
-            {
-                drawSelectedBounds = true;
-            }
-            else if (drawSelectedBounds && !drawParentBounds)
-            {
-                drawParentBounds = true;
-            }
-            else
-            {
-                drawSelectedBounds = drawParentBounds = false;
-            }
+            var modes = (DrawBoundsMode[])Enum.GetValues(typeof(DrawBoundsMode));
+            int curMode = Math.Max(Array.IndexOf(modes, boundsMode), 0);
+            boundsMode = modes[(curMode + 1) % modes.Length];
         }
-        
-        if (drawSelectedBounds)
+
+        builder.Append("\ndrawing " + boundsMode + " bounds, press b to toggle");
+
+        switch (boundsMode)
         {
-            selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTile.Tileset.Behaviour.transform);
-            if (cbv >= 0 && cbv != bv)
+            case DrawBoundsMode.No: break;
+            case DrawBoundsMode.Selected:
             {
-                selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTile.Tileset.Behaviour.transform);
+                selectedTile.BoundingVolume.DebugDraw(Color.magenta, selectedTile.Tileset.Behaviour.transform);
+                if (cbv >= 0 && cbv != bv)
+                {
+                    selectedTile.ContentBoundingVolume.DebugDraw(Color.red, selectedTile.Tileset.Behaviour.transform);
+                }
+                break;
             }
-        }
-        
-        if (drawParentBounds && selectedTile.Parent != null)
-        {
-            var parent = selectedTile.Parent;
-            float pbv = parent.BoundingVolume.Volume();
-            float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
-            parent.BoundingVolume.DebugDraw(Color.cyan, selectedTile.Tileset.Behaviour.transform);
-            if (pcbv >= 0 && pcbv != pbv)
+            case DrawBoundsMode.Parent:
             {
-                parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
+                var parent = selectedTile.Parent;
+                if (parent != null)
+                {
+                    float pbv = parent.BoundingVolume.Volume();
+                    float pcbv = parent.ContentBoundingVolume != null ? parent.ContentBoundingVolume.Volume() : -1;
+                    parent.BoundingVolume.DebugDraw(Color.cyan, selectedTile.Tileset.Behaviour.transform);
+                    if (pcbv >= 0 && pcbv != pbv)
+                    {
+                        parent.ContentBoundingVolume.DebugDraw(Color.blue, selectedTile.Tileset.Behaviour.transform);
+                    }
+                }
+                break;
             }
+            case DrawBoundsMode.Ancestor:
+            {
+                for (var ancestor = selectedTile; ancestor != null; ancestor = ancestor.Parent)
+                {
+                    ancestor.BoundingVolume.DebugDraw(Color.magenta, ancestor.Tileset.Behaviour.transform);
+                }
+                break;
+            }
+            case DrawBoundsMode.All:
+            {
+                void drawBounds(Unity3DTile tile)
+                {
+                    tile.BoundingVolume.DebugDraw(Color.magenta, tile.Tileset.Behaviour.transform);
+                    foreach (var child in tile.Children)
+                    {
+                        drawBounds(child);
+                    }
+                }
+                drawBounds(selectedTile.Tileset.Root);
+                break;
+            }
+            case DrawBoundsMode.Leaf:
+            {
+                void drawBounds(Unity3DTile tile)
+                {
+                    if (tile.Children.Count == 0)
+                    {
+                        tile.BoundingVolume.DebugDraw(Color.magenta, tile.Tileset.Behaviour.transform);
+                    }
+                    foreach (var child in tile.Children)
+                    {
+                        drawBounds(child);
+                    }
+                }
+                drawBounds(selectedTile.Tileset.Root);
+                break;
+            }
+            case DrawBoundsMode.Active:
+            {
+                void drawBounds(Unity3DTile tile)
+                {
+                    if (tile.ContentActive)
+                    {
+                        tile.BoundingVolume.DebugDraw(Color.magenta, tile.Tileset.Behaviour.transform);
+                    }
+                    foreach (var child in tile.Children)
+                    {
+                        drawBounds(child);
+                    }
+                }
+                drawBounds(selectedTile.Tileset.Root);
+                break;
+            }
+            default: Debug.LogWarning("unknown bounds mode: " + boundsMode); break;
         }
-        
+
         if (tilesets != null && tilesets.Count > 0)
         {
             builder.Append("\npress i to hide tileset");
@@ -544,12 +672,29 @@ class DemoUX : MonoBehaviour
 
         if (selectedTile != null)
         {
-            selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
+            if (forceSelectedTile)
+            {
+                builder.Append("\nforcing selected tile to render, hit r to toggle");
+                selectedTile.Tileset.Traversal.ForceTiles.Add(selectedTile);
+            }
+            else
+            {
+                builder.Append("\nnot forcing selected tile to render, hit r to toggle");
+            }
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                forceSelectedTile = !forceSelectedTile;
+            }
         }
     }
     
     private void UpdatePicking()
     {
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            enablePicking = !enablePicking;
+        }
+
         if (enablePicking && hasFocus && !MouseNavBase.MouseOnUI())
         {
             if (Input.GetMouseButtonDown(0))
@@ -590,7 +735,18 @@ class DemoUX : MonoBehaviour
         }
     }
 
-    public void ResetView()
+    private bool IsSky(Unity3DTileset ts)
+    {
+        return ts != null && ts.TilesetOptions != null && ts.TilesetOptions.Name != null &&
+            ts.TilesetOptions.Name.EndsWith("sky", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private BoundingSphere NonSkyBounds()
+    {
+        return tileset.BoundingSphere(ts => !IsSky(ts));
+    }
+
+    public void ResetView(bool unlimited = false)
     {
         if (tileset != null)
         {
@@ -604,37 +760,40 @@ class DemoUX : MonoBehaviour
 
             if (tileset.Ready())
             {
-                var bs = tileset.BoundingSphere();
+                UpdateFarClip(force: true);
+
+                var nsb = unlimited ? tileset.BoundingSphere() : NonSkyBounds();
+                var diam = nsb.radius * 2;
                 if (mouseOrbit != null)
                 {
-                    mouseOrbit.pivot = tileset.transform.TransformPoint(bs.position);
-                    if (relativeNavTransSpeed > 0)
+                    mouseOrbit.pivot = tileset.transform.TransformPoint(nsb.position);
+                    if (diam > 0 && relativeNavTransSpeed > 0)
                     {
-                        mouseOrbit.transSpeed = (bs.radius * 2.0f) / relativeNavTransSpeed;
+                        mouseOrbit.transSpeed = diam / relativeNavTransSpeed;
                     }
                 }
-                if (mouseFly != null && relativeNavTransSpeed > 0)
+                if (mouseFly != null && diam > 0 && relativeNavTransSpeed > 0)
                 {
-                    mouseFly.transSpeed = (bs.radius * 2.0f) / relativeNavTransSpeed;
+                    mouseFly.transSpeed = diam / relativeNavTransSpeed;
                 }
             }
         }
     }
 
-    public void FitView()
+    public void FitView(bool unlimited = false)
     {
         if (tileset != null && tileset.Ready())
         {
             var cam = Camera.main.transform;
-            var sph = tileset.BoundingSphere();
+            var nsb = unlimited ? tileset.BoundingSphere() : NonSkyBounds();
 
-            var ctrInWorld = tileset.transform.TransformPoint(sph.position);
+            var ctrInWorld = tileset.transform.TransformPoint(nsb.position);
             cam.Translate(Vector3.ProjectOnPlane(ctrInWorld - cam.position, cam.forward), Space.World);
 
             var tilesetToCam = tileset.transform.localToWorldMatrix * cam.worldToLocalMatrix; //row major compose l->r
             var t2cScale = tilesetToCam.lossyScale;
             var maxScale = Mathf.Max(t2cScale.x, t2cScale.y, t2cScale.z);
-            var radiusInCam = sph.radius * maxScale;
+            var radiusInCam = (nsb.radius > 0 ? nsb.radius : 10) * maxScale;
 
             var vfov = Camera.main.fieldOfView * Mathf.Deg2Rad;
             var hfov = vfov * Camera.main.aspect;

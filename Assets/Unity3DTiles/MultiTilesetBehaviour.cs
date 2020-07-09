@@ -103,13 +103,16 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
             return tilesets.Count > 0 && tilesets.All(ts => ts.Ready);
         }
 
-        public override BoundingSphere BoundingSphere()
+        public override BoundingSphere BoundingSphere(Func<Unity3DTileset, bool> filter = null)
         {
-            if (tilesets.Count == 0)
+            var spheres = tilesets
+                .Where(ts => filter == null || filter(ts))
+                .Select(ts => ts.Root.BoundingVolume.BoundingSphere())
+                .ToList();
+            if (spheres.Count == 0)
             {
                 return new BoundingSphere(Vector3.zero, 0.0f);
             }
-            var spheres = tilesets.Select(ts => ts.Root.BoundingVolume.BoundingSphere()).ToList();
             var ctr = spheres.Aggregate(Vector3.zero, (sum, sph) => sum += sph.position);
             ctr *= 1.0f / spheres.Count;
             var radius = spheres.Max(sph => Vector3.Distance(ctr, sph.position) + sph.radius);
@@ -163,9 +166,17 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
                 Debug.LogWarning(String.Format("Attempt to add tileset with duplicate name {0} failed.", options.Name));
                 return false;
             }
-            if (SceneOptions.GLTFShaderOverride != null && options.GLTFShaderOverride == null)
+            if (string.IsNullOrEmpty(options.ShaderOverride))
             {
-                options.GLTFShaderOverride = SceneOptions.GLTFShaderOverride;
+                options.ShaderOverride = SceneOptions.ShaderOverride;
+            }
+            if (options.Style == null)
+            {
+                options.Style = SceneOptions.Style;
+            }
+            if (options.LoadIndices == IndexMode.Default)
+            {
+                options.LoadIndices = SceneOptions.LoadIndices;
             }
             var tileset = new Unity3DTileset(options, this);
             tilesets.Add(tileset);

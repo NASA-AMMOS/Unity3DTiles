@@ -59,8 +59,7 @@ namespace Unity3DTiles
 #endif
             if ((int)www.responseCode >= 400)
             {
-                Debug.LogErrorFormat("{0} - {1}", www.responseCode, www.url);
-                throw new Exception("Response code invalid");
+                throw new Exception(string.Format("{0} - {1}", www.responseCode, www.url));
             }
             if (www.downloadedBytes > int.MaxValue)
             {

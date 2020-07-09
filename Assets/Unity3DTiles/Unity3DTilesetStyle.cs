@@ -23,8 +23,8 @@ namespace Unity3DTiles
     /// A style should be set on the Unity3DTileset class to change how tiles in that tileset are rendered
     /// A copy of the tileset's style is created for each tile using the "CreateDefault" method
     /// The idea is that individual tiles can use this object to track what style attributes the tile was last
-    /// rendered with.  The next type the tileset style is applied, the tile's style can compare its attributes
-    /// with those of the tilesets and only modify values that have changed.
+    /// rendered with.  The next time the tileset style is applied, the tile's style can compare its attributes
+    /// with those of the tileset and only modify values that have changed.
     /// </summary>
     [System.Serializable]
     public abstract class Unity3DTilesetStyle

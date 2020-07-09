@@ -21,10 +21,16 @@ namespace Unity3DTiles
     public class Unity3DTileContent
     {
         public GameObject Go { get; private set; }
+
         public int FaceCount { get; private set; }
         public int PixelCount { get; private set; }
         public int TextureCount { get; private set; }
         public Vector2Int MaxTextureSize { get; private set; }
+
+        public Unity3DTileIndex Index;
+
+        public bool IsActive { get { return Go != null && Go.activeSelf; } }
+
         private bool collidersEnabled;
         private bool renderersEnabled;
         private ShadowCastingMode? shadowMode;

@@ -1179,8 +1179,21 @@ namespace UnityGLTF
         {
             IUniformMap mapper;
             const string specGlossExtName = KHR_materials_pbrSpecularGlossinessExtensionFactory.EXTENSION_NAME;
-            if (_gltfRoot.ExtensionsUsed != null && _gltfRoot.ExtensionsUsed.Contains(specGlossExtName)
-                && def.Extensions != null && def.Extensions.ContainsKey(specGlossExtName))
+            const string unlitExtName = "KHR_materials_unlit";
+            if (_gltfRoot.ExtensionsUsed != null && _gltfRoot.ExtensionsUsed.Contains(unlitExtName)
+                && def.Extensions != null && def.Extensions.ContainsKey(unlitExtName))
+            {
+                if (!string.IsNullOrEmpty(CustomShaderName))
+                {
+                    mapper = new MetalRoughMap(CustomShaderName, MaximumLod);
+                }
+                else
+                {
+                    mapper = new MetalRoughMap("Unlit/Texture", MaximumLod);
+                }
+            }
+            else if (_gltfRoot.ExtensionsUsed != null && _gltfRoot.ExtensionsUsed.Contains(specGlossExtName)
+                     && def.Extensions != null && def.Extensions.ContainsKey(specGlossExtName))
             {
                 if (!string.IsNullOrEmpty(CustomShaderName))
                 {

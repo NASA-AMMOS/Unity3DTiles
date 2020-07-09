@@ -35,10 +35,10 @@ namespace Unity3DTiles
         public bool Show = true;
 
         [Tooltip("Controls the level of detail the tileset will be loaded to by specifying the allowed amount of on screen geometric error allowed in pixels")]
-        public double MaximumScreenSpaceError = 16;
+        public double MaximumScreenSpaceError = 8;
 
         [Tooltip("Controls what parent tiles will be skipped when loading a tileset.  This number will be multipled by MaximumScreenSpaceError and any tile with an on screen error larger than this will be skipped by the loading and rendering algorithm")]
-        public double SkipScreenSpaceErrorMultiplier = 16;
+        public double SkipScreenSpaceErrorMultiplier = 64;
 
         [Tooltip("If a tile is in view and needs to be rendered, also load its siblings even if they are not visible.  Especially useful when using colliders so that raycasts outside the users field of view can succeed.  Increases load time and number of tiles that need to be stored in memory.")]
         public bool LoadSiblings = true;
@@ -68,10 +68,15 @@ namespace Unity3DTiles
 
         public int GLTFMaximumLOD = 300;
 
-        [Tooltip("If set to null UnityGLTF will use the StandardShader for GLTF assets.  This can have dramatic performance impacts on HoloLens.  This allows a different shader to be used when instantiation GLTF assets.  Also see Unity3DTilesetStyle which provides a flexible way to change style properties such as shaders at runtime on a tile by tile basis.")]
+        [Tooltip("Overrides shader override of individual tilesets (e.g. \"Unlit/Texture\").  If set to null UnityGLTF will use the StandardShader for GLTF assets.  This can have dramatic performance impacts on resource constrained devices.  This allows a different shader to be used when instantiating GLTF assets.  Also see Style.")]
+        public string ShaderOverride = null;
+
+        [Tooltip("A flexible way to change style properties such as shaders at runtime on a tile by tile basis.")]
         [JsonIgnore]
-        public Shader GLTFShaderOverride;
+        public Unity3DTilesetStyle Style = null;
         
+        public IndexMode LoadIndices = IndexMode.Default;
+
         public UnityEngine.Rendering.ShadowCastingMode ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         public bool RecieveShadows = true;
 
@@ -79,11 +84,10 @@ namespace Unity3DTiles
 
         public bool DebugDrawBounds = false;
 
+        //tiles are loaded in order or priority, so *lower* priority values load before higher
+        //if null a default prioritization is used, see Unity3DTilesetTraversal.TilePriority()
         [JsonIgnore]
-        public System.Func<Unity3DTile, float> TilePriority = new System.Func<Unity3DTile, float>(tile =>
-        {
-            return (float)(tile.Depth - 1.0 / tile.FrameState.DistanceToCamera);
-        });
+        public Func<Unity3DTile, float> TilePriority = null;
     }
 
     [Serializable] //Serializable so it will show up in Unity editor inspector
@@ -106,19 +110,24 @@ namespace Unity3DTiles
         [Tooltip("Manages how many downloads can occurs simultaneously.  Larger results in faster load times but this should be tuned for the particular platform you are deploying to.")]
         public int MaxConcurrentRequests = 6;
 
+        [Tooltip("Overrides shader override of individual tilesets (e.g. \"Unlit/Texture\").")]
+        public string ShaderOverride = null;
+
+        [Tooltip("Optional style, if set it is used as the default style for tilesets that don't have their own.")]
+        [JsonIgnore]
+        public Unity3DTilesetStyle Style = null;
+
+        public IndexMode LoadIndices = IndexMode.Default;
+
         [Tooltip("The set of cameras that should be used to determine which tiles to load.  Typically this will just be the main camera (and that is the default if not specified).  Adding more cameras will decrease performance.")]
         [JsonIgnore]
         public List<Camera> ClippingCameras = new List<Camera>();
-
-        [Tooltip("Overrides shader override of individual tilesets.")]
-        [JsonIgnore]
-        public Shader GLTFShaderOverride;
 
         [Header("Default Camera Pose")]
 
         [Tooltip("Camera translation in right-handed tileset coordinates.")]
         [JsonConverter(typeof(Vector3Converter))]
-        public Vector3 DefaultCameraTranslation = new Vector3(0, 0, -30);
+        public Vector3 DefaultCameraTranslation = new Vector3(0, 0, -10);
 
         [Tooltip("Camera rotation in right-handed tileset coordinates.")]
         [JsonConverter(typeof(QuaternionConverter))]

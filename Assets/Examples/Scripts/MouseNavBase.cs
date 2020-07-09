@@ -129,7 +129,7 @@ public class MouseNavBase : MonoBehaviour
             mouseDiff.x = mouseDiff.y = 0;
         }
 
-        bool rolling = rollButton == Button.None || buttons[(int)rollButton];
+        bool rolling = rollButton != Button.None && buttons[(int)rollButton];
         rolling |= anyButton && rollModifier != Modifier.None && mods[(int)rollModifier];
         if (rolling)
         {
@@ -137,7 +137,7 @@ public class MouseNavBase : MonoBehaviour
             mouseDiff.x = mouseDiff.y = mouseDiff.z = 0;
         }
 
-        bool rotating = rotateButton == Button.None || buttons[(int)rotateButton];
+        bool rotating = rotateButton != Button.None && buttons[(int)rotateButton];
         rotating |= anyButton && rotateModifier != Modifier.None && mods[(int)rotateModifier];
         if (!rotating)
         {

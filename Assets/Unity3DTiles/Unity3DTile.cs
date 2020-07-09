@@ -59,11 +59,11 @@ namespace Unity3DTiles
         public string Id { get; private set; }
         public Schema.Tile tile;
 
-        public Unity3DTilesetStyle Style { get; set; }
+        public Unity3DTilesetStyle Style;
 
-        public double GeometricError
+        public float GeometricError
         {
-            get { return tile.GeometricError; }
+            get { return (float)tile.GeometricError; }
         }
 
         public Schema.TileRefine Refine
@@ -104,6 +104,8 @@ namespace Unity3DTiles
 
         public Unity3DTileContentState ContentState { get; private set; }
 
+        public bool ContentActive { get { return Content != null && Content.IsActive; } }
+
         public string ContentUrl { get; private set; }
 
         public Promise ContentReadyToProcessPromise { get; private set; }
@@ -131,6 +133,7 @@ namespace Unity3DTiles
             public bool InColliderSet = false;      // This tile should have its collider enabled this frame
             public bool UsedLastFrame = false;      // This tile was in the used set last frame and may need to be deactivated next frame
             public float DistanceToCamera = float.MaxValue;
+            public float PixelsToCameraCenter = float.MaxValue;
             public float ScreenSpaceError = 0;
 
             public void MarkUsed()
@@ -156,6 +159,7 @@ namespace Unity3DTiles
                 InRenderSet = false;
                 InColliderSet = false;
                 DistanceToCamera = float.MaxValue;
+                PixelsToCameraCenter = float.MaxValue;
             }
         }
 
@@ -241,6 +245,22 @@ namespace Unity3DTiles
             {
                 this.ContentState = Unity3DTileContentState.READY;
                 this.Content.Initialize(this.Tileset.TilesetOptions.CreateColliders);
+
+                var indexMode = this.Tileset.TilesetOptions.LoadIndices;
+                if (indexMode != IndexMode.Default && indexMode != IndexMode.None)
+                {
+                    Action<IndexMode, string, string> fail = (mode, url, msg) =>
+                    {
+                        //we could log a warning here, but if indices are expected but not available
+                        //that might not actually be a true error condition
+                        //and this would spam the log
+                        //Debug.LogWarning("failed to load " + mode + " index for " + this.ContentUrl + ": " + msg);
+                    };
+                    Action<Unity3DTileIndex> success = index => { this.Content.Index = index; };
+                    this.Tileset.Behaviour
+                        .StartCoroutine(Unity3DTileIndex.Load(indexMode, this.ContentUrl, success, fail));
+                }
+
                 return true;
             }
             return false;
@@ -313,7 +333,10 @@ namespace Unity3DTiles
                         b3dmCo.Url = this.ContentUrl;
                         b3dmCo.Multithreaded = this.Tileset.TilesetOptions.GLTFMultithreadedLoad;
                         b3dmCo.MaximumLod = this.Tileset.TilesetOptions.GLTFMaximumLOD;
-                        b3dmCo.ShaderOverride = this.Tileset.TilesetOptions.GLTFShaderOverride;
+                        if (!string.IsNullOrEmpty(this.Tileset.TilesetOptions.ShaderOverride))
+                        {
+                            b3dmCo.ShaderOverride = Shader.Find(this.Tileset.TilesetOptions.ShaderOverride);
+                        }
                         b3dmCo.AddColliders = false;
                         b3dmCo.DownloadOnStart = false;
                         this.Tileset.Behaviour.StartCoroutine(b3dmCo.Download(finished));

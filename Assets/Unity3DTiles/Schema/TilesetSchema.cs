@@ -176,7 +176,7 @@ namespace Unity3DTiles.Schema
     
         /// <summary>Metadata about the tile's content and a link to the content. When this is omitted the tile is just used for culling. This is required for leaf tiles.</summary>
         [Newtonsoft.Json.JsonProperty("content", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public TileContent Content = new TileContent();
+        public TileContent Content = null; //init to null to properly load no-content nodes
     
         /// <summary>An array of objects that define child tiles. Each child tile content is fully enclosed by its parent tile's bounding volume and, generally, has a geometricError less than its parent tile's geometricError. For leaf tiles, the length of this array is zero, and children may not be defined.</summary>
         [Newtonsoft.Json.JsonProperty("children", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]

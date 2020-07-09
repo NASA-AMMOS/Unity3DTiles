@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.44768214, g: 0.49765748, b: 0.5753876, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -358,7 +358,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &983294637
 GameObject:
@@ -435,7 +435,7 @@ Transform:
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &993157203
 GameObject:
@@ -464,13 +464,13 @@ Light:
   m_Enabled: 1
   serializedVersion: 8
   m_Type: 1
-  m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 2
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -499,13 +499,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 993157203}
-  m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
-  m_LocalPosition: {x: 0, y: 3, z: 0}
+  m_LocalRotation: {x: 0.2588191, y: 0, z: 0, w: 0.9659258}
+  m_LocalPosition: {x: 0, y: 5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+  m_Father: {fileID: 1438352747}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 30, y: 0, z: 0}
 --- !u!1 &1159526987
 GameObject:
   m_ObjectHideFlags: 0
@@ -598,7 +598,7 @@ RectTransform:
   m_Children:
   - {fileID: 838536162}
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -693,7 +693,8 @@ Transform:
   m_LocalRotation: {x: 0.13992198, y: 0.27477083, z: -0.040452354, w: 0.9504138}
   m_LocalPosition: {x: -64.004364, y: 48.055984, z: -55.933582}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
+  m_Children:
+  - {fileID: 993157205}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -742,7 +743,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2111641893
 MonoBehaviour:
@@ -762,8 +763,9 @@ MonoBehaviour:
     LRUCacheMaxSize: 700
     LRUMaxFrameUnloadRatio: 0.2
     MaxConcurrentRequests: 6
+    ShaderOverride: 
+    LoadIndices: 0
     ClippingCameras: []
-    GLTFShaderOverride: {fileID: 0}
     DefaultCameraTranslation: {x: 160, y: 32, z: 100}
     DefaultCameraRotation: {x: 0, y: 0.76604444, z: 0, w: 0.64278764}
   Stats:
@@ -800,7 +802,8 @@ MonoBehaviour:
     MaxDepth: 0
     GLTFMultithreadedLoad: 1
     GLTFMaximumLOD: 300
-    GLTFShaderOverride: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
+    ShaderOverride: 
+    LoadIndices: 0
     ShadowCastingMode: 0
     RecieveShadows: 0
     CreateColliders: 1
@@ -823,13 +826,13 @@ MonoBehaviour:
   mouseOrbit: {fileID: 2111641895}
   pointer: {fileID: 983294637}
   pointerRadiusPixels: 10
-  drawSelectedBounds: 0
-  drawParentBounds: 0
+  boundsMode: 0
   resetOrbitPivotOnNavChange: 1
   enablePicking: 0
   drawSelectedAxes: 0
   drawRootAxes: 0
   relativeNavTransSpeed: 2000
+  forceSelectedTile: 0
 --- !u!114 &2111641895
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -849,7 +852,7 @@ MonoBehaviour:
   scaleModifier: 2
   accelModifier: 1
   rollModifier: 0
-  rotSpeed: 2
+  rotSpeed: 0.1
   zoomSpeed: 1
   transSpeed: 1
   accelFactor: 5
@@ -874,7 +877,7 @@ MonoBehaviour:
   scaleModifier: 2
   accelModifier: 1
   rollModifier: 0
-  rotSpeed: 2
+  rotSpeed: 0.1
   zoomSpeed: 1
   transSpeed: 1
   accelFactor: 5
