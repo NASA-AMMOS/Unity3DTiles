@@ -492,7 +492,8 @@ class DemoUX : MonoBehaviour
             builder.Append(tc.TextureCount + " textures, max " + tc.MaxTextureSize.x + "x" + tc.MaxTextureSize.y);
             if (tc.Index != null)
             {
-                builder.Append("\n " + tc.Index.Width + "x" + tc.Index.Height + " index");
+                builder.Append("\n" + tc.Index.Width + "x" + tc.Index.Height + " index, " +
+                               tc.Index.NumNonzero + " nonzero");
             }
         }
         

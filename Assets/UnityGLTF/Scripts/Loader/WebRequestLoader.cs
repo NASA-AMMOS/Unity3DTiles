@@ -95,7 +95,23 @@ namespace UnityGLTF.Loader
                 }
             };
 
-            yield return Send(_rootURI, gltfFilePath, onDownloadBytes: onDownload);
+            //yield return Send(_rootURI, gltfFilePath, onDownloadBytes: onDownload);
+            var enumerator = Send(_rootURI, gltfFilePath, onDownloadBytes: onDownload); 
+            while (true)
+            {
+                try
+                {
+                    if (!enumerator.MoveNext())
+                    {
+                        break;
+                    }
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+                yield return enumerator.Current;
+            }
         }
 	}
 }

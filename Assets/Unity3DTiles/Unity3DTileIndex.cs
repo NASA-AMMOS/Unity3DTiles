@@ -15,6 +15,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -59,6 +60,20 @@ namespace Unity3DTiles
         public readonly int Width;
         public readonly int Height;
 
+        private int _numNonzero = -1;
+        public int NumNonzero
+        {
+            get
+            {
+                if (_numNonzero >= 0)
+                {
+                    return _numNonzero;
+                }
+                _numNonzero = data[0].Count(index => index != 0);
+                return _numNonzero;
+            }
+        }
+
         public uint this[int band, int row, int column]
         {
             get
@@ -99,31 +114,74 @@ namespace Unity3DTiles
             string dir = UrlUtils.GetBaseUri(tileUrl);
             string file = UrlUtils.GetLastPathSegment(tileUrl);
 
+            var filesToTry = new Queue<string>();
+
             if (mode == IndexMode.ExternalPPM)
             {
-                file = UrlUtils.ChangeUrlExtension(file, ".ppm");
+                filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".ppm"));
+                filesToTry.Enqueue(UrlUtils.StripUrlExtension(file) + "_index.ppm");
             }
-            if (mode == IndexMode.ExternalPPMZ)
+            else if (mode == IndexMode.ExternalPPMZ)
             {
-                file = UrlUtils.ChangeUrlExtension(file, ".ppmz");
+                filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".ppmz"));
+                filesToTry.Enqueue(UrlUtils.StripUrlExtension(file) + "_index.ppmz");
             }
-
-            string ext = UrlUtils.GetUrlExtension(file).ToLower();
-
-            ILoader loader = AbstractWebRequestLoader.CreateDefaultRequestLoader(dir); //.ppm, .ppmz, .glb, .gltf
-
-            if (ext == ".b3dm")
+            else
             {
-                loader = new B3DMLoader(loader);
+                filesToTry.Enqueue(file);
             }
 
-            yield return loader.LoadStream(file);
-
-            Stream stream = loader.LoadedStream;
-
-            if (stream.Length == 0)
+            Stream stream = null;
+            Exception exception = null;
+            string ext = null;
+            while (stream == null && filesToTry.Count > 0)
             {
-                fail(mode, tileUrl, "download failed");
+                exception = null;
+                IEnumerator enumerator = null;
+                ILoader loader = null;
+                try
+                {
+                    file = filesToTry.Dequeue();
+                    ext = UrlUtils.GetUrlExtension(file).ToLower();
+                    loader = AbstractWebRequestLoader.CreateDefaultRequestLoader(dir);
+                    if (ext == ".b3dm")
+                    {
+                        loader = new B3DMLoader(loader);
+                    }
+                    //yield return loader.LoadStream(file); //works but can't catch exceptions
+                    enumerator = loader.LoadStream(file);
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+                while (exception == null)
+                {
+                    try
+                    {
+                        if (!enumerator.MoveNext())
+                        {
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        exception = ex;
+                        break;
+                    }
+                    yield return enumerator.Current;
+                }
+
+                if (exception == null)
+                {
+                    stream = loader.LoadedStream;
+                    stream.Seek(0, SeekOrigin.Begin);
+                }
+            }
+
+            if (stream == null || stream.Length == 0)
+            {
+                fail(mode, tileUrl, "download failed" + (exception != null ? (" " + exception.Message) : ""));
                 yield break;
             }
 
@@ -148,7 +206,7 @@ namespace Unity3DTiles
             }
             catch (Exception ex)
             {
-                fail(mode, tileUrl, "failed to parse " + file + ": " + ex.Message);
+                fail(mode, tileUrl, "failed to parse " + file + ": " + ex.Message + "\n" + ex.StackTrace);
             }
         }
 
@@ -218,6 +276,7 @@ namespace Unity3DTiles
             }
         }
 
+        //http://netpbm.sourceforge.net/doc/ppm.html
         public static Unity3DTileIndex LoadFromPPM(Stream stream, bool compressed)
         {
             if (compressed)
@@ -225,68 +284,101 @@ namespace Unity3DTiles
                 stream = new GZipStream(stream, CompressionMode.Decompress);
             }
 
-            int width = 0, height = 0, maxVal = 0;
-            using (var sr = new StreamReader(stream))
+            using (var br = new BinaryReader(stream))
             {
-                int processedHeaderLines = 0;
-                int expectedHeaderLines = 3;
-                string[] header = new string[3];
-                
-                while (processedHeaderLines < expectedHeaderLines)
+                char readChar()
                 {
-                    var line = sr.ReadLine();
-                    if (line.Length == 0 || line[0] == '#') //skip empty lines/comments
+                    int b = br.Read();
+                    if (b < 0)
                     {
-                        continue;
+                        throw new Exception("unexpected EOF parsing PPM header");
                     }
-                    else
+                    return (char)b;
+                }
+
+                char ch = readChar();
+
+                string readToken(bool eatWhitespace = true)
+                {
+                    var sb = new StringBuilder();
+                    bool ignoring = false;
+                    string tok = null;
+                    for (int i = 0; i < 1000; i++)
                     {
-                        header[processedHeaderLines] = line;
-                        processedHeaderLines++;
+                        if ((!ignoring && char.IsWhiteSpace(ch)) || (ignoring && (ch == '\r' || ch == '\n')))
+                        {
+                            tok = sb.ToString();
+                            break;
+                        }
+                        else if (ch == '#')
+                        {
+                            ignoring = true;
+                        }
+                        else
+                        {
+                            sb.Append(ch);
+                        }
+                        ch = readChar();
                     }
+                    for (int i = 0; eatWhitespace && char.IsWhiteSpace(ch) && i < 1000; i++)
+                    {
+                        ch = readChar();
+                    }
+                    return tok;
                 }
-                
-                if (header[0] != "P6")
+
+                string f = readToken();
+                if (f != "P6")
                 {
-                    throw new Exception("unexpected file format " + header[0]);
+                    throw new Exception("unexpected PPM magic: " + f);
                 }
-                
-                var split = header[1].Split(' ');
-                if (split.Length != 2 || !Int32.TryParse(split[0], out width) || !Int32.TryParse(split[1], out height))
+
+                int width = 0, height = 0, maxVal = 0;
+
+                string w = readToken();
+                if (w != null && !int.TryParse(w, out width))
                 {
-                    throw new Exception(String.Format("unexpected [width height]: {0}", header[1]));
+                    throw new Exception("error parsing PPM width: " + w);
                 }
-                
-                if (!Int32.TryParse(header[2].Trim(), out maxVal))
+
+                string h = readToken();
+                if (h != null && !int.TryParse(h, out height))
                 {
-                    throw new Exception(String.Format("unexpected max pixel value {0}", header[2]));
+                    throw new Exception("error parsing PPM height: " + h);
+                }
+
+                string m = readToken(eatWhitespace: false);
+                if (m != null && !int.TryParse(m, out maxVal))
+                {
+                    throw new Exception("unexpected PPM max val: " + m);
                 }
                 
                 if (maxVal <= 0 || maxVal > 65535)
                 {
-                    throw new Exception(String.Format("maximum pixel value {0} must be in range 1-65535", maxVal));
+                    throw new Exception("max value must be in range 1-65535, got: " + maxVal);
                 }
-            }
 
-            var index = new Unity3DTileIndex(width, height);
+                var index = new Unity3DTileIndex(width, height);
+                
+                int bytesPerVal = maxVal < 256 ? 1 : 2;
 
-            int bytesPerVal = maxVal < 256 ? 1 : 2;
-
-            using (var br = new BinaryReader(stream))
-            {
                 for (int r = 0; r < height; r++)
                 {
                     for (int c = 0; c < width; c++)
                     {
                         for (int b = 0; b < 3; b++)
                         {
-                            index[b, r, c] = BitConverter.ToUInt16(br.ReadBytes(bytesPerVal), 0);
+                            byte[] bytes = br.ReadBytes(bytesPerVal);
+                            if (bytes.Length < 2)
+                            {
+                                throw new Exception($"unexpected EOF at PPM row={r} of {height}, col={c} of {width}");
+                            }
+                            index[b, r, c] = BitConverter.ToUInt16(bytes, 0);
                         }
                     }
                 }
+                return index;
             }
-
-            return index;
         }
     }
 

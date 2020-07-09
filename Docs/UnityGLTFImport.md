@@ -10,3 +10,4 @@ TODO document the custom changes that were made to it.
 
 One thing we've changed is to add support for `KHR_materials_unlit` in GLTFSceneImporter.cs.
 
+Another thing we changed is we catch and forward exceptions in AbstractWebRequestLoader.LoadStream().
