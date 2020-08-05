@@ -35,6 +35,16 @@ public class B3DMLoader : ILoader
     {
 #pragma warning disable 0649
         public int BATCH_LENGTH;
+        public double[] RTC_CENTER;
+#pragma warning restore 0649
+    }
+
+    struct BatchTable
+    {
+#pragma warning disable 0649
+        public double[] Longitude;
+        public double[] Latitude;
+        public int[] Height;
 #pragma warning restore 0649
     }
 
@@ -67,35 +77,47 @@ public class B3DMLoader : ILoader
                     {
                         Debug.LogError("Unsupported version number in b3dm file: " + version + " " + relativeFilePath);
                     }
-                    // Total length
-                    br.ReadUInt32();
+                    // The length of the entire tile, including the header, in bytes.
+                    UInt32 byteLength = br.ReadUInt32();
+                    if (byteLength == 0)
+                    {
+                        Debug.LogError("Unexpected zero length in b3dm file: " + relativeFilePath);
+                    }
+                    // The length of the Feature Table JSON section in bytes.
                     UInt32 featureTableLength = br.ReadUInt32();
                     if (featureTableLength == 0)
                     {
                         Debug.LogError("Unexpected zero length feature table in b3dm file: " + relativeFilePath);
                     }
+                    // The length of the Feature Table binary section in bytes.
                     UInt32 featureBinaryLength = br.ReadUInt32();
                     if (featureBinaryLength != 0)
                     {
                         Debug.LogError("Unexpected non-zero length feature binary in b3dm file: " + relativeFilePath);
                     }
-                    // Batch table length
-                    br.ReadUInt32();
-                    if (featureBinaryLength != 0)
-                    {
-                        Debug.LogError("Unexpected non-zero length batch table in b3dm file: " + relativeFilePath);
-                    }
+                    // The length of the Batch Table JSON section in bytes. Zero indicates there is no Batch Table.
+                    UInt32 batchTableLength = br.ReadUInt32();
+                    // The length of the Batch Table binary section in bytes.
+                    // If batchTableJSONByteLength is zero, this will also be zero.
                     UInt32 batchBinaryLength = br.ReadUInt32();
-                    if (batchBinaryLength != 0)
+                    if (batchTableLength == 0 && batchBinaryLength != 0)
                     {
                         Debug.LogError("Unexpected non-zero length batch binary in b3dm file: " + relativeFilePath);
                     }
                     string featureTableJson = new String(br.ReadChars((int)featureTableLength));
                     FeatureTable ft = JsonConvert.DeserializeObject<FeatureTable>(featureTableJson);
-                    if (ft.BATCH_LENGTH != 0)
+                    if (batchTableLength == 0)
                     {
-                        Debug.LogError("Unexpected non-zero length feature table BATCH_LENGTH in b3dm file: " + relativeFilePath);
+                        if(ft.BATCH_LENGTH != 0)
+                        {
+                            Debug.LogError("Unexpected non-zero length feature table BATCH_LENGTH in b3dm file: " + relativeFilePath);
+                        }
+                    } else
+                    {
+                        string batchTableJson = new string(br.ReadChars((int)batchTableLength));
+                        BatchTable bt = JsonConvert.DeserializeObject<BatchTable>(batchTableJson);
                     }
+                    // after this will be the binary glTF
                 }
                 LoadedStream = new MemoryStream((int)(loader.LoadedStream.Length - loader.LoadedStream.Position));
                 CopyStream(loader.LoadedStream, LoadedStream);
