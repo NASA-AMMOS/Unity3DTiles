@@ -368,12 +368,16 @@ namespace Unity3DTiles
                     {
                         for (int b = 0; b < 3; b++)
                         {
-                            byte[] bytes = br.ReadBytes(bytesPerVal);
-                            if (bytes.Length < 2)
+                            byte[] bytes = br.ReadBytes(bytesPerVal); //PPM data is in network byte order (big endian)
+                            if (BitConverter.IsLittleEndian)
+                            {
+                                Array.Reverse(bytes);
+                            }
+                            if (bytes.Length < bytesPerVal)
                             {
                                 throw new Exception($"unexpected EOF at PPM row={r} of {height}, col={c} of {width}");
                             }
-                            index[b, r, c] = BitConverter.ToUInt16(bytes, 0);
+                            index[b, r, c] = bytesPerVal == 2 ? BitConverter.ToUInt16(bytes, 0) : (ushort)bytes[0];
                         }
                     }
                 }
