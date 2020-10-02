@@ -20,6 +20,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using UnityGLTF;
 using UnityGLTF.Loader;
 
@@ -29,10 +31,12 @@ namespace Unity3DTiles
     {
         Default,      //use mode from SceneOptions, if any, to override TilesetOptions, else don't load indices
         None,         //don't load indices
+        ExternalPNG,  //load index for foo.{b3dm,glb,gltf} from sibling url foo.png
         ExternalPPM,  //load index for foo.{b3dm,glb,gltf} from sibling url foo.ppm
         ExternalPPMZ, //load index for foo.{b3dm,glb,gltf} from sigling url foo.ppmz (gzip compressed)
-        EmbeddedPPM,  //load index embedded in foo.{b3dm,glb,gltf}
-        EmbeddedPPMZ  //load index embedded in foo.{b3dm,glb,gltf} (gzip compressed)
+        EmbeddedPNG,  //load index embedded in foo.{b3dm,glb,gltf} as 16 bit png
+        EmbeddedPPM,  //load index embedded in foo.{b3dm,glb,gltf} as 16 bit ppm
+        EmbeddedPPMZ  //load index embedded in foo.{b3dm,glb,gltf} as 16 bit ppm (gzip compressed)
     };
 
     /// <summary>
@@ -116,7 +120,12 @@ namespace Unity3DTiles
 
             var filesToTry = new Queue<string>();
 
-            if (mode == IndexMode.ExternalPPM)
+            if (mode == IndexMode.ExternalPNG)
+            {
+                filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".png"));
+                filesToTry.Enqueue(UrlUtils.StripUrlExtension(file) + "_index.png");
+            }
+            else if (mode == IndexMode.ExternalPPM)
             {
                 filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".ppm"));
                 filesToTry.Enqueue(UrlUtils.StripUrlExtension(file) + "_index.ppm");
@@ -189,15 +198,19 @@ namespace Unity3DTiles
             {
                 if (ext == ".b3dm" || ext == ".glb")
                 {
-                    success(LoadFromGLB(stream, compressed: mode == IndexMode.EmbeddedPPMZ));
-                }
-                else if (ext == ".ppm" || ext == ".ppmz")
-                {
-                    success(LoadFromPPM(stream, compressed: mode == IndexMode.ExternalPPMZ));
+                    success(LoadFromGLB(stream));
                 }
                 else if (ext == ".gltf")
                 {
-                    success(LoadFromGLTF(stream, compressed: mode == IndexMode.EmbeddedPPMZ));
+                    success(LoadFromGLTF(stream));
+                }
+                else if (ext == ".png")
+                {
+                    success(LoadFromPNG(stream));
+                }
+                else if (ext == ".ppm" || ext == ".ppmz")
+                {
+                    success(LoadFromPPM(stream, compressed: ext == ".ppmz"));
                 }
                 else
                 {
@@ -210,7 +223,18 @@ namespace Unity3DTiles
             }
         }
 
-        public static Unity3DTileIndex LoadFromGLB(Stream stream, bool compressed)
+        public static Unity3DTileIndex LoadRaw(byte[] raw, string mimeType)
+        {
+            switch (mimeType)
+            {
+                case GLTFFile.PNG_MIME: return LoadFromPNG(new MemoryStream(raw));
+                case GLTFFile.PPM_MIME: return LoadFromPPM(new MemoryStream(raw), compressed: false);
+                case GLTFFile.PPMZ_MIME: return LoadFromPPM(new MemoryStream(raw), compressed: true);
+                default: throw new Exception("unsupported tile index mime type " + mimeType);
+            }
+        }
+
+        public static Unity3DTileIndex LoadFromGLB(Stream stream)
         {
             using (var br = new BinaryReader(stream)) //always reads little endian
             {
@@ -262,17 +286,15 @@ namespace Unity3DTiles
                 {
                     gltf.Data = binChunk;
                 }
-                byte[] raw = gltf.DecodeIndex(out bool overrideCompressed);
-                return LoadFromPPM(new MemoryStream(raw), compressed || overrideCompressed);
+                return LoadRaw(gltf.DecodeIndex(out string mimeType), mimeType);
             }
         }
 
-        public static Unity3DTileIndex LoadFromGLTF(Stream stream, bool compressed)
+        public static Unity3DTileIndex LoadFromGLTF(Stream stream)
         {
             using (var sr = new StreamReader(stream))
             {
-                byte[] raw = GLTFFile.FromJson(sr.ReadToEnd()).DecodeIndex(out bool overrideCompressed);
-                return LoadFromPPM(new MemoryStream(raw), compressed || overrideCompressed);
+                return LoadRaw(GLTFFile.FromJson(sr.ReadToEnd()).DecodeIndex(out string mimeType), mimeType);
             }
         }
 
@@ -384,6 +406,25 @@ namespace Unity3DTiles
                 return index;
             }
         }
+
+        public static Unity3DTileIndex LoadFromPNG(Stream stream)
+        {
+            using (var raw = SixLabors.ImageSharp.Image.Load<Rgba64>(stream))
+            {
+                var index = new Unity3DTileIndex(raw.Width, raw.Height);
+                for (int r = 0; r < raw.Height; r++)
+                {
+                    for (int c = 0; c < raw.Width; c++)
+                    {
+                        var pixel = raw[c, r];
+                        index[0, r, c] = pixel.R;
+                        index[1, r, c] = pixel.G;
+                        index[2, r, c] = pixel.B;
+                    }
+                }
+                return index;
+            }
+        }
     }
 
     public class GLTFFile
@@ -437,34 +478,27 @@ namespace Unity3DTiles
             return gltf;
         }
 
-        public byte[] DecodeIndex(out bool compressed)
+        public byte[] DecodeIndex(out string mimeType)
         {
+            mimeType = null;
             int index = 1;
             if (index >= images.Count)
             {
                 throw new Exception("no glTF image at index " + index);
             }
-            string mimeType = null;
-            byte[] raw = null;
             var image = images[index];
             if (image.bufferView.HasValue && !string.IsNullOrEmpty(image.mimeType))
             {
                 mimeType = image.mimeType;
-                raw = GetDataSlice(image.bufferView.Value);
+                return GetDataSlice(image.bufferView.Value);
             }
             else if (image.uri.StartsWith("data:"))
             {
-                raw = Base64Decode(image.uri, out mimeType);
+                return Base64Decode(image.uri, out mimeType);
             }
             else
             {
                 throw new Exception("unhandled glTF image URI: " + Abbreviate(image.uri));
-            }
-            switch (mimeType.ToLower())
-            {
-                case PPMZ_MIME: compressed = true; return raw;
-                case PPM_MIME: compressed = false; return raw;
-                default: throw new Exception("unhandled glTF mime type: " + mimeType);
             }
         }
 
