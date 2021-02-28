@@ -67,22 +67,14 @@ namespace Unity3DTiles
     /// </summary>
     public class Unity3DTileIndex
     {
+        /// Warnings on failed loads are normally disbled by default to avoid spamming the log when indices are
+        /// generally expected but a tileset is loaded that lacks them.
+        public const bool EnableLoadWarnings = false;
+
         public readonly int Width;
         public readonly int Height;
 
-        private int _numNonzero = -1;
-        public int NumNonzero
-        {
-            get
-            {
-                if (_numNonzero >= 0)
-                {
-                    return _numNonzero;
-                }
-                _numNonzero = data[0].Count(index => index != 0);
-                return _numNonzero;
-            }
-        }
+        public int NumNonzero { get; private set; } = 0;
 
         public uint this[int band, int row, int column]
         {
@@ -94,6 +86,10 @@ namespace Unity3DTiles
             set
             {
                 data[band][(row * Width) + column] = value;
+                if (band == 0 && value != 0)
+                {
+                    NumNonzero++;
+                }
             }
         }
 
