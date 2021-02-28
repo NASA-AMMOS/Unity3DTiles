@@ -671,7 +671,7 @@ MonoBehaviour:
     LoadIndices: 0
     ClippingCameras: []
     DefaultCameraTranslation: {x: 0, y: 0, z: -10}
-    DefaultCameraRotation: {x: 0, y: 0, z: 0, w: 1}
+    DefaultCameraRotation: {x: 0, y: 0, z: -0.70710677, w: 0.70710677}
   Stats:
     FrustumSetCount: 0
     UsedSetCount: 0
