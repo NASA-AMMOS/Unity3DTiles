@@ -25,7 +25,7 @@ using Newtonsoft.Json;
 #if IMAGE_SHARP_PNG
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-#elif PNGS_PNG
+#elif PNGCS_PNG
 using Hjg.Pngcs;
 #endif
 using UnityGLTF;
@@ -431,10 +431,10 @@ namespace Unity3DTiles
                 }
             }
             return index;
-#elif PNGS_PNG
+#elif PNGCS_PNG
             var png = new PngReader(stream);
             png.SetUnpackedMode(true);
-            var info = png.ImageInfo;
+            var info = png.ImgInfo;
             if (info.Channels != 3)
             {
                 throw new Exception("expected 3 channel PNG, got " + info.Channels);
@@ -446,9 +446,9 @@ namespace Unity3DTiles
                 png.ReadRow(buf, r);
                 for (int c = 0; c < info.Cols; c++)
                 {
-                    index[0, r, c] = buf[3 * c + 0];
-                    index[1, r, c] = buf[3 * c + 1];
-                    index[2, r, c] = buf[3 * c + 2];
+                    index[0, r, c] = (uint)buf[3 * c + 0];
+                    index[1, r, c] = (uint)buf[3 * c + 1];
+                    index[2, r, c] = (uint)buf[3 * c + 2];
                 }
             }
             png.End();
