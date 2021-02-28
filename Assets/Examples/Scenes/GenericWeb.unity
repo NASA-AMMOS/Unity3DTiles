@@ -707,11 +707,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6551e1c668008d044b4d380b72192ee6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tileset: {fileID: 0}
-  hud: {fileID: 0}
-  mouseFly: {fileID: 0}
-  mouseOrbit: {fileID: 0}
-  pointer: {fileID: 0}
+  tileset: {fileID: 1485971528}
+  hud: {fileID: 2111117106}
+  mouseFly: {fileID: 1485971531}
+  mouseOrbit: {fileID: 1485971530}
+  pointer: {fileID: 983294637}
   pointerRadiusPixels: 10
   boundsMode: 0
   resetOrbitPivotOnNavChange: 1
@@ -774,6 +774,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 3376399834337876657}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2111117106 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3376399835161366645, guid: 5b36edd38769f254e8ee3f629b1741a6,
+    type: 3}
+  m_PrefabInstance: {fileID: 3376399834337876657}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c828705680811a246b63d633c9714a45, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &3376399834337876657
 PrefabInstance:
   m_ObjectHideFlags: 0
