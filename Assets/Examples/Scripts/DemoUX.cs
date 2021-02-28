@@ -799,7 +799,7 @@ class DemoUX : MonoBehaviour
             var hfov = vfov * Camera.main.aspect;
             var minFov = Mathf.Min(vfov, hfov);
 
-            var dist = radiusInCam / Mathf.Tan(minFov / 2);
+            var dist = Math.Min(radiusInCam / Mathf.Tan(minFov / 2), Camera.main.farClipPlane - 10);
             cam.Translate(cam.forward * (Vector3.Distance(cam.position, ctrInWorld) - dist), Space.World);
 
             if (mouseOrbit != null)
