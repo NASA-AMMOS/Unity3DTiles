@@ -1,3 +1,4 @@
+//#define IMAGE_SHARP_PNG
 /*
  * Copyright 2018, by the California Institute of Technology. ALL RIGHTS 
  * RESERVED. United States Government Sponsorship acknowledged. Any 
@@ -20,8 +21,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
+#if IMAGE_SHARP_PNG
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+#endif
 using UnityGLTF;
 using UnityGLTF.Loader;
 
@@ -119,7 +122,6 @@ namespace Unity3DTiles
             string file = UrlUtils.GetLastPathSegment(tileUrl);
 
             var filesToTry = new Queue<string>();
-
             if (mode == IndexMode.ExternalPNG)
             {
                 filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".png"));
@@ -409,9 +411,10 @@ namespace Unity3DTiles
 
         public static Unity3DTileIndex LoadFromPNG(Stream stream)
         {
+#if IMAGE_SHARP_PNG
             using (var raw = SixLabors.ImageSharp.Image.Load<Rgba64>(stream))
+            var index = new Unity3DTileIndex(raw.Width, raw.Height);
             {
-                var index = new Unity3DTileIndex(raw.Width, raw.Height);
                 for (int r = 0; r < raw.Height; r++)
                 {
                     for (int c = 0; c < raw.Width; c++)
@@ -422,8 +425,11 @@ namespace Unity3DTiles
                         index[2, r, c] = pixel.B;
                     }
                 }
-                return index;
             }
+            return index;
+#else
+            return null;
+#endif
         }
     }
 
