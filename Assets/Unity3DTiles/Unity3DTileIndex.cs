@@ -1,4 +1,5 @@
 //#define IMAGE_SHARP_PNG
+#define PNGCS_PNG
 /*
  * Copyright 2018, by the California Institute of Technology. ALL RIGHTS 
  * RESERVED. United States Government Sponsorship acknowledged. Any 
@@ -24,6 +25,8 @@ using Newtonsoft.Json;
 #if IMAGE_SHARP_PNG
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+#elif PNGS_PNG
+using Hjg.Pngcs;
 #endif
 using UnityGLTF;
 using UnityGLTF.Loader;
@@ -412,20 +415,43 @@ namespace Unity3DTiles
         public static Unity3DTileIndex LoadFromPNG(Stream stream)
         {
 #if IMAGE_SHARP_PNG
-            using (var raw = SixLabors.ImageSharp.Image.Load<Rgba64>(stream))
-            var index = new Unity3DTileIndex(raw.Width, raw.Height);
+            //requires extra dependency DLLs which bloat the webgl build
+            using (var png = SixLabors.ImageSharp.Image.Load<Rgba64>(stream))
+            var index = new Unity3DTileIndex(png.Width, png.Height);
             {
-                for (int r = 0; r < raw.Height; r++)
+                for (int r = 0; r < png.Height; r++)
                 {
-                    for (int c = 0; c < raw.Width; c++)
+                    for (int c = 0; c < png.Width; c++)
                     {
-                        var pixel = raw[c, r];
+                        var pixel = png[c, r];
                         index[0, r, c] = pixel.R;
                         index[1, r, c] = pixel.G;
                         index[2, r, c] = pixel.B;
                     }
                 }
             }
+            return index;
+#elif PNGS_PNG
+            var png = new PngReader(stream);
+            png.SetUnpackedMode(true);
+            var info = png.ImageInfo;
+            if (info.Channels != 3)
+            {
+                throw new Exception("expected 3 channel PNG, got " + info.Channels);
+            }
+            var index = new Unity3DTileIndex(info.Cols, info.Rows);
+            var buf = new int[3 * info.Cols];
+            for (int r = 0; r < info.Rows; r++)
+            {
+                png.ReadRow(buf, r);
+                for (int c = 0; c < info.Cols; c++)
+                {
+                    index[0, r, c] = buf[3 * c + 0];
+                    index[1, r, c] = buf[3 * c + 1];
+                    index[2, r, c] = buf[3 * c + 2];
+                }
+            }
+            png.End();
             return index;
 #else
             return null;
