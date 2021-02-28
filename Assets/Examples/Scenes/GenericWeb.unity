@@ -668,7 +668,7 @@ MonoBehaviour:
     LRUMaxFrameUnloadRatio: 0.2
     MaxConcurrentRequests: 6
     ShaderOverride: 
-    LoadIndices: 0
+    LoadIndices: 2
     ClippingCameras: []
     DefaultCameraTranslation: {x: 0, y: 0, z: -10}
     DefaultCameraRotation: {x: 0, y: 0, z: -0.70710677, w: 0.70710677}
