@@ -451,7 +451,7 @@ class DemoUX : MonoBehaviour
 
         builder.Append("\n");
         
-        if (tilesets.Count > 0)
+        if (tilesets != null && tilesets.Count > 0)
         {
             var sts = selectedTile.Tileset;
             builder.Append("\nselected tileset " + sts.TilesetOptions.Name +
