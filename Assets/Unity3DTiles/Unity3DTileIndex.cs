@@ -127,18 +127,18 @@ namespace Unity3DTiles
             var filesToTry = new Queue<string>();
             if (mode == IndexMode.ExternalPNG)
             {
-                filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".png"));
                 filesToTry.Enqueue(UrlUtils.StripUrlExtension(file) + "_index.png");
+                filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".png"));
             }
             else if (mode == IndexMode.ExternalPPM)
             {
-                filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".ppm"));
                 filesToTry.Enqueue(UrlUtils.StripUrlExtension(file) + "_index.ppm");
+                filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".ppm"));
             }
             else if (mode == IndexMode.ExternalPPMZ)
             {
-                filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".ppmz"));
                 filesToTry.Enqueue(UrlUtils.StripUrlExtension(file) + "_index.ppmz");
+                filesToTry.Enqueue(UrlUtils.ChangeUrlExtension(file, ".ppmz"));
             }
             else
             {
