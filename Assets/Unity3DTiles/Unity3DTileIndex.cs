@@ -186,7 +186,7 @@ namespace Unity3DTiles
                     yield return enumerator.Current;
                 }
 
-                if (exception == null)
+                if (exception == null && loader.LoadedStream != null && loader.LoadedStream.Length > 0)
                 {
                     stream = loader.LoadedStream;
                     stream.Seek(0, SeekOrigin.Begin);
