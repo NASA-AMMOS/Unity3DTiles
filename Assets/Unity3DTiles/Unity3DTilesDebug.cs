@@ -27,9 +27,7 @@ namespace Unity3DTiles
 
         public static void DrawLine(Vector3 start, Vector3 end, Color color)
         {
-            //works only in editor with gizmos enabled
-            //UnityEngine.Debug.DrawLine(start, end, color);
-
+            //UnityEngine.Debug.DrawLine(start, end, color); //works only in editor with gizmos enabled
             GetComponent().DrawLine(start, end, color);
         }
 
@@ -103,6 +101,10 @@ namespace Unity3DTiles
 #else
 				lineMesh.SetIndices(lineIndices.ToArray(), MeshTopology.Lines, submesh: 0);
 #endif
+            }
+            else
+            {
+                lineMesh.Clear();
             }
         }
 
