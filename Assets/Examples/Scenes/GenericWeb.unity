@@ -736,8 +736,11 @@ MonoBehaviour:
   rotateButton: 0
   scaleButton: 2
   rollButton: 1
-  lockRoll: 0
+  lockRoll: 1
+  lockRollSpeed: 0.01
+  lockRollCrossover: 0.7
   worldUp: {x: 0, y: 0, z: -1}
+  worldNorth: {x: -1, y: 0, z: 0}
   rotateModifier: 4
   scaleModifier: 2
   accelModifier: 1
@@ -746,7 +749,7 @@ MonoBehaviour:
   zoomSpeed: 1
   transSpeed: 1
   accelFactor: 5
-  pivot: {x: 0, y: 0, z: 0}
+  pivot: {x: -1, y: 0, z: 0}
   minZoom: 0.5
 --- !u!114 &1485971531
 MonoBehaviour:
@@ -763,8 +766,11 @@ MonoBehaviour:
   rotateButton: 0
   scaleButton: 2
   rollButton: 1
-  lockRoll: 0
+  lockRoll: 1
+  lockRollSpeed: 0.01
+  lockRollCrossover: 0.5
   worldUp: {x: 0, y: 0, z: -1}
+  worldNorth: {x: 0, y: 0, z: 1}
   rotateModifier: 4
   scaleModifier: 2
   accelModifier: 1
