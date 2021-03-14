@@ -35,6 +35,9 @@ public class MouseNavBase : MonoBehaviour
 
     public Button rollButton = Button.Right;
 
+    public bool lockRoll;
+    public Vector3 worldUp = Vector3.up;
+
     public enum Modifier { Control = 0, Shift, Alt, Space, None };
     protected bool[] mods = new bool[4];
 
@@ -145,5 +148,21 @@ public class MouseNavBase : MonoBehaviour
         }
 
         accel = accelModifier != Modifier.None && mods[(int)accelModifier] ? accelFactor : 1;
+    }
+
+    protected void LockRoll()
+    {
+        var cam = Camera.main.transform;
+        Vector3 proj = Vector3.Cross(worldUp, cam.forward);
+        if (proj.magnitude > 0.01)
+        {
+            proj = proj.normalized;
+            float angle = Vector3.Angle(cam.right, proj);
+            if (Vector3.Dot(cam.right, worldUp) < 0)
+            {
+                angle *= -1;
+            }
+            cam.RotateAround(cam.position, cam.forward, -angle);
+        }
     }
 }

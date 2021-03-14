@@ -707,6 +707,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6551e1c668008d044b4d380b72192ee6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  targetFrameRate: 60
   tileset: {fileID: 1485971528}
   hud: {fileID: 2111117106}
   mouseFly: {fileID: 1485971531}
@@ -718,7 +719,7 @@ MonoBehaviour:
   enablePicking: 1
   drawSelectedAxes: 0
   drawRootAxes: 0
-  relativeNavTransSpeed: 2000
+  relativeNavTransSpeed: 0.00005
   forceSelectedTile: 0
 --- !u!114 &1485971530
 MonoBehaviour:
@@ -735,6 +736,8 @@ MonoBehaviour:
   rotateButton: 0
   scaleButton: 2
   rollButton: 1
+  lockRoll: 0
+  worldUp: {x: 0, y: 0, z: -1}
   rotateModifier: 4
   scaleModifier: 2
   accelModifier: 1
@@ -760,6 +763,8 @@ MonoBehaviour:
   rotateButton: 0
   scaleButton: 2
   rollButton: 1
+  lockRoll: 0
+  worldUp: {x: 0, y: 0, z: -1}
   rotateModifier: 4
   scaleModifier: 2
   accelModifier: 1
