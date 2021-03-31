@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using RSG;
+using Unity3DTiles.Schema;
 
 namespace Unity3DTiles
 {
