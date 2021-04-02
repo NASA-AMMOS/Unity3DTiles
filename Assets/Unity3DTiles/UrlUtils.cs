@@ -16,7 +16,6 @@ using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
-using System.Web;
 using UnityEngine;
 
 namespace Unity3DTiles
@@ -62,15 +61,20 @@ namespace Unity3DTiles
             }
             else if (excludeQueryParams != null && excludeQueryParams.Length > 0)
             {
-                var queryParams = HttpUtility.ParseQueryString(builder.Query);
-                foreach (var name in excludeQueryParams)
-                {
-                    queryParams.Remove(name);
-                }
-                builder.Query = string.Join("&",
-                                            queryParams.AllKeys
-                                            .Select(name => name + "=" + HttpUtility.UrlEncode(queryParams[name]))
-                                            .ToArray());
+                //avoiding HttpUtility.ParseQueryString()
+                //mainly because we don't want to introduce a dependency on System.Web
+                //which is not available by default in Unity 2020
+                //(though it can be added with a custom csc.rsp)
+                //https://forum.unity.com/threads/the-name-httputility-does-not-exist-in-the-current-context.732281/
+                //https://stackoverflow.com/a/41981254/4970315
+                var queryParams = builder.Query //reads out including the leading question mark
+                    .TrimStart('?')
+                    .Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Split('='))
+                    .Where(p => p.Length == 2)
+                    .Where(p => Array.IndexOf(excludeQueryParams, p[0]) < 0);
+                //write back without leading question mark, as per docs
+                builder.Query = string.Join("&", queryParams.Select(p => p[0] + "=" + p[1]).ToArray());
             }
             return builder.Uri.ToString();
         }

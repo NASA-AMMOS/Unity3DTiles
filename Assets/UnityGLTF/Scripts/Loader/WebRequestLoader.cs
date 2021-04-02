@@ -22,7 +22,9 @@ namespace UnityGLTF.Loader
             return new UnityWebRequestLoader(rootUri);
         }
 
-        public override IEnumerator Send(string rootUri, string httpRequestPath, Action<string, string> onDownloadString = null, Action<byte[], string> onDownloadBytes = null)
+        public override IEnumerator Send(string rootUri, string httpRequestPath,
+                                         Action<string, string> onDownloadString = null,
+                                         Action<byte[], string> onDownloadBytes = null)
         {
             if(onDownloadBytes == null && onDownloadString == null ||
                 onDownloadBytes != null && onDownloadString != null)
@@ -38,18 +40,29 @@ namespace UnityGLTF.Loader
 #else
             yield return www.Send();
 #endif
-            if ((int)www.responseCode >= 400)
+            string error = null;
+            if ((int)(www.responseCode) >= 400) //www.error is *not* set if this is all that went wrong
             {
-                Debug.LogErrorFormat("{0} - {1}", www.responseCode, www.url);
-                throw new Exception("Response code invalid");
+                error = "HTTP " + www.responseCode;
             }
-            if (www.downloadedBytes > int.MaxValue)
+            else if (!string.IsNullOrEmpty(www.error))
             {
-                throw new Exception("Stream is larger than can be copied into byte array");
+                error = www.error;
             }
-            bool isError = (www.isNetworkError || www.isHttpError);
-            onDownloadString?.Invoke(www.downloadHandler.text, isError ? www.error : null);
-            onDownloadBytes?.Invoke(www.downloadHandler.data, isError ? www.error : null);
+            else if (www.isNetworkError)
+            {
+                error = "network error";
+            }
+            else if (www.isHttpError)
+            {
+                error = "HTTP error";
+            }
+            else if (www.downloadedBytes > int.MaxValue)
+            {
+                error = "downloaded " + www.downloadedBytes + " bytes > " + int.MaxValue;
+            }
+            onDownloadString?.Invoke(www.downloadHandler.text, error);
+            onDownloadBytes?.Invoke(www.downloadHandler.data, error);
         }
     }
 
@@ -69,23 +82,25 @@ namespace UnityGLTF.Loader
             return LoaderPrototype.GenerateNewWebRequestLoader(rootUri);
         }      
 
-        public abstract IEnumerator Send(string rootUri, string httpRequestPath, Action<string, string> onDownloadString = null, Action<byte[], string> onDownloadBytes = null);
+        public abstract IEnumerator Send(string rootUri, string httpRequestPath,
+                                         Action<string, string> onDownloadString = null, Action<byte[],
+                                         string> onDownloadBytes = null);
 
         public AbstractWebRequestLoader(string rootURI) : base()
 		{
 			_rootURI = rootURI;
 		}
 
-        public IEnumerator LoadStream(string gltfFilePath)
+        public IEnumerator LoadStream(string filePath)
         {
-            if (gltfFilePath == null)
+            if (filePath == null)
             {
-                throw new ArgumentNullException("gltfFilePath");
+                throw new ArgumentNullException("filePath");
             }
 
             Action<byte[], string> onDownload = (data, error) =>
             {
-                if (error != null || data.Length == 0)
+                if (!string.IsNullOrEmpty(error) || data == null || data.Length == 0)
                 {
                     LoadedStream = new MemoryStream(new byte[] { }, 0, 0, true, true);
                 }
@@ -95,8 +110,8 @@ namespace UnityGLTF.Loader
                 }
             };
 
-            //yield return Send(_rootURI, gltfFilePath, onDownloadBytes: onDownload);
-            var enumerator = Send(_rootURI, gltfFilePath, onDownloadBytes: onDownload); 
+            //yield return Send(_rootURI, filePath, onDownloadBytes: onDownload);
+            var enumerator = Send(_rootURI, filePath, onDownloadBytes: onDownload); 
             while (true)
             {
                 try

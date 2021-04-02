@@ -41,7 +41,11 @@ public class MouseFly : MouseNavBase {
             cam.Translate(-cam.forward * zoomSpeed * accel * mouseDiff.z, Space.World);
         }
 
-        if (mouseDiff.w != 0)
+        if (lockRoll)
+        {
+            LockRoll();
+        }
+        else if (mouseDiff.w != 0)
         {
             cam.RotateAround(cam.position, cam.forward, rotSpeed * accel * mouseDiff.w);
         }

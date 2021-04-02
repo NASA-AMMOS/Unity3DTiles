@@ -43,6 +43,15 @@ public class MouseOrbit : MouseNavBase {
             cam.RotateAround(pivot, -cam.right, rotSpeed * accel * mouseDiff.y);
         }
 
+        if (lockRoll)
+        {
+            LockRoll();
+        }
+        else if (mouseDiff.w != 0)
+        {
+            cam.RotateAround(pivot, cam.forward, rotSpeed * accel * mouseDiff.w);
+        }
+
         if (mouseDiff.z != 0)
         {
             float r = Vector3.Distance(pivot, cam.position);
@@ -52,11 +61,6 @@ public class MouseOrbit : MouseNavBase {
                 d = Mathf.Sign(d) * minZoom;
             }
             cam.Translate(-cam.forward * d * accel, Space.World);
-        }
-
-        if (mouseDiff.w != 0)
-        {
-            cam.RotateAround(pivot, cam.forward, rotSpeed * accel * mouseDiff.w);
         }
     }
 }

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using RSG;
+using Unity3DTiles.Schema;
 
 namespace Unity3DTiles
 {
@@ -254,7 +255,13 @@ namespace Unity3DTiles
                         //we could log a warning here, but if indices are expected but not available
                         //that might not actually be a true error condition
                         //and this would spam the log
-                        //Debug.LogWarning("failed to load " + mode + " index for " + this.ContentUrl + ": " + msg);
+                        if (Unity3DTileIndex.EnableLoadWarnings)
+                        {
+#pragma warning disable 0162
+                            Debug.LogWarning("failed to load " + mode + " index for " + this.ContentUrl + ": " + msg);
+#pragma warning restore 0162
+
+                        }
                     };
                     Action<Unity3DTileIndex> success = index => { this.Content.Index = index; };
                     this.Tileset.Behaviour

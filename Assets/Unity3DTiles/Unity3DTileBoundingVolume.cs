@@ -136,10 +136,6 @@ namespace Unity3DTiles
 
         public abstract void DebugDraw(Color c, Transform t);
 
-        public abstract float MinimumHeight();
-
-        public abstract float MaximumHeight();
-
         public abstract BoundingSphere BoundingSphere();
 
         public abstract float Volume();
@@ -323,16 +319,6 @@ namespace Unity3DTiles
             return IntersectionType.INTERSECTING;
         }
 
-        public override float MaximumHeight()
-        {
-            return this.Center.y + HalfAxesY.y; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
-        }
-
-        public override float MinimumHeight()
-        {
-            return this.Center.y - HalfAxesY.y; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
-        }
-
         public override BoundingSphere BoundingSphere()
         {
             return new TileBoundingSphere(this).BoundingSphere();
@@ -340,19 +326,22 @@ namespace Unity3DTiles
 
         public override float Volume()
         {
-            var d = 2 * (HalfAxesX + HalfAxesY + HalfAxesZ);
-            return Mathf.Abs(d.x) * Mathf.Abs(d.y) * Mathf.Abs(d.z);
+            var rx = HalfAxesX.magnitude;
+            var ry = HalfAxesY.magnitude;
+            var rz = HalfAxesZ.magnitude;
+            return (2 * rx) * (2 * ry) * (2 * rz);
         }
 
         public override string SizeString()
         {
-            var d = 2 * (HalfAxesX + HalfAxesY + HalfAxesZ);
-            return string.Format("{0:f3}x{1:f3}x{2:f3}", Mathf.Abs(d.x), Mathf.Abs(d.y), Mathf.Abs(d.z));
+            var rx = HalfAxesX.magnitude;
+            var ry = HalfAxesY.magnitude;
+            var rz = HalfAxesZ.magnitude;
+            return string.Format("{0:f3}x{1:f3}x{2:f3}", 2 * rx, 2 * ry, 2 * rz);
         }
 
         public void Transform(Matrix4x4 transform)
         {
-            // Find the transformed center and halfAxes
             this.Center = transform.MultiplyPoint(this.Center);
             this.HalfAxesX = transform.MultiplyVector(this.HalfAxesX);
             this.HalfAxesY = transform.MultiplyVector(this.HalfAxesY);
@@ -425,16 +414,6 @@ namespace Unity3DTiles
             return Vector3.Distance(this.Center, ray.origin + Vector3.Project(this.Center - ray.origin, ray.direction));
         }
 
-        public override float MaximumHeight()
-        {
-            return this.Center.y + Radius; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
-        }
-
-        public override float MinimumHeight()
-        {
-            return this.Center.y - Radius; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
-        }
-
         public override BoundingSphere BoundingSphere()
         {
             return new BoundingSphere(Center, Radius);
@@ -447,7 +426,7 @@ namespace Unity3DTiles
 
         public override string SizeString()
         {
-            return string.Format("d={0:f3}", Radius);
+            return string.Format("r={0:f3}", Radius);
         }
 
         public override void DebugDraw(Color c, Transform t)
@@ -486,16 +465,6 @@ namespace Unity3DTiles
         }
 
         public override IntersectionType IntersectPlane(Plane plane)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override float MaximumHeight()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override float MinimumHeight()
         {
             throw new NotImplementedException();
         }

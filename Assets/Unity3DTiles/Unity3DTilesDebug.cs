@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Unity3DTiles
 {
@@ -26,9 +27,7 @@ namespace Unity3DTiles
 
         public static void DrawLine(Vector3 start, Vector3 end, Color color)
         {
-            //works only in editor with gizmos enabled
-            //UnityEngine.Debug.DrawLine(start, end, color);
-
+            //UnityEngine.Debug.DrawLine(start, end, color); //works only in editor with gizmos enabled
             GetComponent().DrawLine(start, end, color);
         }
 
@@ -53,7 +52,6 @@ namespace Unity3DTiles
         }
         private List<Line> lines = new List<Line>();
         private Mesh lineMesh;
-        private Material lineMaterial;
         private List<Vector3> lineVerts = new List<Vector3>();
         private List<Color> lineColors = new List<Color>();
         private List<int> lineIndices = new List<int>();
@@ -66,8 +64,11 @@ namespace Unity3DTiles
         public void Awake()
         {
             lineMesh = new Mesh();
+            lineMesh.indexFormat = IndexFormat.UInt32;
             lineMesh.MarkDynamic();
-            lineMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
+            gameObject.AddComponent<MeshFilter>().sharedMesh = lineMesh;
+            gameObject.AddComponent<MeshRenderer>().sharedMaterial =
+                new Material(Shader.Find("Hidden/Internal-Colored"));
         }
 
 		public void LateUpdate()
@@ -100,10 +101,10 @@ namespace Unity3DTiles
 #else
 				lineMesh.SetIndices(lineIndices.ToArray(), MeshTopology.Lines, submesh: 0);
 #endif
-
-                Graphics.DrawMesh(lineMesh, Vector3.zero, Quaternion.identity, lineMaterial, Unity3DTilesDebug.Layer);
-
-                //don't clear lineMesh here because DrawMesh() is lazy
+            }
+            else
+            {
+                lineMesh.Clear();
             }
         }
 

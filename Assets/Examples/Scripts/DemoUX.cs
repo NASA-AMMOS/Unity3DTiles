@@ -23,6 +23,8 @@ using UnityGLTF.Extensions;
 
 class DemoUX : MonoBehaviour
 {
+    public int targetFrameRate = 60;
+
 #pragma warning disable 0649
     public AbstractTilesetBehaviour tileset;
     public TilesetStatsHud hud;
@@ -42,7 +44,7 @@ class DemoUX : MonoBehaviour
 
     public bool drawSelectedAxes, drawRootAxes;
 
-    public float relativeNavTransSpeed = 2000;
+    public float relativeNavTransSpeed = 0.00005f;
 
     private List<Unity3DTileset> tilesets;
     private Unity3DTile selectedTile;
@@ -77,6 +79,11 @@ class DemoUX : MonoBehaviour
         hasFocus = focusStatus;
     }
 
+    public void Start()
+    {
+        Application.targetFrameRate = targetFrameRate;
+    }
+        
     public void Update()
     {
         if (tileset != null && tileset.Ready() && !didReset)
@@ -170,14 +177,27 @@ class DemoUX : MonoBehaviour
             {
                 builder.Append(" (or " + activeNav.scaleModifier + "-drag)");
             }
-            builder.Append("\nright mouse to roll");
-            if (activeNav.rollModifier != MouseNavBase.Modifier.None)
+            if (!activeNav.lockRoll)
             {
-                builder.Append(" (or " + activeNav.rollModifier + "-drag)");
+                builder.Append("\nright mouse to roll");
+                if (activeNav.rollModifier != MouseNavBase.Modifier.None)
+                {
+                    builder.Append(" (or " + activeNav.rollModifier + "-drag)");
+                }
+                builder.Append(", press l to lock");
+            }
+            else
+            {
+                builder.Append("\nroll locked, press l to unlock");
             }
             if (activeNav.accelModifier != MouseNavBase.Modifier.None)
             {
                 builder.Append("\npress " + activeNav.accelModifier + " to move faster");
+            }
+
+            if (Input.GetKeyDown(KeyCode.L))
+            {
+                activeNav.lockRoll = !activeNav.lockRoll;
             }
         }
 
@@ -219,7 +239,7 @@ class DemoUX : MonoBehaviour
         if (ts >= 0)
         {
             builder.Append($"\ntrans speed {ts:f5} press [ slower, ] faster");
-            float transAdj = 0.005f;
+            float transAdj = 0.0001f;
             if (Input.GetKey(KeyCode.LeftBracket))
             {
                 if (mouseOrbit != null)
@@ -451,7 +471,7 @@ class DemoUX : MonoBehaviour
 
         builder.Append("\n");
         
-        if (tilesets.Count > 0)
+        if (tilesets != null && tilesets.Count > 0)
         {
             var sts = selectedTile.Tileset;
             builder.Append("\nselected tileset " + sts.TilesetOptions.Name +
@@ -769,12 +789,12 @@ class DemoUX : MonoBehaviour
                     mouseOrbit.pivot = tileset.transform.TransformPoint(nsb.position);
                     if (diam > 0 && relativeNavTransSpeed > 0)
                     {
-                        mouseOrbit.transSpeed = diam / relativeNavTransSpeed;
+                        mouseOrbit.transSpeed = diam * relativeNavTransSpeed;
                     }
                 }
                 if (mouseFly != null && diam > 0 && relativeNavTransSpeed > 0)
                 {
-                    mouseFly.transSpeed = diam / relativeNavTransSpeed;
+                    mouseFly.transSpeed = diam * relativeNavTransSpeed;
                 }
             }
         }
@@ -799,7 +819,7 @@ class DemoUX : MonoBehaviour
             var hfov = vfov * Camera.main.aspect;
             var minFov = Mathf.Min(vfov, hfov);
 
-            var dist = radiusInCam / Mathf.Tan(minFov / 2);
+            var dist = Math.Min(radiusInCam / Mathf.Tan(minFov / 2), Camera.main.farClipPlane - 100);
             cam.Translate(cam.forward * (Vector3.Distance(cam.position, ctrInWorld) - dist), Space.World);
 
             if (mouseOrbit != null)
