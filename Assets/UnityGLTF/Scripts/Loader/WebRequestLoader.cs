@@ -93,7 +93,9 @@ namespace UnityGLTF.Loader
 			_rootURI = rootURI;
 		}
 
-        public IEnumerator LoadStream(string filePath)
+        //vona 5/25/21
+//        public IEnumerator LoadStream(string filePath)
+        public virtual IEnumerator LoadStream(string filePath)
         {
             if (filePath == null)
             {
