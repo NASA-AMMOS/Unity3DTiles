@@ -32,37 +32,39 @@ namespace UnityGLTF.Loader
                 throw new Exception("Send must use either string or byte[] data type");
             }
 
-            UnityWebRequest www = new UnityWebRequest(Path.Combine(rootUri, httpRequestPath), "GET",
-                new DownloadHandlerBuffer(), null);
-            www.timeout = 5000;
+            //vona 5/25/21 wrap in using statement
+            using (UnityWebRequest www = new UnityWebRequest(Path.Combine(rootUri, httpRequestPath), "GET",
+                                                             new DownloadHandlerBuffer(), null)) {
+                www.timeout = 5000;
 #if UNITY_2017_2_OR_NEWER
-            yield return www.SendWebRequest();
+                yield return www.SendWebRequest();
 #else
-            yield return www.Send();
+                yield return www.Send();
 #endif
-            string error = null;
-            if ((int)(www.responseCode) >= 400) //www.error is *not* set if this is all that went wrong
-            {
-                error = "HTTP " + www.responseCode;
+                string error = null;
+                if ((int)(www.responseCode) >= 400) //www.error is *not* set if this is all that went wrong
+                {
+                    error = "HTTP " + www.responseCode;
+                }
+                else if (!string.IsNullOrEmpty(www.error))
+                {
+                    error = www.error;
+                }
+                else if (www.isNetworkError)
+                {
+                    error = "network error";
+                }
+                else if (www.isHttpError)
+                {
+                    error = "HTTP error";
+                }
+                else if (www.downloadedBytes > int.MaxValue)
+                {
+                    error = "downloaded " + www.downloadedBytes + " bytes > " + int.MaxValue;
+                }
+                onDownloadString?.Invoke(www.downloadHandler.text, error);
+                onDownloadBytes?.Invoke(www.downloadHandler.data, error);
             }
-            else if (!string.IsNullOrEmpty(www.error))
-            {
-                error = www.error;
-            }
-            else if (www.isNetworkError)
-            {
-                error = "network error";
-            }
-            else if (www.isHttpError)
-            {
-                error = "HTTP error";
-            }
-            else if (www.downloadedBytes > int.MaxValue)
-            {
-                error = "downloaded " + www.downloadedBytes + " bytes > " + int.MaxValue;
-            }
-            onDownloadString?.Invoke(www.downloadHandler.text, error);
-            onDownloadBytes?.Invoke(www.downloadHandler.data, error);
         }
     }
 
