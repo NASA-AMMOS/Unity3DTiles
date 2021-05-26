@@ -17,6 +17,51 @@ using Debug = UnityEngine.Debug;
 
 namespace UnityGLTF
 {
+    public class ArrayPool //vona 5/26/21
+    {
+        List<System.WeakReference<byte[]>> pool = new List<System.WeakReference<byte[]>>();
+
+        public byte[] Acquire(int size)
+        {
+            if (size < int.MaxValue - 32768)
+            {
+                size = 32768 * (int)Math.Ceiling(size / 32768.0);
+            }
+            byte[] arr = null;
+            foreach (var wr in pool)
+            {
+                if (wr.TryGetTarget(out arr))
+                {
+                    wr.SetTarget(null);
+                    break;
+                }
+            }
+            if (arr == null || arr.Length < size)
+            {
+                arr = new byte[size];
+            }
+            return arr;
+        }
+
+        public void Return(byte[] arr)
+        {
+            foreach (var wr in pool)
+            {
+                if (!wr.TryGetTarget(out byte[] _))
+                {
+                    wr.SetTarget(arr);
+                    return;
+                }
+            }
+            pool.Add(new System.WeakReference<byte[]>(arr));
+        }
+
+        public int PoolSize()
+        {
+            return pool.Count;
+        }
+    }
+
     public struct MeshConstructionData
     {
         public MeshPrimitive Primitive { get; set; }
@@ -75,6 +120,8 @@ namespace UnityGLTF
         protected AsyncAction _asyncAction;
         protected ILoader _loader;
         private bool _isRunning = false;
+
+        private static ArrayPool _arrayPool = new ArrayPool(); //vona 5/26/21
 
         /// <summary>
         /// Creates a GLTFSceneBuilder object which will be able to construct a scene based off a url
@@ -412,10 +459,14 @@ namespace UnityGLTF
             {
                 // Read from GLB
                 var bufferView = image.BufferView.Value;
-                var data = new byte[bufferView.ByteLength];
+                //vona 5/25/21
+                //var data = new byte[bufferView.ByteLength];
+                var data = _arrayPool.Acquire(bufferView.ByteLength);
                 var bufferContents = _assetCache.BufferCache[bufferView.Buffer.Id];
                 bufferContents.Stream.Position = bufferView.ByteOffset + bufferContents.ChunkOffset;
-                bufferContents.Stream.Read(data, 0, data.Length);
+                //vona 5/25/21
+                //bufferContents.Stream.Read(data, 0, data.Length);
+                bufferContents.Stream.Read(data, 0, bufferView.ByteLength);
                 return data;
             }
             else
@@ -442,7 +493,9 @@ namespace UnityGLTF
                     }
                     else
                     {
-                        byte[] buffer = new byte[stream.Length];
+                        //vona 5/26/21
+                        //byte[] buffer = new byte[stream.Length];
+                        byte[] buffer = _arrayPool.Acquire((int)(stream.Length));
                         // todo: potential optimization is to split stream read into multiple frames (or put it on a thread?)
                         //vona 5/25/21
                         //using (stream)
@@ -483,6 +536,9 @@ namespace UnityGLTF
                     //	NOTE: the second parameter of LoadImage() marks non-readable, but we can't mark it until after we call Apply()
                     texture.LoadImage(data, false);
                 }
+                _arrayPool.Return(data); //vona 5/26/21
+                //Debug.Log("array pool size " + _arrayPool.PoolSize() + ", returned array size " + data.Length);
+
                 texture.filterMode = filterMode;
                 texture.wrapMode = wrapMode;
                 yield return null;              
