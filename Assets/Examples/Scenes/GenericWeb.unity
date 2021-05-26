@@ -666,7 +666,7 @@ MonoBehaviour:
     GCMemThreshold: -1
     MaximumTilesToProcessPerFrame: 1
     LRUCacheTargetSize: 600
-    LRUCacheMaxSize: 700
+    LRUCacheMaxSize: 1000
     LRUMaxFrameUnloadRatio: 0.2
     MaxConcurrentRequests: 6
     ShaderOverride: 
