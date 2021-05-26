@@ -539,6 +539,13 @@ namespace UnityGLTF
                 _arrayPool.Return(data); //vona 5/26/21
                 //Debug.Log("array pool size " + _arrayPool.PoolSize() + ", returned array size " + data.Length);
 
+                //vona 5/26/21
+                //TODO: it'd be a project but it may be possible to keep a pool of Texture2D
+                //* have renderer return them to pool when tiles are unloaded
+                //* use third party libraries to decompress e.g. PNG directly into the texture
+                //  using Texture2D.GetRawTextureData()
+                //* might require Landform to export power of two textures to increase probability of size matches
+
                 texture.filterMode = filterMode;
                 texture.wrapMode = wrapMode;
                 yield return null;              
@@ -1179,6 +1186,13 @@ namespace UnityGLTF
 
         protected IEnumerator ConstructUnityMesh(MeshConstructionData meshConstructionData, int meshId, int primitiveIndex)
         {
+            //vona 5/26/21
+            //TODO: it'd be a project but it may be possible to keep a pool of Mesh
+            //* have renderer return them to pool when tiles are unloaded
+            //* use Set{Vertex,Index}Buffer{Params,Data}()
+            //* rewrite GLTFHelpers.BuildMeshAttributes() and GLTF.Schema.Accessor.AsXXXArray()
+            //  to unpack directly into the vertex buffer
+
             MeshPrimitive primitive = meshConstructionData.Primitive;
             var meshAttributes = meshConstructionData.MeshAttributes;
             var vertexCount = primitive.Attributes[SemanticProperties.POSITION].Value.Count;
