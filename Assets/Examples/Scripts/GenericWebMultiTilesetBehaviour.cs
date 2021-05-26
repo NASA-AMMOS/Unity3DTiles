@@ -164,8 +164,18 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
         if (!string.IsNullOrEmpty(sceneOptionsUrl))
         {
             Debug.Log("overriding scene options from URL: " + sceneOptionsUrl);
-            DownloadText(sceneOptionsUrl, json => JsonConvert.PopulateObject(json, SceneOptions));
+            DownloadText(sceneOptionsUrl, json => {
+                JsonConvert.PopulateObject(json, SceneOptions);
+                LoadSceneOrTileset();
+            });
         }
+        else
+        {
+            LoadSceneOrTileset();
+        }
+    }
+
+    protected void LoadSceneOrTileset() {
 
         string sceneManifestUrl = MakeAbsoluteUrl(getURLParameter("Scene") ?? SceneUrl);
         string singleTilesetUrlRaw = getURLParameter("Tileset");
