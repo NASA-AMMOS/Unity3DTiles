@@ -45,7 +45,9 @@ namespace GLTF
 			for (int i = 0; i < binaryChunkIndex + 2; ++i)
 			{
 				chunkOffset += chunkLength;
-				stream.Position = chunkOffset;
+                //vona 5/25/21
+				//stream.Position = chunkOffset;
+				stream.Position = startPosition + chunkOffset;
 				chunkLength = GetUInt32(stream);
 				chunkOffset += 8;   // to account for chunk length (4 bytes) and type (4 bytes)
 			}

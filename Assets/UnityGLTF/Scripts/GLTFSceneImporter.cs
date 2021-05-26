@@ -281,7 +281,8 @@ namespace UnityGLTF
             yield return _loader.LoadStream(jsonFilePath);
 
             _gltfStream.Stream = _loader.LoadedStream;
-            _gltfStream.StartPosition = 0;
+            //_gltfStream.StartPosition = 0; //vona 5/25/21
+            _gltfStream.StartPosition = _loader.LoadedStream.Position;
             _gltfRoot = GLTFParser.ParseJson(_gltfStream.Stream, _gltfStream.StartPosition);
         }
 
@@ -431,7 +432,9 @@ namespace UnityGLTF
                     Stream stream = _assetCache.ImageStreamCache[imageCacheIndex];
                     if (stream is MemoryStream)
                     {
-                        using (MemoryStream memoryStream = stream as MemoryStream)
+                        //vona 5/25/21
+                        //using (MemoryStream memoryStream = stream as MemoryStream)
+                        MemoryStream memoryStream = stream as MemoryStream;
                         {
 
                             return memoryStream.ToArray();
@@ -441,7 +444,8 @@ namespace UnityGLTF
                     {
                         byte[] buffer = new byte[stream.Length];
                         // todo: potential optimization is to split stream read into multiple frames (or put it on a thread?)
-                        using (stream)
+                        //vona 5/25/21
+                        //using (stream)
                         {
                             if (stream.Length > int.MaxValue)
                             {
@@ -1491,8 +1495,27 @@ namespace UnityGLTF
         /// </summary>
         private void Cleanup()
         {
+            //vona 5/25/21
+            var closedStreams = new HashSet<Stream>();
+            if (_gltfStream.Stream != null)
+            {
+                _gltfStream.Stream.Dispose();
+                closedStreams.Add(_gltfStream.Stream);
+                _gltfStream.Stream = null;
+            }
+            foreach (var bc in _assetCache.BufferCache)
+            {
+                if (bc != null && bc.Stream != null && !closedStreams.Contains(bc.Stream))
+                {
+                    bc.Stream.Dispose();
+                    closedStreams.Add(bc.Stream);
+                    bc.Stream = null;
+                }
+            }
+
             _assetCache.Dispose();
             _assetCache = null;
+
         }
     }
 }
