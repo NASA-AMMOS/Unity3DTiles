@@ -49,18 +49,74 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
     public string SceneUrl; //mainly for unity editor
 
 #if UNITY_WEBGL && !UNITY_EDITOR
+
     [DllImport("__Internal")]
     private static extern string getURLParameter(string name);
+
     [DllImport("__Internal")]
     private static extern string getWindowLocationURL();
+
+    [DllImport("__Internal")]
+    private static extern uint getTotalMemorySize();
+    
+    [DllImport("__Internal")]
+    private static extern uint getTotalStackSize();
+    
+    [DllImport("__Internal")]
+    private static extern uint getStaticMemorySize();
+    
+    [DllImport("__Internal")]
+    private static extern uint getDynamicMemorySize();
+
+    private static uint getUsedMemorySize()
+    {
+        return getTotalStackSize() + getStaticMemorySize() + getDynamicMemorySize();
+    }
+
+    private static uint getFreeMemorySize()
+    {
+        return getTotalMemorySize() - getUsedMemorySize();
+    }
 #else
+
     private static string getURLParameter(string name)
     {
         return null;
     }
+
     private static string getWindowLocationURL()
     {
         return null;
+    }
+
+    private static uint getTotalMemorySize()
+    {
+        return 0;
+    }
+
+    private static uint getTotalStackSize()
+    {
+        return 0;
+    }
+
+    private static uint getStaticMemorySize()
+    {
+        return 0;
+    }
+
+    private static uint getDynamicMemorySize()
+    {
+        return 0;
+    }
+
+    private static uint getUsedMemorySize()
+    {
+        return 0; 
+    }
+
+    private static uint getFreeMemorySize()
+    {
+        return 0;
     }
 #endif
 
@@ -108,8 +164,18 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
         if (!string.IsNullOrEmpty(sceneOptionsUrl))
         {
             Debug.Log("overriding scene options from URL: " + sceneOptionsUrl);
-            DownloadText(sceneOptionsUrl, json => JsonConvert.PopulateObject(json, SceneOptions));
+            DownloadText(sceneOptionsUrl, json => {
+                JsonConvert.PopulateObject(json, SceneOptions);
+                LoadSceneOrTileset();
+            });
         }
+        else
+        {
+            LoadSceneOrTileset();
+        }
+    }
+
+    protected void LoadSceneOrTileset() {
 
         string sceneManifestUrl = MakeAbsoluteUrl(getURLParameter("Scene") ?? SceneUrl);
         string singleTilesetUrlRaw = getURLParameter("Tileset");
@@ -164,4 +230,11 @@ public class GenericWebMultiTilesetBehaviour : MultiTilesetBehaviour
             Debug.Log("consider setting URL parameter Scene or Tileset");
         }
     }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+    protected override void _update()
+    {
+        RequestManager.SetMemoryUsage(getUsedMemorySize(), getTotalMemorySize(), "WebGL");
+    }
+#endif
 }

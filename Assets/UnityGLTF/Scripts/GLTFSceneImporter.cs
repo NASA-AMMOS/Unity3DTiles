@@ -17,6 +17,51 @@ using Debug = UnityEngine.Debug;
 
 namespace UnityGLTF
 {
+    public class ArrayPool //vona 5/26/21
+    {
+        List<System.WeakReference<byte[]>> pool = new List<System.WeakReference<byte[]>>();
+
+        public byte[] Acquire(int size)
+        {
+            if (size < int.MaxValue - 32768)
+            {
+                size = 32768 * (int)Math.Ceiling(size / 32768.0);
+            }
+            byte[] arr = null;
+            foreach (var wr in pool)
+            {
+                if (wr.TryGetTarget(out arr))
+                {
+                    wr.SetTarget(null);
+                    break;
+                }
+            }
+            if (arr == null || arr.Length < size)
+            {
+                arr = new byte[size];
+            }
+            return arr;
+        }
+
+        public void Return(byte[] arr)
+        {
+            foreach (var wr in pool)
+            {
+                if (!wr.TryGetTarget(out byte[] _))
+                {
+                    wr.SetTarget(arr);
+                    return;
+                }
+            }
+            pool.Add(new System.WeakReference<byte[]>(arr));
+        }
+
+        public int PoolSize()
+        {
+            return pool.Count;
+        }
+    }
+
     public struct MeshConstructionData
     {
         public MeshPrimitive Primitive { get; set; }
@@ -75,6 +120,8 @@ namespace UnityGLTF
         protected AsyncAction _asyncAction;
         protected ILoader _loader;
         private bool _isRunning = false;
+
+        private static ArrayPool _arrayPool = new ArrayPool(); //vona 5/26/21
 
         /// <summary>
         /// Creates a GLTFSceneBuilder object which will be able to construct a scene based off a url
@@ -281,7 +328,8 @@ namespace UnityGLTF
             yield return _loader.LoadStream(jsonFilePath);
 
             _gltfStream.Stream = _loader.LoadedStream;
-            _gltfStream.StartPosition = 0;
+            //_gltfStream.StartPosition = 0; //vona 5/25/21
+            _gltfStream.StartPosition = _loader.LoadedStream.Position;
             _gltfRoot = GLTFParser.ParseJson(_gltfStream.Stream, _gltfStream.StartPosition);
         }
 
@@ -411,10 +459,14 @@ namespace UnityGLTF
             {
                 // Read from GLB
                 var bufferView = image.BufferView.Value;
-                var data = new byte[bufferView.ByteLength];
+                //vona 5/25/21
+                //var data = new byte[bufferView.ByteLength];
+                var data = _arrayPool.Acquire(bufferView.ByteLength);
                 var bufferContents = _assetCache.BufferCache[bufferView.Buffer.Id];
                 bufferContents.Stream.Position = bufferView.ByteOffset + bufferContents.ChunkOffset;
-                bufferContents.Stream.Read(data, 0, data.Length);
+                //vona 5/25/21
+                //bufferContents.Stream.Read(data, 0, data.Length);
+                bufferContents.Stream.Read(data, 0, bufferView.ByteLength);
                 return data;
             }
             else
@@ -431,7 +483,9 @@ namespace UnityGLTF
                     Stream stream = _assetCache.ImageStreamCache[imageCacheIndex];
                     if (stream is MemoryStream)
                     {
-                        using (MemoryStream memoryStream = stream as MemoryStream)
+                        //vona 5/25/21
+                        //using (MemoryStream memoryStream = stream as MemoryStream)
+                        MemoryStream memoryStream = stream as MemoryStream;
                         {
 
                             return memoryStream.ToArray();
@@ -439,9 +493,12 @@ namespace UnityGLTF
                     }
                     else
                     {
-                        byte[] buffer = new byte[stream.Length];
+                        //vona 5/26/21
+                        //byte[] buffer = new byte[stream.Length];
+                        byte[] buffer = _arrayPool.Acquire((int)(stream.Length));
                         // todo: potential optimization is to split stream read into multiple frames (or put it on a thread?)
-                        using (stream)
+                        //vona 5/25/21
+                        //using (stream)
                         {
                             if (stream.Length > int.MaxValue)
                             {
@@ -479,6 +536,16 @@ namespace UnityGLTF
                     //	NOTE: the second parameter of LoadImage() marks non-readable, but we can't mark it until after we call Apply()
                     texture.LoadImage(data, false);
                 }
+                _arrayPool.Return(data); //vona 5/26/21
+                //Debug.Log("array pool size " + _arrayPool.PoolSize() + ", returned array size " + data.Length);
+
+                //vona 5/26/21
+                //TODO: it'd be a project but it may be possible to keep a pool of Texture2D
+                //* have renderer return them to pool when tiles are unloaded
+                //* use third party libraries to decompress e.g. PNG directly into the texture
+                //  using Texture2D.GetRawTextureData()
+                //* might require Landform to export power of two textures to increase probability of size matches
+
                 texture.filterMode = filterMode;
                 texture.wrapMode = wrapMode;
                 yield return null;              
@@ -1119,6 +1186,13 @@ namespace UnityGLTF
 
         protected IEnumerator ConstructUnityMesh(MeshConstructionData meshConstructionData, int meshId, int primitiveIndex)
         {
+            //vona 5/26/21
+            //TODO: it'd be a project but it may be possible to keep a pool of Mesh
+            //* have renderer return them to pool when tiles are unloaded
+            //* use Set{Vertex,Index}Buffer{Params,Data}()
+            //* rewrite GLTFHelpers.BuildMeshAttributes() and GLTF.Schema.Accessor.AsXXXArray()
+            //  to unpack directly into the vertex buffer
+
             MeshPrimitive primitive = meshConstructionData.Primitive;
             var meshAttributes = meshConstructionData.MeshAttributes;
             var vertexCount = primitive.Attributes[SemanticProperties.POSITION].Value.Count;
@@ -1491,8 +1565,27 @@ namespace UnityGLTF
         /// </summary>
         private void Cleanup()
         {
+            //vona 5/25/21
+            var closedStreams = new HashSet<Stream>();
+            if (_gltfStream.Stream != null)
+            {
+                _gltfStream.Stream.Dispose();
+                closedStreams.Add(_gltfStream.Stream);
+                _gltfStream.Stream = null;
+            }
+            foreach (var bc in _assetCache.BufferCache)
+            {
+                if (bc != null && bc.Stream != null && !closedStreams.Contains(bc.Stream))
+                {
+                    bc.Stream.Dispose();
+                    closedStreams.Add(bc.Stream);
+                    bc.Stream = null;
+                }
+            }
+
             _assetCache.Dispose();
             _assetCache = null;
+
         }
     }
 }

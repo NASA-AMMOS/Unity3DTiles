@@ -251,7 +251,9 @@ namespace GLTF
 
 			if (attributeAccessor.Stream is System.IO.MemoryStream)
 			{
-				using (var memoryStream = attributeAccessor.Stream as System.IO.MemoryStream)
+                //vona 5/25/21
+				//using (var memoryStream = attributeAccessor.Stream as System.IO.MemoryStream)
+				var memoryStream = attributeAccessor.Stream as System.IO.MemoryStream;
 				{
 #if NETFX_CORE || NETSTANDARD1_3
 					if (memoryStream.TryGetBuffer(out System.ArraySegment<byte> arraySegment))

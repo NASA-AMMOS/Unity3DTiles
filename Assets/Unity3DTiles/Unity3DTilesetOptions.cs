@@ -95,6 +95,12 @@ namespace Unity3DTiles
     {
         //Options shared between tilesets in a scene
 
+        [Tooltip("Pause new tile requests if the used memory size grows beyond this size in bytes.")]
+        public long PauseMemThreshold = -1;
+        
+        [Tooltip("Periodically request garbage collection if the used memory size grows beyond this size in bytes.")]
+        public long GCMemThreshold = -1;
+
         [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrease load time but may increase frame lurches when loading tiles.")]
         public int MaximumTilesToProcessPerFrame = 1;
 
@@ -102,7 +108,7 @@ namespace Unity3DTiles
         public int LRUCacheTargetSize = 600;
 
         [Tooltip("Sets the maximum number of tiles (hard limit) that can be loaded into memory at any given time. Requests that would exceed this limit fail.")]
-        public int LRUCacheMaxSize = 700;
+        public int LRUCacheMaxSize = 1000;
 
         [Tooltip("Controls the maximum number of unused tiles that will be unloaded at a time when the cache is full.  This is specified as a ratio of the LRUMaxCacheSize. For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will unload 120 (0.2*600) tiles in a single frame.")]
         public float LRUMaxFrameUnloadRatio = 0.2f;

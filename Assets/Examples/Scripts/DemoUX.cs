@@ -96,7 +96,9 @@ class DemoUX : MonoBehaviour
 
         builder.Clear();
 
-        builder.Append("\npress h to toggle HUD, v for default view, f to fit");
+        builder.Append(tileset.RequestManager.GetStatus());
+
+        builder.Append("\n\npress h to toggle HUD, v for default view, f to fit");
         builder.Append("\npicking " + (enablePicking ? "enabled" : "disabled") + ",  press p to toggle");
 
         bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
@@ -865,7 +867,7 @@ class DemoUX : MonoBehaviour
     {
         if (Mathf.Abs(b) < k) return b.ToString("f0");
         else if (Mathf.Abs(b) < k*k) return string.Format("{0:f1}k", b/k);
-        else if (Mathf.Abs(b) < k*k*k) return string.Format("{0:f1}M", b/(k*k));
-        else return string.Format("{0:f1}G", b/(k*k*k));
+        else if (Mathf.Abs(b) < k*k*k) return string.Format("{0:f2}M", b/(k*k));
+        else return string.Format("{0:f3}G", b/(k*k*k));
     }
 }
