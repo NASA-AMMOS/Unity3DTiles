@@ -95,6 +95,12 @@ namespace Unity3DTiles
     {
         //Options shared between tilesets in a scene
 
+        [Tooltip("Pause new tile requests if the used memory size grows beyond this size in bytes.")]
+        public long PauseMemThreshold = -1;
+        
+        [Tooltip("Periodically request garbage collection if the used memory size grows beyond this size in bytes.")]
+        public long GCMemThreshold = -1;
+
         [Tooltip("Controls how many colliders can be created per frame, this can be an expensive operation on some platforms.  Increasing this number will decrease load time but may increase frame lurches when loading tiles.")]
         public int MaximumTilesToProcessPerFrame = 1;
 

@@ -36,16 +36,10 @@ namespace Unity3DTiles
             {
                 if (_requestManager == null)
                 {
-                    _requestManager = new RequestManager(MaxConcurrentRequests);
+                    _requestManager = new RequestManager(SceneOptions);
                 }
                 return _requestManager;
             }
-        }
-
-        public int MaxConcurrentRequests //for legacy api
-        {
-            get { return SceneOptions.MaxConcurrentRequests; } 
-            set { SceneOptions.MaxConcurrentRequests = value; } 
         }
 
         public abstract bool Ready();
