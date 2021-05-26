@@ -81,29 +81,29 @@ public class TilesetStatsHud : MonoBehaviour
         int missedFrames;
         if (UnityEngine.XR.XRStats.TryGetDroppedFrameCount(out missedFrames))
         {
-            builder.Append("Missed Frames: ");
+            builder.Append("missed frames: ");
             builder.Append(missedFrames);
             builder.AppendLine();
         }
 #endif        
-        builder.Append("Active Colliders: ");
+        builder.Append("active colliders: ");
         builder.Append(stats.ColliderTileCount);
         builder.AppendLine();
-        builder.Append("Used Set: ");
+        builder.Append("used set: ");
         builder.Append(stats.UsedSetCount);
         builder.AppendLine();
-        builder.Append("Content Loaded: ");
+        builder.Append("loaded tiles: ");
         builder.Append(stats.LoadedContentCount);
+        builder.Append(", ");
+        builder.Append(stats.TilesLeftToLoad);
+        builder.Append(" remaining");
         builder.AppendLine();
-        builder.Append("Content Cache: ");
+        builder.Append("cached tiles: ");
         builder.Append(tileset.LRUCache.Count);
         builder.Append(" / ");
         builder.Append(tileset.SceneOptions.LRUCacheMaxSize);
         builder.AppendLine();
-        builder.Append("Tiles Remaining: ");
-        builder.Append(stats.TilesLeftToLoad);
-        builder.AppendLine();
-        builder.Append("Visible Tiles: ");
+        builder.Append("visible tiles: ");
         builder.Append(stats.VisibleTileCount);
         builder.Append(" (depth ");
         builder.Append(stats.MinVisibleTileDepth);
@@ -113,14 +113,14 @@ public class TilesetStatsHud : MonoBehaviour
         builder.Append(tileset.DeepestDepth());
         builder.Append(")");
         builder.AppendLine();
-        builder.Append("Visible Faces: ");
+        builder.Append("visible faces: ");
         builder.Append(stats.VisibleFaces / 1000);
         builder.Append(" k");
         builder.AppendLine();
-        builder.Append("Visible Textures: ");
+        builder.Append("visible textures: ");
         builder.Append(stats.VisibleTextures);
         builder.AppendLine();
-        builder.Append("Visible Megapixels: ");
+        builder.Append("visible megapixels: ");
         builder.Append((stats.VisiblePixels / 1000000f).ToString("0.00"));
         builder.AppendLine();
         if (!string.IsNullOrEmpty(ExtraMessage))

@@ -662,6 +662,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SceneOptions:
+    PauseMemThreshold: -1
+    GCMemThreshold: -1
     MaximumTilesToProcessPerFrame: 1
     LRUCacheTargetSize: 600
     LRUCacheMaxSize: 700
