@@ -11,6 +11,8 @@
  * before exporting such information to foreign countries or providing 
  * access to foreign persons.
  */
+using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,25 +22,28 @@ using RSG;
 
 namespace Unity3DTiles
 {
-    public class Request : PriorityQueueItem<Unity3DTile>
+    public class Request
     {
+        readonly public Unity3DTile Tile;
         readonly public Promise Started;
         readonly public Promise<bool> Finished;
 
-        public Request(Unity3DTile tile, float priority, Promise started, Promise<bool> finished) : base(tile, priority)
+        public Request(Unity3DTile tile, Promise started, Promise<bool> finished)
         {
+            Tile = tile;
             Started = started;
             Finished = finished;
         }
     }
 
-    public class RequestManager
+    public class RequestManager : IEnumerable<Unity3DTile>
     {
-        private Unity3DTilesetSceneOptions sceneOptions;
+        private readonly Unity3DTilesetSceneOptions sceneOptions;
 
-        private int currentRequests;
-
-        private PriorityQueue<Unity3DTile> priorityQueue = new PriorityQueue<Unity3DTile>();
+        private Queue<Request> queue = new Queue<Request>();
+        private HashSet<Unity3DTile> activeDownloads = new HashSet<Unity3DTile>();
+        private List<Request> tmpList = new List<Request>();
+        private HashSet<Unity3DTile> tmpSet = new HashSet<Unity3DTile>();
 
         private float lastGC = -1;
         private bool paused;
@@ -85,6 +90,36 @@ namespace Unity3DTiles
             }
         }
 
+        public int Count(Func<Unity3DTile, bool> predicate = null)
+        {
+            if (predicate == null)
+            {
+                return queue.Count;
+            } 
+            int num = 0;
+            foreach (var request in queue)
+            {
+                if (predicate(request.Tile))
+                {
+                    num++;
+                }
+            }
+            return num;
+        }
+
+        public IEnumerator<Unity3DTile> GetEnumerator()
+        {
+            foreach (var request in queue)
+            {
+                yield return request.Tile;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+
         public string GetStatus()
         {
             var sb = new StringBuilder();
@@ -96,8 +131,8 @@ namespace Unity3DTiles
             }
             //sb.Append($"\npause mem threshold: {FmtKMG(sceneOptions.PauseMemThreshold)}");
             //sb.Append($"\nGC mem threshold: {FmtKMG(sceneOptions.GCMemThreshold)}");
-            sb.Append($"\ntile requests: {currentRequests}/{sceneOptions.MaxConcurrentRequests} active, ");
-            sb.Append($"{priorityQueue.Count(),3}/{MAX_QUEUE_SIZE} queued" + (paused ? " (paused)" : ""));
+            sb.Append($"\ntile requests: {activeDownloads.Count}/{sceneOptions.MaxConcurrentRequests} active, ");
+            sb.Append(queue.Count.ToString("d3") + $"/{MAX_QUEUE_SIZE} queued" + (paused ? " (paused)" : ""));
             return sb.ToString();
         }
 
@@ -106,27 +141,22 @@ namespace Unity3DTiles
             this.sceneOptions = sceneOptions;
         }
 
-        public int RequestsInProgress()
+        public int CountActiveDownloads(Func<Unity3DTile, bool> predicate = null)
         {
-            return currentRequests;
-        }
-
-        public int QueueSize()
-        {
-            return priorityQueue.Count();
-        }
-
-        public bool Full()
-        {
-            return priorityQueue.Count() >= MAX_QUEUE_SIZE;
+            if (predicate == null)
+            {
+                return activeDownloads.Count;
+            }
+            return activeDownloads.Count(predicate);
         }
 
         public void EnqueRequest(Request request)
         {
-            priorityQueue.Enqueue(request);
+            request.Tile.ContentState = Unity3DTileContentState.LOADING;
+            queue.Enqueue(request);
         }
 
-        public void Process()
+        public void Process(int maxNewRequests)
         {
             if (sceneOptions.GCMemThreshold > 0 && UsedMem > sceneOptions.GCMemThreshold &&
                 (lastGC < 0 || (Time.realtimeSinceStartup - lastGC) > MIN_GC_PERIOD_SEC)) {
@@ -134,20 +164,50 @@ namespace Unity3DTiles
                 GC();
                 lastGC = Time.realtimeSinceStartup;
             }
+
             if (sceneOptions.PauseMemThreshold > 0 && UsedMem > sceneOptions.PauseMemThreshold) {
                 paused = true;
                 return;
             }
             paused = false;
-            while(currentRequests < sceneOptions.MaxConcurrentRequests && priorityQueue.Count() > 0)
+
+            //re-sort queue from high to low priority (high priority = low value)
+            //because priorities may change from frame to frame
+            //also cull any duplicates, drop any requests that are now offscreen (priority = MaxValue)
+            //and drop any requests that exceed MAX_QUEUE_SIZE
+            tmpList.Clear();
+            tmpSet.Clear();
+            tmpList.AddRange(queue);
+            queue.Clear();
+            tmpList.Sort((x, y) => (int)Mathf.Sign(x.Tile.FrameState.Priority - y.Tile.FrameState.Priority));
+            tmpSet.Clear();
+            for (int i = 0; i < tmpList.Count; i++)
             {
-                var curItem = (Request) priorityQueue.Dequeue();
-                currentRequests++;
-                curItem.Finished.Then((success) =>
+                if (queue.Count < MAX_QUEUE_SIZE && tmpList[i].Tile.FrameState.Priority < float.MaxValue)
                 {
-                    currentRequests--;
-                });
-                curItem.Started.Resolve();
+                    if (!tmpSet.Contains(tmpList[i].Tile))
+                    {
+                        queue.Enqueue(tmpList[i]);
+                        tmpSet.Add(tmpList[i].Tile);
+                    }
+                }
+                else
+                {
+                    tmpList[i].Tile.ContentState = Unity3DTileContentState.UNLOADED;
+                }
+            }
+            tmpList.Clear();
+            tmpSet.Clear();
+
+            int newRequests = 0;
+            while (activeDownloads.Count < sceneOptions.MaxConcurrentRequests && queue.Count > 0 &&
+                   (maxNewRequests < 0 || newRequests < maxNewRequests))
+            {
+                var request = queue.Dequeue();
+                activeDownloads.Add(request.Tile);
+                newRequests++;
+                request.Finished.Then((success) => { activeDownloads.Remove(request.Tile); });
+                request.Started.Resolve();
             }
         }
 

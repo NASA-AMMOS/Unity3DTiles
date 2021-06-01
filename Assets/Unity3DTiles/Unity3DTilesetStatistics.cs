@@ -21,45 +21,47 @@ namespace Unity3DTiles
     public class Unity3DTilesetStatistics
     {
         [Header("Frame statistics")]
-        public int FrustumSetCount;
-        public int UsedSetCount;
-        public int VisibleTileCount;
-        public int ColliderTileCount;
+        public int UsedSet;
+        public int FrustumSet;
+        public int ColliderSet;
+
+        public int VisibleTiles;
         public int VisibleFaces;
         public int VisibleTextures;
         public int VisiblePixels;
 
-        public int MinVisibleTileDepth;
-        public int MaxVisibleTileDepth;
+        public int MinVisibleTileDepth = -1;
+        public int MaxVisibleTileDepth = -1;
         
-        [Header("Dataset statistics")]
-        public int NumberOfTilesTotal; // Number of tiles in tileset.json (and other tileset.json files as they are loaded)
-        public int LoadedContentCount; // Number of tiles with loaded content
-        public int ProcessingTiles;    // Number of tiles still being processed
-        public int RequestQueueLength; // Number of tiles waiting to be downloaded
-        public int ConcurrentRequests; // Number of tiles being downloaded
-        public int TotalTilesLoaded;   // Number of tiles downloaded since start
-        public int TilesLeftToLoad;    // Number of tiles left to load for the current viewpoint
-        public int LeafContentRequired;// Number of leaf tiles with content (loaded or not loaded)
-        public int LeafContentLoaded;  // Number of leaf tiles with content that has been loaded
-        public int RequestsThisFrame;  // Number of requests processed this frame
-        public bool NetworkError;      // Indicates if the most recent network request succeeded or failed
+        public int RequestsThisFrame;  // Number of download requests processed this frame
+        public int NetworkErrorsThisFrame;  // Number of network errors this frame
 
-        public float LeafLoadProgress
+        [Header("Dataset statistics")]
+        public int NumberOfTilesTotal; // #tiles in tileset(s)
+
+        public int RequestQueueLength; // #tiles waiting to be downloaded
+        public int ActiveDownloads; // #tiles being downloaded
+        public int ProcessingQueueLength; // #tiles waiting to be processed
+
+        public int DownloadedTiles; // #tiles with downloaded content (may still be processing)
+        public int ReadyTiles;   // #tiles loaded and processed
+
+        public static int MaxLoadedTiles; // maximum #tiles that can be loaded at a time
+
+        //was TilesLeftToLoad
+        public int PendingTiles // #tiles waiting to be downloaded, being downloaded, or waiting to process
         {
-            get
-            {
-                if(LeafContentRequired == 0)
-                {
-                    return 0;
-                }
-                return LeafContentLoaded / (float)LeafContentRequired;
-            }
+            get { return RequestQueueLength + ActiveDownloads + ProcessingQueueLength; }
+        }
+
+        public float LoadProgress
+        {
+            get { return Mathf.Clamp01( ReadyTiles / (float)Mathf.Min(UsedSet, MaxLoadedTiles)); }
         }
 
         public void TallyVisibleTile(Unity3DTile tile)
         {
-            VisibleTileCount += 1;
+            VisibleTiles += 1;
             if (tile.Content != null)
             {
                 VisibleFaces += tile.Content.FaceCount;
@@ -75,59 +77,66 @@ namespace Unity3DTiles
             Unity3DTilesetStatistics ret = new Unity3DTilesetStatistics();
             ret.Clear();
 
-            if(stats.Length == 0)
+            if (stats.Length == 0)
             {
                 return ret;
             }
 
-            ret.NumberOfTilesTotal = 0;
-            ret.LoadedContentCount = 0;         
-            ret.RequestQueueLength = stats[0].RequestQueueLength; //Cache informed statistics shared between tilesets, do not sum
-            ret.ConcurrentRequests = stats[0].ConcurrentRequests;
-            ret.ProcessingTiles = stats[0].ProcessingTiles; //Single queue for all tilesets
-            ret.TilesLeftToLoad = ret.RequestQueueLength + ret.ConcurrentRequests + ret.ProcessingTiles;
-            ret.TotalTilesLoaded = 0;
-
             foreach (var stat in stats)
             {
-                ret.FrustumSetCount += stat.FrustumSetCount;
-                ret.UsedSetCount += stat.UsedSetCount;
-                ret.VisibleTileCount += stat.VisibleTileCount;
-                ret.ColliderTileCount += stat.ColliderTileCount;
+                ret.UsedSet += stat.UsedSet;
+                ret.FrustumSet += stat.FrustumSet;
+                ret.VisibleTiles += stat.VisibleTiles;
+                ret.ColliderSet += stat.ColliderSet;
+
                 ret.VisibleFaces += stat.VisibleFaces;
                 ret.VisibleTextures += stat.VisibleTextures;
                 ret.VisiblePixels += stat.VisiblePixels;
 
                 ret.MinVisibleTileDepth = MinPositive(ret.MinVisibleTileDepth, stat.MinVisibleTileDepth);
                 ret.MaxVisibleTileDepth = MaxPositive(ret.MaxVisibleTileDepth, stat.MaxVisibleTileDepth);
-                         
-                ret.NumberOfTilesTotal += stat.NumberOfTilesTotal;
-                ret.LoadedContentCount += stat.LoadedContentCount;
-                ret.TotalTilesLoaded += stat.TotalTilesLoaded;
-                ret.LeafContentRequired += stat.LeafContentRequired;
-                ret.LeafContentLoaded += stat.LeafContentLoaded;
+
                 ret.RequestsThisFrame += stat.RequestsThisFrame;
-                ret.NetworkError = ret.NetworkError || stat.NetworkError;
+                ret.NetworkErrorsThisFrame += stat.NetworkErrorsThisFrame;
+
+                ret.NumberOfTilesTotal += stat.NumberOfTilesTotal;
+
+                ret.RequestQueueLength += stat.RequestQueueLength;
+                ret.ActiveDownloads += stat.ActiveDownloads;
+                ret.ProcessingQueueLength += stat.ProcessingQueueLength;
+
+                ret.DownloadedTiles += stat.DownloadedTiles;
+                ret.ReadyTiles += stat.ReadyTiles;
             }
-            
+
             return ret;
         }
 
         public void Clear()
         {
-            FrustumSetCount = 0;
-            UsedSetCount = 0;
-            VisibleTileCount = 0;
-            ColliderTileCount = 0;
+            UsedSet = 0;
+            FrustumSet = 0;
+            ColliderSet = 0;
+
+            VisibleTiles = 0;
             VisibleFaces = 0;
             VisibleTextures = 0;
             VisiblePixels = 0;
+
             MinVisibleTileDepth = -1;
             MaxVisibleTileDepth = -1;
-            LeafContentRequired = 0;
-            LeafContentLoaded = 0;
+
             RequestsThisFrame = 0;
-            NetworkError = false;
+            NetworkErrorsThisFrame = 0;
+
+            //NumberOfTilesTotal = 0;
+
+            RequestQueueLength = 0;
+            ActiveDownloads = 0;
+            ProcessingQueueLength = 0;
+
+            DownloadedTiles = 0;
+            ReadyTiles = 0;
         }
 
         private static int MinPositive(int a, int b)

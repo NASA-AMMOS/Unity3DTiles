@@ -78,23 +78,22 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
         {
             // Rotate processing order of tilesets each frame to avoid starvation (only upon request queue / cache full)
             startIndex = Mathf.Clamp(startIndex, 0, tilesets.Count - 1);
-            foreach (var t in tilesets.Skip(startIndex))
+            for (int i = 0; i < tilesets.Count; i++)
             {
-                t.Update();
+                tilesets[(i + startIndex) % tilesets.Count].Update();
             }
-            foreach (var t in tilesets.Take(startIndex))
+            if (tilesets.Count > 0)
             {
-                t.Update();
-            }
-            startIndex++;
-            if (startIndex >= tilesets.Count)
-            {
-                startIndex = 0;
+                startIndex = (startIndex + 1) % tilesets.Count;
             }
         }
 
         protected override void UpdateStats()
         {
+            foreach (var tileset in tilesets)
+            {
+                tileset.UpdateStats();
+            }
             Stats = Unity3DTilesetStatistics.Aggregate(tilesets.Select(t => t.Statistics).ToArray());
         }
 

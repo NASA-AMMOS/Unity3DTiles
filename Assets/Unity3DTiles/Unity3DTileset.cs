@@ -13,6 +13,7 @@
  */
 
 using System;
+using System.Linq;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,58 +32,31 @@ namespace Unity3DTiles
     /// </summary>
     public class Unity3DTileset
     {
-        public Unity3DTilesetOptions TilesetOptions { private set; get; }
+        public Unity3DTilesetOptions TilesetOptions { get; private set;}
+
         public Unity3DTile Root { get; private set; }
 
-        private string basePath;
-        private string tilesetUrl;
-        private int previousTilesRemaining = 0;
-
-        private Schema.Tileset tileset;
-        public Queue<Unity3DTile> ProcessingQueue;           // Tiles whose content is being loaded/processed
-
-        public MonoBehaviour Behaviour { get; private set; }
-
-        /// <summary>
-        /// Maintians a least recently used list of tiles that have content
-        /// </summary>
-        public LRUCache<Unity3DTile> LRUContent { get; private set; }
-
-        /// <summary>
-        /// The deepest depth of the tree as specified by the loaded json structure.  This may increase as recursive json
-        /// tilesets are loaded.  This value does not depend on what renderable content has been loaded.
-        /// </summary>
-        public int DeepestDepth { get; private set; }
-
-        public Unity3DTilesetStatistics Statistics = new Unity3DTilesetStatistics();
-
-        public Unity3DTilesetTraversal Traversal;
-        private Promise<Unity3DTileset> readyPromise = new Promise<Unity3DTileset>();
-
-        public delegate void LoadProgressDelegate(int tilesRemaining);
-        public event LoadProgressDelegate LoadProgress;
-
-        public delegate void AllTilesLoadedDelegate(bool loaded);
-        public event AllTilesLoadedDelegate AllTilesLoaded;
-
-        public delegate void TileDelegate(Unity3DTile tile);
-
-        public bool Ready { get { return this.Root != null; } }
+        public TileCache TileCache { get; private set; }
 
         public RequestManager RequestManager { get; private set;}
 
-        private DateTime loadTimestamp;
+        public Queue<Unity3DTile> ProcessingQueue { get; private set; }
+
+        public AbstractTilesetBehaviour Behaviour { get; private set; }
 
         /// <summary>
-        /// Time since tileset was loaded in seconds
+        /// The deepest depth of the tree as specified by the loaded json structure.  This may increase as
+        /// recursive json tilesets are loaded.  This value does not depend on what renderable content has been loaded.
         /// </summary>
-        public double TimeSinceLoad
-        {
-            get
-            {
-                return Math.Max((DateTime.UtcNow - this.loadTimestamp).TotalSeconds, 0);
-            }
-        }
+        public int DeepestDepth { get; private set; }
+
+        public readonly Unity3DTilesetStatistics Statistics = new Unity3DTilesetStatistics();
+
+        public Unity3DTilesetTraversal Traversal { get; private set; }
+
+        public bool Ready { get { return Root != null; } }
+
+        private Schema.Tileset schemaTileset;
 
         public void GetRootTransform(out Vector3 translation, out Quaternion rotation, out Vector3 scale,
                                      bool convertToUnityFrame = true)
@@ -105,33 +79,26 @@ namespace Unity3DTiles
 
         public Unity3DTileset(Unity3DTilesetOptions tilesetOptions, AbstractTilesetBehaviour behaviour)
         {
-            this.TilesetOptions = tilesetOptions;
-            this.Behaviour = behaviour;
-            this.RequestManager = behaviour.RequestManager;
-            this.ProcessingQueue = behaviour.ProcessingQueue;
-            this.LRUContent = behaviour.LRUCache;
-            this.Traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
-            this.DeepestDepth = 0;
+            TilesetOptions = tilesetOptions;
+            Behaviour = behaviour;
+            RequestManager = behaviour.RequestManager;
+            ProcessingQueue = behaviour.ProcessingQueue;
+            TileCache = behaviour.TileCache;
+            Traversal = new Unity3DTilesetTraversal(this, behaviour.SceneOptions);
+            DeepestDepth = 0;
 
             string url = UrlUtils.ReplaceDataProtocol(tilesetOptions.Url);
-
-            if (UrlUtils.GetLastPathSegment(url).EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            string tilesetUrl = url;
+            if (!UrlUtils.GetLastPathSegment(url).EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
-                this.basePath = UrlUtils.GetBaseUri(url);
-                this.tilesetUrl = url;
-            }
-            else
-            {
-                this.basePath = url;
-                this.tilesetUrl = UrlUtils.JoinUrls(url, "tileset.json");
+                tilesetUrl = UrlUtils.JoinUrls(url, "tileset.json");
             }
 
-            LoadTilesetJson(this.tilesetUrl).Then(json =>
+            LoadTilesetJson(tilesetUrl).Then(json =>
             {
                 // Load Tileset (main tileset or a reference tileset)
-                this.tileset = Schema.Tileset.FromJson(json);
-                this.Root = LoadTileset(this.tilesetUrl, this.tileset, null);
-                this.readyPromise.Resolve(this);
+                schemaTileset = Schema.Tileset.FromJson(json);
+                Root = LoadTileset(tilesetUrl, schemaTileset, null);
             }).Catch(error =>
             {
                 Debug.LogError(error.Message + "\n" + error.StackTrace);
@@ -141,7 +108,7 @@ namespace Unity3DTiles
         public Promise<string> LoadTilesetJson(string url)
         {
             Promise<string> promise = new Promise<string>();
-            this.Behaviour.StartCoroutine(DownloadTilesetJson(url, promise));
+            Behaviour.StartCoroutine(DownloadTilesetJson(url, promise));
             return promise;
         }
 
@@ -186,8 +153,6 @@ namespace Unity3DTiles
                     version = tileset.Asset.TilesetVersion;
                 }
                 string versionQuery = "v=" + version;
-                
-                this.basePath = UrlUtils.SetQuery(this.basePath, versionQuery);
                 tilesetUrl = UrlUtils.SetQuery(tilesetUrl, versionQuery);
             }
             // A tileset.json referenced from a tile may exist in a different directory than the root tileset.
@@ -202,52 +167,40 @@ namespace Unity3DTiles
             while (stack.Count > 0)
             {
                 Unity3DTile tile3D = stack.Pop();
-                for (int i = 0; i < tile3D.tile.Children.Count; i++)
+                for (int i = 0; i < tile3D.schemaTile.Children.Count; i++)
                 {
-                    Unity3DTile child = new Unity3DTile(this, basePath, tile3D.tile.Children[i], tile3D);
-                    this.DeepestDepth = Math.Max(child.Depth, this.DeepestDepth);
+                    Unity3DTile child = new Unity3DTile(this, basePath, tile3D.schemaTile.Children[i], tile3D);
+                    DeepestDepth = Math.Max(child.Depth, DeepestDepth);
                     Statistics.NumberOfTilesTotal++;
                     stack.Push(child);
                 }
                 // TODO consider using CullWithChildrenBounds optimization here
             }
-            this.loadTimestamp = DateTime.UtcNow;
             return rootTile;
         }
 
         public void Update()
         {
-            if(!this.Ready)
-            {
-                return;
-            }            
             Statistics.Clear();
-            Traversal.Run();
-            Statistics.RequestQueueLength = this.RequestManager.QueueSize();
-            Statistics.ConcurrentRequests = this.RequestManager.RequestsInProgress();
-            Statistics.ProcessingTiles = this.ProcessingQueue.Count;
-            int remaining = Statistics.RequestQueueLength + Statistics.ConcurrentRequests + Statistics.ProcessingTiles;
-            Statistics.TilesLeftToLoad = remaining;
-            if (AllTilesLoaded != null)
+            if (Ready)
             {
-                if (previousTilesRemaining != 0 && remaining == 0)
+                Traversal.Run();
+                if (TilesetOptions.DebugDrawBounds)
                 {
-                    AllTilesLoaded(true);
-                }
-                if(previousTilesRemaining == 0 && remaining != 0)
-                {
-                    AllTilesLoaded(false);
+                    Traversal.DrawDebug();
                 }
             }
-            if (LoadProgress != null && remaining != previousTilesRemaining)
-            {
-                LoadProgress(remaining);
-            }
-            previousTilesRemaining = remaining;
-            if (this.TilesetOptions.DebugDrawBounds)
-            {
-                Traversal.DrawDebug();
-            }
+        }
+
+        public void UpdateStats()
+        {
+            Statistics.RequestQueueLength = RequestManager.Count(t => t.Tileset == this);
+            Statistics.ActiveDownloads = RequestManager.CountActiveDownloads(t => t.Tileset == this);
+            Statistics.ProcessingQueueLength = ProcessingQueue.Count(t => t.Tileset == this);
+            Statistics.DownloadedTiles = TileCache.Count(t => t.Tileset == this);
+            Statistics.ReadyTiles =
+                TileCache.Count(t => t.Tileset == this && t.ContentState == Unity3DTileContentState.READY);
+            Unity3DTilesetStatistics.MaxLoadedTiles = TileCache.MaxSize;
         }
     }
 }

@@ -658,7 +658,7 @@ class DemoUX : MonoBehaviour
             {
                 void drawBounds(Unity3DTile tile)
                 {
-                    if (tile.ContentActive)
+                    if (tile.Content != null && tile.Content.IsActive)
                     {
                         tile.BoundingVolume.DebugDraw(Color.magenta, tile.Tileset.Behaviour.transform);
                     }

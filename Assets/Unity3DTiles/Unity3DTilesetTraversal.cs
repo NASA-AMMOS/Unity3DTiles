@@ -14,6 +14,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 using System.Linq;
 using System;
 
@@ -51,11 +52,11 @@ namespace Unity3DTiles
                     tile.FrameState.Reset(frameCount);
                     tile.MarkUsed();
                     tile.FrameState.InFrustumSet = true;
-                    tileset.Statistics.FrustumSetCount += 1;
+                    tileset.Statistics.FrustumSet++;
                 }
             }
             
-            SSECalculator sse = new SSECalculator(this.tileset);
+            SSECalculator sse = new SSECalculator(tileset);
             foreach (Camera cam in sceneOptions.ClippingCameras)
             {
                 if (cam == null)
@@ -73,11 +74,13 @@ namespace Unity3DTiles
                 DetermineFrustumSet(tileset.Root, planes, sse, cameraPositionInTileset, cameraForwardInTileset,
                                     PlaneClipMask.GetDefaultMask());
             }
+            AssignPrioritiesRecursively(tileset.Root);
             MarkUsedSetLeaves(tileset.Root);
             SkipTraversal(tileset.Root);      
             ToggleTiles(tileset.Root);
-            //this.tileset.RequestManager.Process();
-            //UnloadUnusedContent called once for all tilesets at end of AbstractTilesetBehaviour.LateUpdate()
+            //tileset.RequestManager.Process();
+            //RequestManager.Process() and UnloadUnusedContent()
+            //called once for all tilesets at end of AbstractTilesetBehaviour.LateUpdate()
         }
 
         class SSECalculator
@@ -116,7 +119,7 @@ namespace Unity3DTiles
 
             public float ProjectDistanceOnTileToScreen(float distOnTile, float distFromCamera)
             {
-                if (this.cam.orthographic)
+                if (cam.orthographic)
                 {
                     return distOnTile / pixelSize;
                 }
@@ -153,7 +156,7 @@ namespace Unity3DTiles
                                  Vector3 cameraFwdInTilesetFrame, PlaneClipMask mask)
         {
             // Reset frame state if needed
-            tile.FrameState.Reset(this.frameCount);
+            tile.FrameState.Reset(frameCount);
             // Check to see if we are in the fustrum
             mask = tile.BoundingVolume.IntersectPlanes(planes, mask);
             if (mask.Intersection == IntersectionType.OUTSIDE)
@@ -163,7 +166,7 @@ namespace Unity3DTiles
             // We are in frustum and at a rendereable level of detail, mark as used and as visible
             tile.MarkUsed();  //  mark content as used in LRUContent so it won't be unloaded
             tile.FrameState.InFrustumSet = true;
-            this.tileset.Statistics.FrustumSetCount += 1;
+            tileset.Statistics.FrustumSet++;
             // Skip screen space error check if this node has empty content, 
             // we need to keep recursing until we find a node with content regardless of error
             if (!tile.HasEmptyContent)
@@ -198,7 +201,7 @@ namespace Unity3DTiles
                 anyChildUsed = anyChildUsed || r;
             }
             // If any children are in the workingset, mark all of them as being used (siblings/atomic split criteria).  
-            if (anyChildUsed && this.tileset.TilesetOptions.LoadSiblings)
+            if (anyChildUsed && tileset.TilesetOptions.LoadSiblings)
             {
                 for (int i = 0; i < tile.Children.Count; i++)
                 {
@@ -218,7 +221,7 @@ namespace Unity3DTiles
         {
             // We need to reset as we go in case we find tiles that weren't previously explored
             // If they have already been reset this frame this has no effect
-            tile.FrameState.Reset(this.frameCount);
+            tile.FrameState.Reset(frameCount);
             tile.MarkUsed();
             if(tile.HasEmptyContent)
             {
@@ -238,29 +241,21 @@ namespace Unity3DTiles
         void MarkUsedSetLeaves(Unity3DTile tile)
         {
             // A used leaf is a node that is used but has no children in the used set
-            if (!tile.FrameState.IsUsedThisFrame(this.frameCount))
+            if (!tile.FrameState.IsUsedThisFrame(frameCount))
             {
                 // Not used this frame, can't be a used leaf and neither can anything beneath us
                 return;
             }
-            this.tileset.Statistics.UsedSetCount += 1;
+            tileset.Statistics.UsedSet++;
             // If any child is used, then we are not a leaf
             bool anyChildrenUsed = false;
             for (int i = 0; i < tile.Children.Count; i++)
             {
-                anyChildrenUsed = anyChildrenUsed || tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount);
+                anyChildrenUsed = anyChildrenUsed || tile.Children[i].FrameState.IsUsedThisFrame(frameCount);
             }
             if (!anyChildrenUsed || ForceTiles.Contains(tile))
             {
                 tile.FrameState.IsUsedSetLeaf = true;
-                if (!tile.HasEmptyContent)
-                {
-                    this.tileset.Statistics.LeafContentRequired++;
-                    if(tile.ContentState == Unity3DTileContentState.READY)
-                    {
-                        this.tileset.Statistics.LeafContentLoaded++;
-                    }
-                }
             }
             else
             {
@@ -271,15 +266,6 @@ namespace Unity3DTiles
             }
         }
 
-        private bool CanRequest
-        {
-            get
-            {
-                return this.tileset.LRUContent.HasMaxSize && 
-                    this.tileset.LRUContent.Count + this.tileset.ProcessingQueue.Count + this.tileset.RequestManager.QueueSize() < this.tileset.LRUContent.MaxSize;
-            }
-        }
-
         /// <summary>
         /// Traverse the tree, request tiles, and enable visible tiles
         /// Skip parent tiles that have a screen space error larger than MaximumScreenSpaceError*SkipScreenSpaceErrorMultiplier
@@ -287,7 +273,7 @@ namespace Unity3DTiles
         /// <param name="tile"></param>
         void SkipTraversal(Unity3DTile tile)
         {
-            if (!tile.FrameState.IsUsedThisFrame(this.frameCount))
+            if (!tile.FrameState.IsUsedThisFrame(frameCount))
             {
                 return;
             }
@@ -301,9 +287,9 @@ namespace Unity3DTiles
                         tileset.Statistics.TallyVisibleTile(tile);
                     }
                     tile.FrameState.InColliderSet = true;
-                    this.tileset.Statistics.ColliderTileCount += 1;
+                    tileset.Statistics.ColliderSet++;
                 }
-                else if (this.CanRequest)
+                else
                 {
                     RequestTile(tile);
                 }
@@ -319,13 +305,13 @@ namespace Unity3DTiles
             bool allChildrenHaveContent = true;
             for (int i = 0; i < tile.Children.Count; i++)
             {
-                if (tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount))
+                if (tile.Children[i].FrameState.IsUsedThisFrame(frameCount))
                 {
                     bool childContent = tile.Children[i].ContentState == Unity3DTileContentState.READY || tile.HasEmptyContent;
                     allChildrenHaveContent = allChildrenHaveContent && childContent;
                 }
             }
-            if(meetsSSE && !hasContent && this.CanRequest)
+            if(meetsSSE && !hasContent)
             {
                 RequestTile(tile);
             }
@@ -337,11 +323,11 @@ namespace Unity3DTiles
                     tileset.Statistics.TallyVisibleTile(tile);
                 }
                 tile.FrameState.InColliderSet = true;
-                this.tileset.Statistics.ColliderTileCount += 1;
+                tileset.Statistics.ColliderSet++;
                 // Request children
                 for (int i = 0; i < tile.Children.Count; i++)
                 {
-                    if (tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount) && this.CanRequest)
+                    if (tile.Children[i].FrameState.IsUsedThisFrame(frameCount))
                     {
                         RequestTile(tile.Children[i]);
                     }
@@ -351,7 +337,7 @@ namespace Unity3DTiles
             // Otherwise keep decending
             for (int i = 0; i < tile.Children.Count; i++)
             {
-                if (tile.Children[i].FrameState.IsUsedThisFrame(this.frameCount))
+                if (tile.Children[i].FrameState.IsUsedThisFrame(frameCount))
                 {
                     SkipTraversal(tile.Children[i]);
                 }
@@ -361,10 +347,10 @@ namespace Unity3DTiles
         void ToggleTiles(Unity3DTile tile)
         {
             // Only consider tiles that were used this frame or the previous frame
-            if (tile.FrameState.IsUsedThisFrame(this.frameCount) || tile.FrameState.UsedLastFrame)
+            if (tile.FrameState.IsUsedThisFrame(frameCount) || tile.FrameState.UsedLastFrame)
             {
                 tile.FrameState.UsedLastFrame = false;
-                if (!tile.FrameState.IsUsedThisFrame(this.frameCount))
+                if (!tile.FrameState.IsUsedThisFrame(frameCount))
                 {
                     // This tile was active last frame but isn't active any more
                     if (tile.Content != null)
@@ -379,20 +365,22 @@ namespace Unity3DTiles
                     {
                         tile.Content.SetActive(tile.FrameState.InColliderSet || tile.FrameState.InRenderSet);
                         tile.Content.EnableColliders(tile.FrameState.InColliderSet);
-                        if (this.tileset.TilesetOptions.Show)
+                        if (tileset.TilesetOptions.Show)
                         {
                             if (tile.FrameState.InRenderSet)
                             {
                                 tile.Content.EnableRenderers(true);
-                                tile.Content.SetShadowMode(this.tileset.TilesetOptions.ShadowCastingMode, this.tileset.TilesetOptions.RecieveShadows);
-                                if (this.tileset.TilesetOptions.Style != null)
+                                tile.Content.SetShadowMode(tileset.TilesetOptions.ShadowCastingMode,
+                                                           tileset.TilesetOptions.RecieveShadows);
+                                if (tileset.TilesetOptions.Style != null)
                                 {
                                     tileset.TilesetOptions.Style.ApplyStyle(tile);
                                 }
                             }
-                            else if (tile.FrameState.InColliderSet && this.tileset.TilesetOptions.ShadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off)
+                            else if (tile.FrameState.InColliderSet &&
+                                     tileset.TilesetOptions.ShadowCastingMode != ShadowCastingMode.Off)
                             {
-                                tile.Content.SetShadowMode(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly, false);
+                                tile.Content.SetShadowMode(ShadowCastingMode.ShadowsOnly, false);
                             }
                         }
                     }
@@ -407,8 +395,8 @@ namespace Unity3DTiles
 
         int DepthFromFirstUsedAncestor(Unity3DTile tile)
         {
-            if (!tile.FrameState.IsUsedThisFrame(this.frameCount) ||
-                tile.Parent == null || !tile.Parent.FrameState.IsUsedThisFrame(this.frameCount))
+            if (!tile.FrameState.IsUsedThisFrame(frameCount) ||
+                tile.Parent == null || !tile.Parent.FrameState.IsUsedThisFrame(frameCount))
             {
                 return 0;
             }
@@ -418,8 +406,8 @@ namespace Unity3DTiles
 
         float MinUsedAncestorPixelsToCameraCenter(Unity3DTile tile, float pixels = float.MaxValue)
         {
-            if (!tile.FrameState.IsUsedThisFrame(this.frameCount) ||
-                tile.Parent == null || !tile.Parent.FrameState.IsUsedThisFrame(this.frameCount))
+            if (!tile.FrameState.IsUsedThisFrame(frameCount) ||
+                tile.Parent == null || !tile.Parent.FrameState.IsUsedThisFrame(frameCount))
             {
                 return pixels;
             }
@@ -429,9 +417,14 @@ namespace Unity3DTiles
 
         float TilePriority(Unity3DTile tile)
         {
-            if (this.tileset.TilesetOptions.TilePriority != null)
+            if (tileset.TilesetOptions.TilePriority != null)
             {
-                return this.tileset.TilesetOptions.TilePriority(tile);
+                return tileset.TilesetOptions.TilePriority(tile);
+            }
+
+            if (ForceTiles.Contains(tile))
+            {
+                return 0;
             }
 
             //prioritize by distance from camera
@@ -461,34 +454,45 @@ namespace Unity3DTiles
             return quantizedDist + relDepth;
         }
 
+        
         /// <summary>
-        /// Request a tile
-        /// If the tile has siblings in the used set, request them at the same time since we will need all of them to split the parent tile
-        /// Set request priority based on the closest sibling, request all siblings with the same priority since we need all of them to load before
-        /// any of them can be made visible
+        /// If the tile has siblings in the used set, request them at the same time since we will need all of
+        /// them to split the parent tile.
+        /// Set request priority based on the closest sibling, request all siblings with
+        /// the same priority since we need all of them to load before any of them can be made visible.
         /// </summary>
-        /// <param name="tile"></param>
+        void AssignPrioritiesRecursively(Unity3DTile tile)
+        {
+            tile.FrameState.Priority = float.MaxValue;
+            if (tile.FrameState.IsUsedThisFrame(frameCount) && !tile.HasEmptyContent)
+            {
+                tile.FrameState.Priority = TilePriority(tile);
+            }
+            float minChildPriority = float.MaxValue;
+            foreach (var child in tile.Children)
+            {
+                AssignPrioritiesRecursively(child);
+                minChildPriority = Mathf.Min(minChildPriority, child.FrameState.Priority);
+            }
+            foreach (var child in tile.Children)
+            {
+                child.FrameState.Priority = minChildPriority;
+            }
+        }
+
         void RequestTile(Unity3DTile tile)
         {
             if (tile.Parent == null)
             {
-                tile.RequestContent(TilePriority(tile));
+                tile.RequestContent(tile.FrameState.Priority);
             }
             else
             {
-                float priority = float.MaxValue;
                 for (int i = 0; i < tile.Parent.Children.Count; i++)
                 {
-                    if (tile.Parent.Children[i].FrameState.IsUsedThisFrame(this.frameCount))
+                    if (tile.Parent.Children[i].FrameState.IsUsedThisFrame(frameCount))
                     {
-                        priority = Mathf.Min(TilePriority(tile.Parent.Children[i]), priority);
-                    }
-                }
-                for (int i = 0; i < tile.Parent.Children.Count; i++)
-                {
-                    if (tile.Parent.Children[i].FrameState.IsUsedThisFrame(this.frameCount))
-                    {
-                        tile.Parent.Children[i].RequestContent(priority);
+                        tile.Parent.Children[i].RequestContent(tile.FrameState.Priority);
                     }
                 }
             }
@@ -502,11 +506,11 @@ namespace Unity3DTiles
 
         void DebugDrawUsedSet(Unity3DTile tile)
         {
-            if (tile.FrameState.IsUsedThisFrame(this.frameCount))
+            if (tile.FrameState.IsUsedThisFrame(frameCount))
             {
                 if (tile.FrameState.IsUsedSetLeaf)
                 {
-                    tile.BoundingVolume.DebugDraw(Color.white, this.tileset.Behaviour.transform);
+                    tile.BoundingVolume.DebugDraw(Color.white, tileset.Behaviour.transform);
                 }
                 for (int i = 0; i < tile.Children.Count; i++)
                 {
@@ -517,11 +521,11 @@ namespace Unity3DTiles
 
         void DebugDrawFrustumSet(Unity3DTile tile)
         {
-            if (tile.FrameState.IsUsedThisFrame(this.frameCount) && tile.FrameState.InFrustumSet)
+            if (tile.FrameState.IsUsedThisFrame(frameCount) && tile.FrameState.InFrustumSet)
             {
                 if (tile.FrameState.IsUsedSetLeaf)
                 {
-                    tile.BoundingVolume.DebugDraw(Color.green, this.tileset.Behaviour.transform);
+                    tile.BoundingVolume.DebugDraw(Color.green, tileset.Behaviour.transform);
                 }
                 for (int i = 0; i < tile.Children.Count; i++)
                 {

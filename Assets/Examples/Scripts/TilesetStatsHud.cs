@@ -86,25 +86,46 @@ public class TilesetStatsHud : MonoBehaviour
             builder.AppendLine();
         }
 #endif        
-        builder.Append("active colliders: ");
-        builder.Append(stats.ColliderTileCount);
+        builder.Append(stats.NumberOfTilesTotal);
+        builder.Append(" total tiles, ");
+        builder.Append(stats.ReadyTiles);
+        builder.Append(" ready, ");
+        builder.Append(stats.ProcessingQueueLength);
+        builder.Append(" to process");
         builder.AppendLine();
-        builder.Append("used set: ");
-        builder.Append(stats.UsedSetCount);
+
+        builder.Append(stats.UsedSet);
+        builder.Append(" used tiles, ");
+        builder.Append(stats.FrustumSet);
+        builder.Append(" in frustum, ");
+        builder.Append(stats.ColliderSet);
+        builder.Append(" with colliders");
         builder.AppendLine();
-        builder.Append("loaded tiles: ");
-        builder.Append(stats.LoadedContentCount);
-        builder.Append(", ");
-        builder.Append(stats.TilesLeftToLoad);
-        builder.Append(" remaining");
+
+        builder.Append("load progress ");
+        builder.Append((int)(stats.LoadProgress * 100));
+        builder.Append("%, ");
+        builder.Append(stats.PendingTiles);
+        builder.Append(" pending");
         builder.AppendLine();
+
+        builder.Append(stats.ActiveDownloads);
+        builder.Append(" active downloads, ");
+        builder.Append(stats.RequestQueueLength.ToString("d3"));
+        builder.Append(" queued");
+        builder.AppendLine();
+
         builder.Append("cached tiles: ");
-        builder.Append(tileset.LRUCache.Count);
-        builder.Append(" / ");
-        builder.Append(tileset.SceneOptions.LRUCacheMaxSize);
+        builder.Append(stats.DownloadedTiles);
+        builder.Append("/");
+        builder.Append(tileset.SceneOptions.CacheMaxSize);
+        builder.Append(", ");
+        builder.Append(tileset.TileCache.Unused);
+        builder.Append(" unused");
         builder.AppendLine();
+
         builder.Append("visible tiles: ");
-        builder.Append(stats.VisibleTileCount);
+        builder.Append(stats.VisibleTiles);
         builder.Append(" (depth ");
         builder.Append(stats.MinVisibleTileDepth);
         builder.Append("-");
@@ -113,6 +134,7 @@ public class TilesetStatsHud : MonoBehaviour
         builder.Append(tileset.DeepestDepth());
         builder.Append(")");
         builder.AppendLine();
+
         builder.Append("visible faces: ");
         builder.Append(stats.VisibleFaces / 1000);
         builder.Append(" k");
@@ -123,6 +145,7 @@ public class TilesetStatsHud : MonoBehaviour
         builder.Append("visible megapixels: ");
         builder.Append((stats.VisiblePixels / 1000000f).ToString("0.00"));
         builder.AppendLine();
+
         if (!string.IsNullOrEmpty(ExtraMessage))
         {
             builder.Append(ExtraMessage);
