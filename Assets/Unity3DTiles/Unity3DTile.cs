@@ -26,9 +26,7 @@ namespace Unity3DTiles
         UNLOADED = 0,   // Has never been requested
         LOADING = 1,    // Is waiting on a pending request
         PROCESSING = 2, // Request received.  Contents are being processed for rendering.  Depending on the content, it might make its own requests for external data.
-        READY = 3,      // Ready to render.
-        EXPIRED = 4,    // Is expired and will be unloaded once new content is loaded.
-        FAILED = 5      // Request failed.
+        READY = 3      // Ready to render.
     };
 
     public enum Unity3DTileContentType
@@ -39,10 +37,89 @@ namespace Unity3DTiles
         Unknown
     }
 
-    public class TileInfo : MonoBehaviour
+    [Serializable]
+    public class Unity3DTileFrameState
     {
+        public int LastVisitedFrame = -1;
+        
+        public bool InFrustumSet = false;  // Currently in view of a camera (And in this frames "Used set")
+        public bool InUsedSet = false;     // should be checked with IsUsedThisFrame
+        public bool IsUsedSetLeaf = false; 
+        public bool InRenderSet = false;   // This tile should be rendered this frame
+        public bool InColliderSet = false; // This tile should have its collider enabled this frame
+        public bool UsedLastFrame = false; // This tile was in the used set last frame
+        public float DistanceToCamera = float.MaxValue;
+        public float PixelsToCameraCenter = float.MaxValue;
+        public float ScreenSpaceError = 0;
+        public float Priority = float.MaxValue; // lower value means higher priority
+        
+        public void MarkUsed()
+        {
+            InUsedSet = true;
+        }
+        
+        public bool IsUsedThisFrame
+        {
+            get
+            {
+                return InUsedSet && LastVisitedFrame == Time.frameCount;
+            }
+        }
+        
+        public void Reset()
+        {
+            if (LastVisitedFrame == Time.frameCount)
+            {
+                return;
+            }
+            LastVisitedFrame = Time.frameCount;
+            InUsedSet = false;
+            InFrustumSet = false;
+            IsUsedSetLeaf = false;
+            InRenderSet = false;
+            InColliderSet = false;
+            DistanceToCamera = float.MaxValue;
+            PixelsToCameraCenter = float.MaxValue;
+            ScreenSpaceError = 0;
+            Priority = float.MaxValue;
+        }
+    }
+
+    public class Unity3DTileInfo : MonoBehaviour
+    {
+        public Unity3DTileFrameState FrameState;
         public Unity3DTile Tile;
     }
+
+#if UNITY_EDITOR
+    [UnityEditor.CustomEditor(typeof(Unity3DTileInfo))]
+    public class Unity3DTileInfoEditor : UnityEditor.Editor
+    {
+        private UnityEditor.SerializedProperty frameState;
+
+        public void OnEnable()
+        {
+            frameState = serializedObject.FindProperty("FrameState");
+        }
+
+        public override void OnInspectorGUI()
+        {
+            var ti = target as Unity3DTileInfo;
+            //DrawDefaultInspector();
+            UnityEditor.EditorGUILayout.LabelField("Used This Frame", ti.FrameState.IsUsedThisFrame.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Id", ti.Tile.Id);
+            UnityEditor.EditorGUILayout.LabelField("Parent", ti.Tile.Parent != null ? ti.Tile.Parent.Id : "null");
+            UnityEditor.EditorGUILayout.LabelField("Depth", ti.Tile.Depth.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Geometric Error", ti.Tile.GeometricError.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Refine", ti.Tile.Refine.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Has Empty Content", ti.Tile.HasEmptyContent.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Content Url", ti.Tile.ContentUrl);
+            UnityEditor.EditorGUILayout.LabelField("Content Type", ti.Tile.ContentType.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Content State", ti.Tile.ContentState.ToString());
+            UnityEditor.EditorGUILayout.PropertyField(frameState);
+        }
+    }
+#endif
 
     public class Unity3DTile
     {
@@ -58,33 +135,35 @@ namespace Unity3DTiles
         public Unity3DTile Parent;
         public int Depth = 0;
         public string Id { get; private set; }
-        public Schema.Tile tile;
+        public Schema.Tile schemaTile;
 
         public Unity3DTilesetStyle Style;
 
         public float GeometricError
         {
-            get { return (float)tile.GeometricError; }
+            get { return (float)schemaTile.GeometricError; }
         }
 
         public Schema.TileRefine Refine
         {
-            get { return tile.Refine.Value; }
+            get { return schemaTile.Refine.Value; }
         }
         
         public bool HasEmptyContent
         {
             get
             {
-                return tile.Content == null;
+                return schemaTile.Content == null;
             }
         }
+
+        public string ContentUrl { get; private set; }
 
         public Unity3DTileContentType ContentType
         {
             get
             {
-                string ext = Path.GetExtension(UrlUtils.RemoveQuery(this.ContentUrl)).ToLower();
+                string ext = Path.GetExtension(UrlUtils.RemoveQuery(ContentUrl)).ToLower();
                 if(ext.Equals(".b3dm"))
                 {
                     return Unity3DTileContentType.B3DM;
@@ -103,151 +182,93 @@ namespace Unity3DTiles
 
         public Unity3DTileContent Content { get; private set; }
 
-        public Unity3DTileContentState ContentState { get; private set; }
-
-        public bool ContentActive { get { return Content != null && Content.IsActive; } }
-
-        public string ContentUrl { get; private set; }
-
-        public Promise ContentReadyToProcessPromise { get; private set; }
-
-        public Promise ContentReadyPromise { get; private set; }
-
-        public Unity3DTileContent ExpiredContent { get; private set; }
-
-        public bool HasRenderableContent { get; private set; }
-
-        public bool HasTilesetContent { get; private set; }
-
-        public TileFrameState FrameState { get; private set; }
+        public Unity3DTileContentState ContentState;
 
         private int hashCode;
 
-        public class TileFrameState
-        {
-            public int LastVisitedFrame = -1;
-         
-            public bool InFrustumSet = false;       // Currently in view of a camera (And in this frames "Used set")
-            private bool InUsedSet = false;         // Relevant to rendering or collisons this frame, private because this should be checked with IsUsedThisFrame to void reading stale values
-            public bool IsUsedSetLeaf = false;      // This tile is at the maximum LOD this frame given our screen space error requirements
-            public bool InRenderSet = false;        // This tile should be rendered this frame
-            public bool InColliderSet = false;      // This tile should have its collider enabled this frame
-            public bool UsedLastFrame = false;      // This tile was in the used set last frame and may need to be deactivated next frame
-            public float DistanceToCamera = float.MaxValue;
-            public float PixelsToCameraCenter = float.MaxValue;
-            public float ScreenSpaceError = 0;
-
-            public void MarkUsed()
-            {
-                InUsedSet = true;
-            }
-
-            public bool IsUsedThisFrame(int frameCount)
-            {
-                return InUsedSet && LastVisitedFrame == frameCount;
-            }
-
-            public void Reset(int frameCount)
-            {
-                if(LastVisitedFrame == frameCount)
-                {
-                    return;
-                }
-                LastVisitedFrame = frameCount;
-                InUsedSet = false;
-                InFrustumSet = false;
-                IsUsedSetLeaf = false;
-                InRenderSet = false;
-                InColliderSet = false;
-                DistanceToCamera = float.MaxValue;
-                PixelsToCameraCenter = float.MaxValue;
-            }
-        }
+        public Unity3DTileFrameState FrameState = new Unity3DTileFrameState();
 
         public void MarkUsed()
         {
-            // Mark as used in frame state
-            this.FrameState.MarkUsed();
-            // If this node has content, it will also be tracked in the LRUContent datastructure.  Mark it as used
-            // so it's content won't be selected for unloading
-            this.Tileset.LRUContent.MarkUsed(this);
+            FrameState.MarkUsed();
+            Tileset.TileCache.MarkUsed(this);
         }
 
-        public Unity3DTile(Unity3DTileset tileset, string basePath, Schema.Tile tile, Unity3DTile parent)
+        public Unity3DTile(Unity3DTileset tileset, string basePath, Schema.Tile schemaTile, Unity3DTile parent)
         {
-            this.hashCode = (int)UnityEngine.Random.Range(0, int.MaxValue);
-            this.Tileset = tileset;
-            this.tile = tile;
-            this.FrameState = new TileFrameState();
-            if (tile.Content != null)
+            hashCode = (int)UnityEngine.Random.Range(0, int.MaxValue);
+            Tileset = tileset;
+            this.schemaTile = schemaTile;
+            if (schemaTile.Content != null)
             {
-                this.Id = Path.GetFileNameWithoutExtension(tile.Content.GetUri());
+                Id = Path.GetFileNameWithoutExtension(schemaTile.Content.GetUri());
             }
             if (parent != null)
             {
                 parent.Children.Add(this);
-                this.Depth = parent.Depth + 1;
+                Depth = parent.Depth + 1;
             }
 
             // TODO: Consider using a double percision Matrix library for doing 3d tiles root transform calculations
             // Set the local transform for this tile, default to identity matrix
-            this.transform = this.tile.UnityTransform();
+            transform = schemaTile.UnityTransform();
             var parentTransform = (parent != null) ? parent.computedTransform : tileset.GetRootTransform();
-            this.computedTransform = parentTransform * this.transform;
+            computedTransform = parentTransform * transform;
 
-            this.BoundingVolume = CreateBoundingVolume(tile.BoundingVolume, this.computedTransform);
+            BoundingVolume = CreateBoundingVolume(schemaTile.BoundingVolume, computedTransform);
 
             // TODO: Add 2D bounding volumes
 
-            if (tile.Content != null && tile.Content.BoundingVolume.IsDefined())
+            if (schemaTile.Content != null && schemaTile.Content.BoundingVolume.IsDefined())
             {
                 // Non-leaf tiles may have a content bounding-volume, which is a tight-fit bounding volume
                 // around only the features in the tile.  This box is useful for culling for rendering,
                 // but not for culling for traversing the tree since it does not guarantee spatial coherence, i.e.,
                 // since it only bounds features in the tile, not the entire tile, children may be
                 // outside of this box.
-                this.ContentBoundingVolume = CreateBoundingVolume(tile.Content.BoundingVolume, this.computedTransform);
+                ContentBoundingVolume = CreateBoundingVolume(schemaTile.Content.BoundingVolume, computedTransform);
             }
             else
             {
                 // Default to tile bounding volume
-                this.ContentBoundingVolume = CreateBoundingVolume(tile.BoundingVolume, this.computedTransform);
+                ContentBoundingVolume = CreateBoundingVolume(schemaTile.BoundingVolume, computedTransform);
             }
             // TODO: Add viewer request volume support
-            //if(tile.ViewerRequestVolume != null && tile.ViewerRequestVolume.IsDefined())
+            //if(schemaTile.ViewerRequestVolume != null && schemaTile.ViewerRequestVolume.IsDefined())
             //{
-            //    this.viewerRequestVolume = CreateBoundingVolume(tile.ViewerRequestVolume, transform);
+            //    viewerRequestVolume = CreateBoundingVolume(schemaTile.ViewerRequestVolume, transform);
             //}
 
-            if(!tile.Refine.HasValue)
+            if (!schemaTile.Refine.HasValue)
             {
-                tile.Refine = (parent == null) ? Schema.TileRefine.REPLACE : parent.tile.Refine.Value;
+                schemaTile.Refine = (parent == null) ? Schema.TileRefine.REPLACE : parent.schemaTile.Refine.Value;
             }
 
-            this.Parent = parent;
+            Parent = parent;
             
-            if(this.HasEmptyContent)
+            if (HasEmptyContent)
             {
-                this.ContentState = Unity3DTileContentState.READY;
+                ContentState = Unity3DTileContentState.READY;
             }
             else
             {
                 ContentState = Unity3DTileContentState.UNLOADED;
-                this.ContentUrl = UrlUtils.JoinUrls(basePath, tile.Content.GetUri());
+                ContentUrl = UrlUtils.JoinUrls(basePath, schemaTile.Content.GetUri());
             }
-
-            this.HasRenderableContent = false;
-            this.HasTilesetContent = false;
         }
 
         public bool Process()
         {
-            if (this.ContentState == Unity3DTileContentState.PROCESSING)
+            if (ContentState == Unity3DTileContentState.PROCESSING)
             {
-                this.ContentState = Unity3DTileContentState.READY;
-                this.Content.Initialize(this.Tileset.TilesetOptions.CreateColliders);
+                ContentState = Unity3DTileContentState.READY;
 
-                var indexMode = this.Tileset.TilesetOptions.LoadIndices;
+                Content.SetShadowMode(Tileset.TilesetOptions.ShadowCastingMode,
+                                      Tileset.TilesetOptions.RecieveShadows);
+
+                Content.Initialize(Tileset.TilesetOptions.CreateColliders);
+
+                var indexMode = Tileset.TilesetOptions.LoadIndices;
                 if (indexMode != IndexMode.Default && indexMode != IndexMode.None)
                 {
                     Action<IndexMode, string, string> fail = (mode, url, msg) =>
@@ -258,14 +279,13 @@ namespace Unity3DTiles
                         if (Unity3DTileIndex.EnableLoadWarnings)
                         {
 #pragma warning disable 0162
-                            Debug.LogWarning("failed to load " + mode + " index for " + this.ContentUrl + ": " + msg);
+                            Debug.LogWarning("failed to load " + mode + " index for " + ContentUrl + ": " + msg);
 #pragma warning restore 0162
 
                         }
                     };
-                    Action<Unity3DTileIndex> success = index => { this.Content.Index = index; };
-                    this.Tileset.Behaviour
-                        .StartCoroutine(Unity3DTileIndex.Load(indexMode, this.ContentUrl, success, fail));
+                    Action<Unity3DTileIndex> success = index => { Content.Index = index; };
+                    Tileset.Behaviour.StartCoroutine(Unity3DTileIndex.Load(indexMode, ContentUrl, success, fail));
                 }
 
                 return true;
@@ -279,102 +299,84 @@ namespace Unity3DTiles
         /// <param name="priority"></param>
         public void RequestContent(float priority)
         {
-            if (this.Tileset.RequestManager.Full())
+            if (HasEmptyContent || ContentState != Unity3DTileContentState.UNLOADED)
             {
                 return;
             }
-            if(this.HasEmptyContent)
-            {
-                return;
-            }
-            if (this.ContentState == Unity3DTileContentState.UNLOADED ||
-               this.ContentState == Unity3DTileContentState.EXPIRED)
-            {
-                this.ContentState = Unity3DTileContentState.LOADING;
                 
-                Promise<bool> finished = new Promise<bool>();
-                finished.Then((success) =>
+            Promise<bool> finished = new Promise<bool>();
+            finished.Then((success) =>
+            {
+                Tileset.Statistics.RequestsThisFrame++;
+                Tileset.Statistics.NetworkErrorsThisFrame += success ? 0 : 1;
+                bool duplicate = false;
+                if (success && Tileset.TileCache.Add(this, out duplicate))
                 {
-                    this.Tileset.Statistics.NetworkError = !success;
-                    this.Tileset.Statistics.RequestsThisFrame += 1;
-                    if (success)
-                    {
-                        this.ContentState = Unity3DTileContentState.PROCESSING;
-                        this.Content.SetShadowMode(this.Tileset.TilesetOptions.ShadowCastingMode, this.Tileset.TilesetOptions.RecieveShadows);
-                        this.Tileset.Statistics.LoadedContentCount += 1;
-                        this.Tileset.Statistics.TotalTilesLoaded += 1;
-                        // Track tile in cache as soon as it has downloaded content, but still queue it for processing
-                        CacheRequestStatus status = this.Tileset.LRUContent.Add(this);
-                        if (status == CacheRequestStatus.ADDED)
-                        {
-                            this.Tileset.ProcessingQueue.Enqueue(this);
-                        }
-                        else
-                        {
-                            UnloadContent();
-                        }                                             
-                    }
-                    else
-                    {
-                        UnloadContent();
-                    }
-                });
-
-                Promise started = new Promise();
-                started.Then(() =>
+                    ContentState = Unity3DTileContentState.PROCESSING;
+                    Tileset.ProcessingQueue.Enqueue(this);
+                }
+                else if (!duplicate)
                 {
-                    GameObject go = new GameObject(Id);
-                    go.transform.parent = this.Tileset.Behaviour.transform;
-                    go.transform.localPosition = new Vector3(this.computedTransform.m03, this.computedTransform.m13, this.computedTransform.m23);
-                    go.transform.localRotation = this.computedTransform.rotation;
-                    go.transform.localScale = this.computedTransform.lossyScale;
-                    go.layer = this.Tileset.Behaviour.gameObject.layer;
-                    go.SetActive(false);
-                    var info = go.AddComponent<TileInfo>();
-                    info.Tile = this;
-                    this.Content = new Unity3DTileContent(go);
-
-                    if (ContentType == Unity3DTileContentType.B3DM)
+                    UnloadContent();
+                }                                             
+            });
+            
+            Promise started = new Promise();
+            started.Then(() =>
+            {
+                GameObject go = new GameObject(Id);
+                go.transform.parent = Tileset.Behaviour.transform;
+                go.transform.localPosition =
+                    new Vector3(computedTransform.m03, computedTransform.m13, computedTransform.m23);
+                go.transform.localRotation = computedTransform.rotation;
+                go.transform.localScale = computedTransform.lossyScale;
+                go.layer = Tileset.Behaviour.gameObject.layer;
+                go.SetActive(false);
+                var info = go.AddComponent<Unity3DTileInfo>();
+                info.Tile = this;
+                info.FrameState = FrameState;
+                Content = new Unity3DTileContent(go);
+                
+                if (ContentType == Unity3DTileContentType.B3DM)
+                {
+                    B3DMComponent b3dmCo = go.AddComponent<B3DMComponent>();
+                    b3dmCo.Url = ContentUrl;
+                    b3dmCo.Multithreaded = Tileset.TilesetOptions.GLTFMultithreadedLoad;
+                    b3dmCo.MaximumLod = Tileset.TilesetOptions.GLTFMaximumLOD;
+                    if (!string.IsNullOrEmpty(Tileset.TilesetOptions.ShaderOverride))
                     {
-                        B3DMComponent b3dmCo = go.AddComponent<B3DMComponent>();
-                        b3dmCo.Url = this.ContentUrl;
-                        b3dmCo.Multithreaded = this.Tileset.TilesetOptions.GLTFMultithreadedLoad;
-                        b3dmCo.MaximumLod = this.Tileset.TilesetOptions.GLTFMaximumLOD;
-                        if (!string.IsNullOrEmpty(this.Tileset.TilesetOptions.ShaderOverride))
-                        {
-                            b3dmCo.ShaderOverride = Shader.Find(this.Tileset.TilesetOptions.ShaderOverride);
-                        }
-                        b3dmCo.AddColliders = false;
-                        b3dmCo.DownloadOnStart = false;
-                        this.Tileset.Behaviour.StartCoroutine(b3dmCo.Download(finished));
+                        b3dmCo.ShaderOverride = Shader.Find(Tileset.TilesetOptions.ShaderOverride);
                     }
-                    else if (ContentType == Unity3DTileContentType.PNTS)
-                    {
-                        PNTSComponent pntsCo = go.AddComponent<PNTSComponent>();
-                        pntsCo.Url = UrlUtils.RemoveQuery(this.ContentUrl);
-                        pntsCo.ShaderOverride = Shader.Find("Point Cloud/Point");
-                        pntsCo.DownloadOnStart = false;
-                        this.Tileset.Behaviour.StartCoroutine(pntsCo.Download(finished));
-                    }
+                    b3dmCo.AddColliders = false;
+                    b3dmCo.DownloadOnStart = false;
+                    Tileset.Behaviour.StartCoroutine(b3dmCo.Download(finished));
+                }
+                else if (ContentType == Unity3DTileContentType.PNTS)
+                {
+                    PNTSComponent pntsCo = go.AddComponent<PNTSComponent>();
+                    pntsCo.Url = UrlUtils.RemoveQuery(ContentUrl);
+                    pntsCo.ShaderOverride = Shader.Find("Point Cloud/Point");
+                    pntsCo.DownloadOnStart = false;
+                    Tileset.Behaviour.StartCoroutine(pntsCo.Download(finished));
+                }
+                
+            });
 
-                });
-                Request request = new Request(this, priority, started, finished);
-                this.Tileset.RequestManager.EnqueRequest(request);
-            }
+            Tileset.RequestManager.EnqueRequest(new Request(this, started, finished));
         }
 
         public void UnloadContent()
         {
-            if (this.HasEmptyContent)
+            if (HasEmptyContent)
             {
                 return;
             }
-            this.ContentState = Unity3DTileContentState.UNLOADED;
-            if (this.Content != null && this.Content.Go != null)
+            ContentState = Unity3DTileContentState.UNLOADED;
+            if (Content != null && Content.Go != null)
             {
-                this.Tileset.Statistics.LoadedContentCount -= 1;
-                GameObject.Destroy(this.Content.Go);
-                this.Content = null;
+                GameObject.Destroy(Content.Go);
+                Content = null;
+                Tileset.Behaviour.RequestUnloadUnusedAssets();
             }
         }
 
@@ -421,7 +423,7 @@ namespace Unity3DTiles
 
         public override int GetHashCode()
         {
-            return this.hashCode;
+            return hashCode;
         }
     }
 }

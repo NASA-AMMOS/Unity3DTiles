@@ -658,7 +658,7 @@ class DemoUX : MonoBehaviour
             {
                 void drawBounds(Unity3DTile tile)
                 {
-                    if (tile.ContentActive)
+                    if (tile.Content != null && tile.Content.IsActive)
                     {
                         tile.BoundingVolume.DebugDraw(Color.magenta, tile.Tileset.Behaviour.transform);
                     }
@@ -845,10 +845,16 @@ class DemoUX : MonoBehaviour
             var go = hit.collider.transform.gameObject;
             while (go != null)
             {
-                var ti = go.GetComponent<TileInfo>();
+                var ti = go.GetComponent<Unity3DTileInfo>();
                 if (ti != null)
                 {
                     selectedTile = ti.Tile;
+#if UNITY_EDITOR
+                    if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+                    {
+                        UnityEditor.Selection.activeGameObject = go;
+                    }
+#endif
                     break;
                 }
                 go = go.transform.parent != null ? go.transform.parent.gameObject : null;

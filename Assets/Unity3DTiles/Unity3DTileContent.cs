@@ -74,10 +74,10 @@ namespace Unity3DTiles
                 }
                 // Need to toggle active and then inactive to bake collider data
                 // We do this here so that we can control the number of bakes per frame
-                // by limiting the number of times we call initialize per frame when processing new tiles
-                // otherwise we can have lots of colliders bake in one frame if many tiles become active for the first time
-                this.Go.SetActive(true);
-                this.Go.SetActive(false);
+                // otherwise we can have lots of colliders bake in one frame if many tiles become
+                // active for the first time
+                Go.SetActive(true);
+                Go.SetActive(false);
             }
 
             for (int i = 0; i < meshFilters.Length; i++)
@@ -85,14 +85,14 @@ namespace Unity3DTiles
                 var m = meshFilters[i].sharedMesh;
                 if (m.GetTopology(0) == MeshTopology.Triangles)
                 {
-                    this.FaceCount += m.triangles.Length / 3;
+                    FaceCount += m.triangles.Length / 3;
                 }
             }
 
             int maxPixels = 0;
-            for (int i = 0; i < this.renderers.Length; i++)
+            for (int i = 0; i < renderers.Length; i++)
             {
-                var r = this.renderers[i];
+                var r = renderers[i];
                 for(int j = 0; j < r.materials.Length; j++)
                 {
                     if (r.materials[j].HasProperty("_MainTex"))
@@ -103,17 +103,17 @@ namespace Unity3DTiles
                             int pixels = t.width * t.height;
                             if (pixels > maxPixels)
                             {
-                                this.MaxTextureSize = new Vector2Int(t.width, t.height);
+                                MaxTextureSize = new Vector2Int(t.width, t.height);
                             }
-                            this.PixelCount += pixels;
-                            this.TextureCount += 1;
+                            PixelCount += pixels;
+                            TextureCount += 1;
                         }
                     }
                 }
             }
-            this.colliders = this.Go.GetComponentsInChildren<Collider>();
-            this.collidersEnabled = true;
-            this.renderersEnabled = true;
+            colliders = Go.GetComponentsInChildren<Collider>();
+            collidersEnabled = true;
+            renderersEnabled = true;
         }
 
         /// <summary>
@@ -123,9 +123,9 @@ namespace Unity3DTiles
         /// <param name="active"></param>
         public void SetActive(bool active)
         {
-            if(active != this.Go.activeSelf)
+            if (active != Go.activeSelf)
             {
-                this.Go.SetActive(active);
+                Go.SetActive(active);
             }
         }
 
@@ -136,14 +136,14 @@ namespace Unity3DTiles
         /// <param name="enabled"></param>
         public void EnableColliders(bool enabled)
         {
-            if (enabled != this.collidersEnabled)
+            if (enabled != collidersEnabled)
             {
-                this.collidersEnabled = enabled;
-                if (this.colliders != null)
+                collidersEnabled = enabled;
+                if (colliders != null)
                 {
-                    for (int i = 0; i < this.colliders.Length; i++)
+                    for (int i = 0; i < colliders.Length; i++)
                     {
-                        this.colliders[i].enabled = enabled;
+                        colliders[i].enabled = enabled;
                     }
                 }
             }
@@ -156,14 +156,14 @@ namespace Unity3DTiles
         /// <param name="enabled"></param>
         public void EnableRenderers(bool enabled)
         {
-            if (enabled != this.renderersEnabled)
+            if (enabled != renderersEnabled)
             {
-                this.renderersEnabled = enabled;
-                if (this.renderers != null)
+                renderersEnabled = enabled;
+                if (renderers != null)
                 {
-                    for (int i = 0; i < this.renderers.Length; i++)
+                    for (int i = 0; i < renderers.Length; i++)
                     {
-                        this.renderers[i].enabled = enabled;
+                        renderers[i].enabled = enabled;
                     }
                 }
             }
@@ -171,16 +171,17 @@ namespace Unity3DTiles
 
         public void SetShadowMode(ShadowCastingMode shadowMode, bool recieveShadows)
         {
-            if (!this.shadowMode.HasValue || !this.recieveShadows.HasValue || this.shadowMode.Value != shadowMode || this.recieveShadows.Value != recieveShadows)
+            if (!this.shadowMode.HasValue || !this.recieveShadows.HasValue ||
+                this.shadowMode.Value != shadowMode || this.recieveShadows.Value != recieveShadows)
             {
                 this.shadowMode = shadowMode;
                 this.recieveShadows = recieveShadows;
-                if (this.renderers != null)
+                if (renderers != null)
                 {
-                    for (int i = 0; i < this.renderers.Length; i++)
+                    for (int i = 0; i < renderers.Length; i++)
                     {
-                        this.renderers[i].receiveShadows = recieveShadows;
-                        this.renderers[i].shadowCastingMode = shadowMode;
+                        renderers[i].receiveShadows = recieveShadows;
+                        renderers[i].shadowCastingMode = shadowMode;
                     }
                 }
             }
@@ -188,7 +189,7 @@ namespace Unity3DTiles
 
         public MeshRenderer[] GetRenderers()
         {
-            return this.renderers;
+            return renderers;
         }
     }
 }

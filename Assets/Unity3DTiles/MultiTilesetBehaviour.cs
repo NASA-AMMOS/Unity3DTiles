@@ -78,23 +78,37 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
         {
             // Rotate processing order of tilesets each frame to avoid starvation (only upon request queue / cache full)
             startIndex = Mathf.Clamp(startIndex, 0, tilesets.Count - 1);
-            foreach (var t in tilesets.Skip(startIndex))
+            for (int i = 0; i < tilesets.Count; i++)
             {
-                t.Update();
+                tilesets[(i + startIndex) % tilesets.Count].Update();
             }
-            foreach (var t in tilesets.Take(startIndex))
+            if (tilesets.Count > 0)
             {
-                t.Update();
-            }
-            startIndex++;
-            if (startIndex >= tilesets.Count)
-            {
-                startIndex = 0;
+                startIndex = (startIndex + 1) % tilesets.Count;
             }
         }
 
         protected override void UpdateStats()
         {
+            //this works but is very inefficient and drags down framerate significantly when many tilesets are loaded
+            //foreach (var tileset in tilesets)
+            //{
+            //    tileset.UpdateStats();
+            //}
+            RequestManager.ForEachQueuedDownload(t => { t.Tileset.Statistics.RequestQueueLength++; });
+            RequestManager.ForEachActiveDownload(t => { t.Tileset.Statistics.ActiveDownloads++; });
+            foreach (var tile in ProcessingQueue)
+            {
+                tile.Tileset.Statistics.ProcessingQueueLength++;
+            }
+            TileCache.ForEach(t => {
+                t.Tileset.Statistics.DownloadedTiles++;
+                if (t.ContentState == Unity3DTileContentState.READY)
+                {
+                    t.Tileset.Statistics.ReadyTiles++;
+                }
+            });
+            Unity3DTilesetStatistics.MaxLoadedTiles = TileCache.MaxSize;
             Stats = Unity3DTilesetStatistics.Aggregate(tilesets.Select(t => t.Statistics).ToArray());
         }
 

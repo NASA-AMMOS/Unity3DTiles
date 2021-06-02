@@ -70,5 +70,10 @@ namespace Unity3DTiles
                 Tileset.Update();
             }
         }
+
+        protected override void UpdateStats()
+        {
+            Tileset.UpdateStats();
+        }
     }
 }

@@ -105,13 +105,13 @@ namespace Unity3DTiles
         public int MaximumTilesToProcessPerFrame = 1;
 
         [Tooltip("Sets the target maximum number of tiles that can be loaded into memory at any given time.  Beyond this limit, unused tiles will be unloaded as new requests are made.")]
-        public int LRUCacheTargetSize = 600;
+        public int CacheTargetSize = 600;
 
         [Tooltip("Sets the maximum number of tiles (hard limit) that can be loaded into memory at any given time. Requests that would exceed this limit fail.")]
-        public int LRUCacheMaxSize = 1000;
+        public int CacheMaxSize = 1000;
 
-        [Tooltip("Controls the maximum number of unused tiles that will be unloaded at a time when the cache is full.  This is specified as a ratio of the LRUMaxCacheSize. For example, if this is set to 0.2 and LRUMaxCacheSize is 600 then at most we will unload 120 (0.2*600) tiles in a single frame.")]
-        public float LRUMaxFrameUnloadRatio = 0.2f;
+        [Tooltip("Controls the maximum number of unused tiles that will be unloaded at a time when the cache is full.  This is specified as a ratio of the MaxCacheSize. For example, if this is set to 0.2 and MaxCacheSize is 600 then at most we will unload 120 (0.2*600) tiles in a single frame.")]
+        public float MaxCacheUnloadRatio = 0.2f;
 
         [Tooltip("Manages how many downloads can occurs simultaneously.  Larger results in faster load times but this should be tuned for the particular platform you are deploying to.")]
         public int MaxConcurrentRequests = 6;

@@ -22,25 +22,19 @@ namespace Unity3DTiles
 {
     public abstract class AbstractTilesetBehaviour : MonoBehaviour
     {
+        //not readonly to show up in inspector
         public Unity3DTilesetSceneOptions SceneOptions = new Unity3DTilesetSceneOptions();
 
-        public Unity3DTilesetStatistics Stats;
+        public Unity3DTilesetStatistics Stats; //not readonly to show up in inspector
 
-        public LRUCache<Unity3DTile> LRUCache = new LRUCache<Unity3DTile>();
-        public Queue<Unity3DTile> ProcessingQueue = new Queue<Unity3DTile>();
+        public RequestManager RequestManager { get; private set; }
 
-        private RequestManager _requestManager;
-        public RequestManager RequestManager
-        {
-            get
-            {
-                if (_requestManager == null)
-                {
-                    _requestManager = new RequestManager(SceneOptions);
-                }
-                return _requestManager;
-            }
-        }
+        public TileCache TileCache { get; private set; }
+
+        public readonly Queue<Unity3DTile> ProcessingQueue = new Queue<Unity3DTile>();
+
+        private bool unloadAssetsPending;
+        private AsyncOperation lastUnloadAssets;
 
         public abstract bool Ready();
 
@@ -50,32 +44,91 @@ namespace Unity3DTiles
 
         public abstract void ClearForcedTiles();
 
+        public void RequestUnloadUnusedAssets()
+        {
+            unloadAssetsPending = true;
+        }
+
         public void Update()
         {
-            this._update();
+            _update();
         }
 
         public void LateUpdate()
         {
-            LRUCache.MaxSize = SceneOptions.LRUCacheMaxSize;
-            LRUCache.MarkAllUnused();
-            this._lateUpdate();
-            this._requestManager?.Process();
-            // Move any tiles with downloaded content to the ready state
+            TileCache.MarkAllUnused();
+
+            _lateUpdate();
+
+            RequestManager.ForEachQueuedDownload(DerateUnusedTilePriority);
+            RequestManager.ForEachActiveDownload(DerateUnusedTilePriority);
+            TileCache.ForEach(DerateUnusedTilePriority);
+
+            int maxNewRequests = TileCache.HasMaxSize ? TileCache.MaxSize - TileCache.Count() : -1;
+            RequestManager.Process(maxNewRequests);
+
             int processed = 0;
-            while (processed < this.SceneOptions.MaximumTilesToProcessPerFrame && this.ProcessingQueue.Count != 0)
+            while (processed < SceneOptions.MaximumTilesToProcessPerFrame && ProcessingQueue.Count != 0)
             {
-                var tile = this.ProcessingQueue.Dequeue();
-                // We allow requests to terminate early if the (would be) tile goes out of view, so check if a tile is actually processed
-                if (tile.Process())
+                var tile = ProcessingQueue.Dequeue();
+                if (tile.Process()) //bake colliders, load indices, etc...
                 {
+                    // We allow requests to terminate early if the (would be) tile goes out of view, so check if a tile
+                    // is actually processed
                     processed++;
                 }
             }
 
-            LRUCache.UnloadUnusedContent(SceneOptions.LRUCacheTargetSize, SceneOptions.LRUMaxFrameUnloadRatio, n => -n.Depth, t => t.UnloadContent());
+            //if there are queued requests with higher priority than existing tiles but the TileCache cache is too full
+            //to allow them to load, unload a corresponding number of lowest-priority tiles
+            int ejected = 0;
+            if (maxNewRequests >= 0 && maxNewRequests < SceneOptions.MaxConcurrentRequests &&
+                RequestManager.Count() > maxNewRequests)
+            {
+                var re = RequestManager.GetEnumerator(); //high priority (low value) first
+                ejected = TileCache.MarkLowPriorityUnused(t => //low priority (high value) first
+                                                          re.MoveNext() &&
+                                                          t.FrameState.Priority > re.Current.FrameState.Priority,
+                                                          SceneOptions.MaxConcurrentRequests - maxNewRequests);
+            }
 
-            this.UpdateStats();
+            if (ejected > 0 || (TileCache.TargetSize > 0 && TileCache.Count() > TileCache.TargetSize))
+            {
+                //this will trigger Resources.UnloadUnusedAssets() as needed
+                TileCache.UnloadUnusedContent(ejected);
+            }
+
+            if (unloadAssetsPending)
+            {
+                if (lastUnloadAssets == null || lastUnloadAssets.isDone)
+                {
+                    unloadAssetsPending = false;
+                    lastUnloadAssets = Resources.UnloadUnusedAssets();
+                }
+            }
+                
+            UpdateStats();
+        }
+
+        private void DerateUnusedTilePriority(Unity3DTile tile)
+        {
+            if (!tile.FrameState.IsUsedThisFrame && !tile.FrameState.UsedLastFrame)
+            {
+                if (tile.FrameState.LastVisitedFrame < 0)
+                {
+                    tile.FrameState.Priority = float.MaxValue;
+                }
+                else if (!float.IsNaN(tile.FrameState.Priority) && tile.FrameState.Priority > 0 &&
+                         tile.FrameState.Priority < float.MaxValue)
+                {
+                    float maxFrames = 1000;
+                    float framesSinceUsed = Time.frameCount - tile.FrameState.LastVisitedFrame;
+                    if (framesSinceUsed > 0 && framesSinceUsed <= maxFrames)
+                    {
+                        tile.FrameState.Priority *= (maxFrames + framesSinceUsed) / (maxFrames + framesSinceUsed - 1);
+                    }
+                }
+            }
         }
 
         protected virtual void UpdateStats()
@@ -95,6 +148,9 @@ namespace Unity3DTiles
 
         public void Start()
         {
+            RequestManager = new RequestManager(SceneOptions);
+            TileCache = new TileCache(SceneOptions);
+
             if (SceneOptions.ClippingCameras.Count == 0)
             {
                 SceneOptions.ClippingCameras.Add(Camera.main);
