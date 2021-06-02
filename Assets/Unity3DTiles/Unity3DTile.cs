@@ -128,18 +128,21 @@ namespace Unity3DTiles
                 InUsedSet = true;
             }
 
-            public bool IsUsedThisFrame(int frameCount)
+            public bool IsUsedThisFrame
             {
-                return InUsedSet && LastVisitedFrame == frameCount;
+                get
+                {
+                    return InUsedSet && LastVisitedFrame == Time.frameCount;
+                }
             }
 
-            public void Reset(int frameCount)
+            public void Reset()
             {
-                if(LastVisitedFrame == frameCount)
+                if (LastVisitedFrame == Time.frameCount)
                 {
                     return;
                 }
-                LastVisitedFrame = frameCount;
+                LastVisitedFrame = Time.frameCount;
                 InUsedSet = false;
                 InFrustumSet = false;
                 IsUsedSetLeaf = false;

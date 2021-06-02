@@ -35,15 +35,6 @@ namespace Unity3DTiles
 
         private readonly List<Unity3DTile> tmpList = new List<Unity3DTile>();
 
-        public int Count(Func<Unity3DTile, bool> predicate = null)
-        {
-            if (predicate == null)
-            {
-                return list.Count - 1;
-            }
-            return list.Count(t => t != null && predicate(t));
-        }
-
         public bool HasMaxSize
         {
             get { return sceneOptions.CacheMaxSize > 0;  }
@@ -100,9 +91,33 @@ namespace Unity3DTiles
             list.AddFirst(sentinel);
         }
 
+        public int Count(Func<Unity3DTile, bool> predicate = null)
+        {
+            if (predicate == null)
+            {
+                return list.Count - 1;
+            }
+            return list.Count(t => t != null && predicate(t));
+        }
+
+        public void ForEach(Action<Unity3DTile> action)
+        {
+            foreach (var tile in list)
+            {
+                if (tile != null)
+                {
+                    action(tile);
+                }
+            }
+        }
+
         public bool Add(Unity3DTile tile, out bool duplicate)
         {
             duplicate = false;
+            if (tile == null)
+            {
+                return false;
+            }
             if (nodeLookup.ContainsKey(tile))
             {
                 duplicate = true;

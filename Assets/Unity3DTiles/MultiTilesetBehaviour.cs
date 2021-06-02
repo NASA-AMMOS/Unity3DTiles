@@ -90,10 +90,25 @@ public class MultiTilesetBehaviour : AbstractTilesetBehaviour
 
         protected override void UpdateStats()
         {
-            foreach (var tileset in tilesets)
+            //this works but is very inefficient and drags down framerate significantly when many tilesets are loaded
+            //foreach (var tileset in tilesets)
+            //{
+            //    tileset.UpdateStats();
+            //}
+            RequestManager.ForEachQueuedDownload(t => { t.Tileset.Statistics.RequestQueueLength++; });
+            RequestManager.ForEachActiveDownload(t => { t.Tileset.Statistics.ActiveDownloads++; });
+            foreach (var tile in ProcessingQueue)
             {
-                tileset.UpdateStats();
+                tile.Tileset.Statistics.ProcessingQueueLength++;
             }
+            TileCache.ForEach(t => {
+                t.Tileset.Statistics.DownloadedTiles++;
+                if (t.ContentState == Unity3DTileContentState.READY)
+                {
+                    t.Tileset.Statistics.ReadyTiles++;
+                }
+            });
+            Unity3DTilesetStatistics.MaxLoadedTiles = TileCache.MaxSize;
             Stats = Unity3DTilesetStatistics.Aggregate(tilesets.Select(t => t.Statistics).ToArray());
         }
 

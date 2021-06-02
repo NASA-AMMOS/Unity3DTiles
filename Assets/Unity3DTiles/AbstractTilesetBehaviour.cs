@@ -60,6 +60,10 @@ namespace Unity3DTiles
 
             _lateUpdate();
 
+            RequestManager.ForEachQueuedDownload(DerateUnusedTilePriority);
+            RequestManager.ForEachActiveDownload(DerateUnusedTilePriority);
+            TileCache.ForEach(DerateUnusedTilePriority);
+
             int maxNewRequests = TileCache.HasMaxSize ? TileCache.MaxSize - TileCache.Count() : -1;
             RequestManager.Process(maxNewRequests);
 
@@ -104,6 +108,23 @@ namespace Unity3DTiles
             }
                 
             UpdateStats();
+        }
+
+        private void DerateUnusedTilePriority(Unity3DTile tile)
+        {
+            if (!tile.FrameState.IsUsedThisFrame && !tile.FrameState.UsedLastFrame)
+            {
+                if (tile.FrameState.LastVisitedFrame < 0)
+                {
+                    tile.FrameState.Priority = float.MaxValue;
+                }
+                else
+                {
+                    float maxFrames = 1000;
+                    float framesSinceUsed = Mathf.Min(Time.frameCount - tile.FrameState.LastVisitedFrame, maxFrames);
+                    tile.FrameState.Priority = (1 + (framesSinceUsed / maxFrames));
+                }
+            }
         }
 
         protected virtual void UpdateStats()

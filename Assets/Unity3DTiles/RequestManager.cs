@@ -90,23 +90,6 @@ namespace Unity3DTiles
             }
         }
 
-        public int Count(Func<Unity3DTile, bool> predicate = null)
-        {
-            if (predicate == null)
-            {
-                return queue.Count;
-            } 
-            int num = 0;
-            foreach (var request in queue)
-            {
-                if (predicate(request.Tile))
-                {
-                    num++;
-                }
-            }
-            return num;
-        }
-
         public IEnumerator<Unity3DTile> GetEnumerator()
         {
             foreach (var request in queue)
@@ -141,6 +124,23 @@ namespace Unity3DTiles
             this.sceneOptions = sceneOptions;
         }
 
+        public int Count(Func<Unity3DTile, bool> predicate = null)
+        {
+            if (predicate == null)
+            {
+                return queue.Count;
+            } 
+            int num = 0;
+            foreach (var request in queue)
+            {
+                if (predicate(request.Tile))
+                {
+                    num++;
+                }
+            }
+            return num;
+        }
+
         public int CountActiveDownloads(Func<Unity3DTile, bool> predicate = null)
         {
             if (predicate == null)
@@ -148,6 +148,22 @@ namespace Unity3DTiles
                 return activeDownloads.Count;
             }
             return activeDownloads.Count(predicate);
+        }
+
+        public void ForEachQueuedDownload(Action<Unity3DTile> action)
+        {
+            foreach (var request in queue)
+            {
+                action(request.Tile);
+            }
+        }
+
+        public void ForEachActiveDownload(Action<Unity3DTile> action)
+        {
+            foreach (var tile in activeDownloads)
+            {
+                action(tile);
+            }
         }
 
         public void EnqueRequest(Request request)
