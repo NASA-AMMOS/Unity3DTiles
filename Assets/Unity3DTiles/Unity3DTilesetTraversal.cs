@@ -86,9 +86,9 @@ namespace Unity3DTiles
                 }
             }
             
-            AssignPrioritiesRecursively(tileset.Root);
-
             MarkUsedSetLeaves(tileset.Root);
+
+            AssignPrioritiesRecursively(tileset.Root);
 
             SkipTraversal(tileset.Root);      
 
@@ -193,9 +193,11 @@ namespace Unity3DTiles
             {
                 // Check to see if this tile meets the on screen error level of detail requirement
                 float distance = tile.BoundingVolume.MinDistanceTo(cameraPosInTilesetFrame);
+
                 // We take the min in case multiple cameras, reset dist to max float on frame reset
                 tile.FrameState.DistanceToCamera = Mathf.Min(distance, tile.FrameState.DistanceToCamera);
-                tile.FrameState.ScreenSpaceError = sse.PixelError(tile.GeometricError, distance);
+                tile.FrameState.ScreenSpaceError =
+                    sse.PixelError(tile.GeometricError, tile.FrameState.DistanceToCamera);
 
                 Ray cameraRay = new Ray(cameraPosInTilesetFrame, cameraFwdInTilesetFrame);
                 float distToAxis = tile.BoundingVolume.CenterDistanceTo(cameraRay);
@@ -296,6 +298,7 @@ namespace Unity3DTiles
             {
                 return;
             }
+
             if (tile.FrameState.IsUsedSetLeaf)
             {
                 if (tile.ContentState == Unity3DTileContentState.READY)
@@ -332,10 +335,12 @@ namespace Unity3DTiles
                     allChildrenHaveContent = allChildrenHaveContent && childContent;
                 }
             }
+
             if (meetsSSE && !hasContent)
             {
                 RequestTile(tile);
             }
+
             if (meetsSSE && hasContent && !allChildrenHaveContent)
             {
                 if (tile.FrameState.InFrustumSet)
@@ -355,6 +360,7 @@ namespace Unity3DTiles
                 }
                 return;
             }
+
             // Otherwise keep decending
             for (int i = 0; i < tile.Children.Count; i++)
             {
@@ -425,7 +431,7 @@ namespace Unity3DTiles
             return 1 + DepthFromFirstUsedAncestor(tile.Parent);
         }
 
-        float MinUsedAncestorPixelsToCameraCenter(Unity3DTile tile, float pixels = float.MaxValue)
+        float MinUsedAncestorPixelsToCameraCenter(Unity3DTile tile, float pixels = 10000)
         {
             if (!tile.FrameState.IsUsedThisFrame || tile.Parent == null || !tile.Parent.FrameState.IsUsedThisFrame)
             {
@@ -442,7 +448,7 @@ namespace Unity3DTiles
                 return 0;
             }
 
-            if (!tile.FrameState.IsUsedThisFrame)
+            if (!tile.FrameState.IsUsedThisFrame || !tile.FrameState.InFrustumSet || tile.HasEmptyContent)
             {
                 return float.MaxValue;
             }
@@ -452,31 +458,40 @@ namespace Unity3DTiles
                 return tilesetOptions.TilePriority(tile);
             }
 
-            //prioritize by distance from camera
-            //return tile.FrameState.DistanceToCamera;
-            //return tile.FrameState.PixelsToCameraCenter;
-            //return MinUsedAncestorPixelsToCameraCenter(tile);
+            float distLimit = 1000;
+            float d2c = tile.FrameState.DistanceToCamera;
+            d2c = float.IsNaN(d2c) ? distLimit : Mathf.Max(0, Mathf.Min(distLimit, d2c));
 
-            //prioritize coarse to fine
-            //return tile.Depth;
-            //return DepthFromFirstUsedAncestor(tile);
+            float pixelsLimit = 10000;
+            float p2c = tile.FrameState.PixelsToCameraCenter;
+            //float p2c = MinUsedAncestorPixelsToCameraCenter(tile, pixelsLimit);
+            p2c = float.IsNaN(p2c) ? pixelsLimit : Mathf.Max(0, Mathf.Min(pixelsLimit, p2c));
 
-            //prioritize first coarse to fine, then by distance
-            //int depth = tileDepth;
-            //int depth = DepthFromFirstUsedAncestor(tile); //integer part
-            //float distLimit = 1000;
-            //float dist = Mathf.Min(tile.FrameState.DistanceToCamera, distLimit);
-            //float relDist = dist / distLimit; //fractional part
-            //return depth + relDist;
-
-            //prioritize first by distance, then coarse to fine
-            float quantizedDist = (int)(tile.FrameState.PixelsToCameraCenter / 100);
-            //float quantizedDist = (int)(MinUsedAncestorPixelsToCameraCenter(tile) / 100);
             float depthLimit = 100;
-            float depth = Math.Min(tile.Depth, depthLimit);
-            //float depth = Math.Min(DepthFromFirstUsedAncestor(tile), depthLimit);
-            float relDepth = depth / depthLimit; //fractional part
-            return quantizedDist + relDepth;
+            float depth = tile.Depth;
+            //float depth = DepthFromFirstUsedAncestor(tile);
+            depth = float.IsNaN(depth) ? depthLimit : Mathf.Max(0, Mathf.Min(depthLimit, depth));
+
+            //prioritize by distance from camera
+            //return d2c;
+
+            //prioritize by pixels from camera
+            //return p2c;
+
+            //prioritize by depth
+            //return depth;
+
+            //prioritize first by depth, then pixels to camera
+            //return depth + (p2c / pixelsLimit);
+
+            //prioritize first by pixels to camera, then depth
+            //return (int)(p2c / 100) + (depth / depthLimit);
+
+            //prioritize first by used set leaf, then distance to camera, then depth, then pixels to camera
+            return (tile.FrameState.IsUsedSetLeaf ? 0 : 100) +
+                (d2c < 1 ? 0 : 10) +
+                (int)(9 * depth / depthLimit) +
+                (p2c / pixelsLimit);
         }
 
         

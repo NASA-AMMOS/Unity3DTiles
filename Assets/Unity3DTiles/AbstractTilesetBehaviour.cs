@@ -118,11 +118,15 @@ namespace Unity3DTiles
                 {
                     tile.FrameState.Priority = float.MaxValue;
                 }
-                else
+                else if (!float.IsNaN(tile.FrameState.Priority) && tile.FrameState.Priority > 0 &&
+                         tile.FrameState.Priority < float.MaxValue)
                 {
                     float maxFrames = 1000;
-                    float framesSinceUsed = Mathf.Min(Time.frameCount - tile.FrameState.LastVisitedFrame, maxFrames);
-                    tile.FrameState.Priority = (1 + (framesSinceUsed / maxFrames));
+                    float framesSinceUsed = Time.frameCount - tile.FrameState.LastVisitedFrame;
+                    if (framesSinceUsed > 0 && framesSinceUsed <= maxFrames)
+                    {
+                        tile.FrameState.Priority *= (maxFrames + framesSinceUsed) / (maxFrames + framesSinceUsed - 1);
+                    }
                 }
             }
         }

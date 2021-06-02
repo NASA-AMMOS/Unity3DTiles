@@ -37,10 +37,89 @@ namespace Unity3DTiles
         Unknown
     }
 
-    public class TileInfo : MonoBehaviour
+    [Serializable]
+    public class Unity3DTileFrameState
     {
+        public int LastVisitedFrame = -1;
+        
+        public bool InFrustumSet = false;  // Currently in view of a camera (And in this frames "Used set")
+        public bool InUsedSet = false;     // should be checked with IsUsedThisFrame
+        public bool IsUsedSetLeaf = false; 
+        public bool InRenderSet = false;   // This tile should be rendered this frame
+        public bool InColliderSet = false; // This tile should have its collider enabled this frame
+        public bool UsedLastFrame = false; // This tile was in the used set last frame
+        public float DistanceToCamera = float.MaxValue;
+        public float PixelsToCameraCenter = float.MaxValue;
+        public float ScreenSpaceError = 0;
+        public float Priority = float.MaxValue; // lower value means higher priority
+        
+        public void MarkUsed()
+        {
+            InUsedSet = true;
+        }
+        
+        public bool IsUsedThisFrame
+        {
+            get
+            {
+                return InUsedSet && LastVisitedFrame == Time.frameCount;
+            }
+        }
+        
+        public void Reset()
+        {
+            if (LastVisitedFrame == Time.frameCount)
+            {
+                return;
+            }
+            LastVisitedFrame = Time.frameCount;
+            InUsedSet = false;
+            InFrustumSet = false;
+            IsUsedSetLeaf = false;
+            InRenderSet = false;
+            InColliderSet = false;
+            DistanceToCamera = float.MaxValue;
+            PixelsToCameraCenter = float.MaxValue;
+            ScreenSpaceError = 0;
+            Priority = float.MaxValue;
+        }
+    }
+
+    public class Unity3DTileInfo : MonoBehaviour
+    {
+        public Unity3DTileFrameState FrameState;
         public Unity3DTile Tile;
     }
+
+#if UNITY_EDITOR
+    [UnityEditor.CustomEditor(typeof(Unity3DTileInfo))]
+    public class Unity3DTileInfoEditor : UnityEditor.Editor
+    {
+        private UnityEditor.SerializedProperty frameState;
+
+        public void OnEnable()
+        {
+            frameState = serializedObject.FindProperty("FrameState");
+        }
+
+        public override void OnInspectorGUI()
+        {
+            var ti = target as Unity3DTileInfo;
+            //DrawDefaultInspector();
+            UnityEditor.EditorGUILayout.LabelField("Used This Frame", ti.FrameState.IsUsedThisFrame.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Id", ti.Tile.Id);
+            UnityEditor.EditorGUILayout.LabelField("Parent", ti.Tile.Parent != null ? ti.Tile.Parent.Id : "null");
+            UnityEditor.EditorGUILayout.LabelField("Depth", ti.Tile.Depth.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Geometric Error", ti.Tile.GeometricError.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Refine", ti.Tile.Refine.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Has Empty Content", ti.Tile.HasEmptyContent.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Content Url", ti.Tile.ContentUrl);
+            UnityEditor.EditorGUILayout.LabelField("Content Type", ti.Tile.ContentType.ToString());
+            UnityEditor.EditorGUILayout.LabelField("Content State", ti.Tile.ContentState.ToString());
+            UnityEditor.EditorGUILayout.PropertyField(frameState);
+        }
+    }
+#endif
 
     public class Unity3DTile
     {
@@ -107,55 +186,7 @@ namespace Unity3DTiles
 
         private int hashCode;
 
-        public class TileFrameState
-        {
-            public int LastVisitedFrame = -1;
-         
-            public bool InFrustumSet = false;       // Currently in view of a camera (And in this frames "Used set")
-            private bool InUsedSet = false;         // Relevant to rendering or collisons this frame, private because this should be checked with IsUsedThisFrame to void reading stale values
-            public bool IsUsedSetLeaf = false;      // This tile is at the maximum LOD this frame given our screen space error requirements
-            public bool InRenderSet = false;        // This tile should be rendered this frame
-            public bool InColliderSet = false;      // This tile should have its collider enabled this frame
-            public bool UsedLastFrame = false;      // This tile was in the used set last frame and may need to be deactivated next frame
-            public float DistanceToCamera = float.MaxValue;
-            public float PixelsToCameraCenter = float.MaxValue;
-            public float ScreenSpaceError = 0;
-
-            public float Priority = float.MaxValue; // lower value means higher priority
-
-            public void MarkUsed()
-            {
-                InUsedSet = true;
-            }
-
-            public bool IsUsedThisFrame
-            {
-                get
-                {
-                    return InUsedSet && LastVisitedFrame == Time.frameCount;
-                }
-            }
-
-            public void Reset()
-            {
-                if (LastVisitedFrame == Time.frameCount)
-                {
-                    return;
-                }
-                LastVisitedFrame = Time.frameCount;
-                InUsedSet = false;
-                InFrustumSet = false;
-                IsUsedSetLeaf = false;
-                InRenderSet = false;
-                InColliderSet = false;
-                DistanceToCamera = float.MaxValue;
-                PixelsToCameraCenter = float.MaxValue;
-                ScreenSpaceError = 0;
-                Priority = float.MaxValue;
-            }
-        }
-
-        public TileFrameState FrameState = new TileFrameState();
+        public Unity3DTileFrameState FrameState = new Unity3DTileFrameState();
 
         public void MarkUsed()
         {
@@ -301,8 +332,9 @@ namespace Unity3DTiles
                 go.transform.localScale = computedTransform.lossyScale;
                 go.layer = Tileset.Behaviour.gameObject.layer;
                 go.SetActive(false);
-                var info = go.AddComponent<TileInfo>();
+                var info = go.AddComponent<Unity3DTileInfo>();
                 info.Tile = this;
+                info.FrameState = FrameState;
                 Content = new Unity3DTileContent(go);
                 
                 if (ContentType == Unity3DTileContentType.B3DM)

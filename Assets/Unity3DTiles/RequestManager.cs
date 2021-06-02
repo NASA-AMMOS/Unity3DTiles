@@ -189,8 +189,7 @@ namespace Unity3DTiles
 
             //re-sort queue from high to low priority (high priority = low value)
             //because priorities may change from frame to frame
-            //also cull any duplicates, drop any requests that are now offscreen (priority = MaxValue)
-            //and drop any requests that exceed MAX_QUEUE_SIZE
+            //also cull any duplicates and drop any requests that exceed MAX_QUEUE_SIZE
             tmpList.Clear();
             tmpSet.Clear();
             tmpList.AddRange(queue);
@@ -199,7 +198,7 @@ namespace Unity3DTiles
             tmpSet.Clear();
             for (int i = 0; i < tmpList.Count; i++)
             {
-                if (queue.Count < MAX_QUEUE_SIZE && tmpList[i].Tile.FrameState.Priority < float.MaxValue)
+                if (queue.Count < MAX_QUEUE_SIZE)
                 {
                     if (!tmpSet.Contains(tmpList[i].Tile))
                     {
