@@ -735,7 +735,7 @@ MonoBehaviour:
   rotateButton: 0
   scaleButton: 2
   rollButton: 1
-  lockRoll: 1
+  lockRoll: 0
   lockRollSpeed: 0.01
   lockRollCrossover: 0.7
   worldUp: {x: 0, y: 0, z: -1}
